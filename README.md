@@ -23,7 +23,7 @@ In the configuration panel you can set:
 - ASM Include
 - Emulator input setup
 
-![](https://github.com/gouky/MDStudio/blob/master/mdstudio_screen.jpg)
+![](https://github.com/bigevilcorporation/MDStudio/blob/master/mdstudio_screen.jpg)
 
 # Features
 
@@ -59,9 +59,12 @@ Matt Phillips
 
 # Contact
 
-mdstudio@gouky.com
+matt@bigevilcorporation.co.uk
 
 # History
+
+Fork from 0.1:
+- In loving memory of Nicolas Hamel
 
 Version 0.1:
 - Initial release
