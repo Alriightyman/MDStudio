@@ -1,3 +1,9 @@
+The currently active development branch forked from Gouky.
+
+In loving memory of Nicolas 'Gouky' Hamel.
+
+Original ReadMe is below:
+
 
 # MDStudio
 
