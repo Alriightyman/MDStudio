@@ -84,10 +84,19 @@ namespace MDStudio
 
         private FileSystemWatcher m_SourceWatcher;
 
-        private BreakMode m_BreakMode = BreakMode.kBreakpoint;
-        private uint m_StepOverAddress;
+        class Breakpoint
+        {
+            public Breakpoint(string _file, int _line) { filename = _file; line = _line; address = 0; }
+            public Breakpoint(string _file, int _line, uint _address) { filename = _file; line = _line; address = _address; }
+            public string filename;
+            public int line;
+            public uint address;
+        }
 
-        private List<uint> m_Breakpoints;
+        private BreakMode m_BreakMode = BreakMode.kBreakpoint;
+        private Breakpoint m_StepOverBreakpoint;
+
+        private List<Breakpoint> m_Breakpoints;
         private List<uint> m_Watchpoints;
 
 #if UMDK_SUPPORT
@@ -180,7 +189,7 @@ namespace MDStudio
             m_ErrorMarkers = new List<Marker>();
             m_SearchMarkers= new List<Marker>();
             m_SearchResults = new List<TextLocation>();
-            m_Breakpoints = new List<uint>();
+            m_Breakpoints = new List<Breakpoint>();
             m_Watchpoints = new List<uint>();
 
             //
@@ -294,19 +303,73 @@ namespace MDStudio
 
             SetTargetBreakpoint(address);
 
-            m_Breakpoints.Add(address);
+            Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(address);
+
+            m_Breakpoints.Add(new Breakpoint(fileLine.Item1, fileLine.Item2));
+        }
+
+        public void SetBreakpoint(string filename, int line)
+        {
+            if (m_DebugSymbols != null)
+            {
+                //Symbols loaded, add "online" breakpoint by address
+                uint address = m_DebugSymbols.GetAddress(filename, line);
+                if (address >= 0)
+                {
+                    if (m_BreakpointView != null)
+                    {
+                        //TODO: Breakpoint view should be by file/line, not address
+                        m_BreakpointView.SetBreakpoint(address);
+                    }
+
+                    SetTargetBreakpoint(address);
+                    m_Breakpoints.Add(new Breakpoint(filename, line, address));
+                }
+            }
+            else
+            {
+                //No symbols yet, add "offline" breakpoint by file/line
+                m_Breakpoints.Add(new Breakpoint(filename, line));
+            }
         }
 
         public void RemoveBreakpoint(uint address)
         {
             if (m_BreakpointView != null)
             {
+                //TODO: Breakpoint view should be by file/line, not address
                 m_BreakpointView.RemoveBreakpoint(address);
             }
 
             RemoveTargetBreakpoint(address);
 
-            m_Breakpoints.Remove(address);
+            Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(address);
+
+            m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == fileLine.Item1 && breakpoint.line == fileLine.Item2));
+        }
+
+        public void RemoveBreakpoint(string filename, int line)
+        {
+            if (m_DebugSymbols != null)
+            {
+                uint address = m_DebugSymbols.GetAddress(filename, line);
+                if (address >= 0)
+                {
+                    if (m_BreakpointView != null)
+                    {
+                        //TODO: Breakpoint view should be by file/line, not address
+                        m_BreakpointView.RemoveBreakpoint(address);
+                    }
+
+                    RemoveTargetBreakpoint(address);
+
+                    m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == filename && breakpoint.line == line));
+                }
+            }
+            else
+            {
+                m_Breakpoints.Remove(new Breakpoint(filename, line));
+            }
         }
 
         public void ClearBreakpoints()
@@ -457,16 +520,16 @@ namespace MDStudio
                     if (m_BreakMode == BreakMode.kStepOver)
                     {
                         //If hit desired step over address
-                        if (currentPC == m_StepOverAddress)
+                        if (currentPC == m_StepOverBreakpoint.address)
                         {
                             //Clear step over breakpoint, if we don't have a user breakpoint here
-                            if (m_Breakpoints.IndexOf(m_StepOverAddress) == -1)
+                            if (m_Breakpoints.IndexOf(m_StepOverBreakpoint) == -1)
                             {
-                                m_Target.RemoveBreakpoint(m_StepOverAddress);
+                                m_Target.RemoveBreakpoint(m_StepOverBreakpoint.address);
                             }
 
                             //Return to breakpoint mode
-                            m_StepOverAddress = 0;
+                            m_StepOverBreakpoint = null;
                             m_BreakMode = BreakMode.kBreakpoint;
                         }
                         else
@@ -889,10 +952,11 @@ namespace MDStudio
                         //  Load Rom
                         m_Target.LoadBinary(binaryFile);
 
-                        //  Set initial breakpoints
-                        foreach(uint breakpoint in m_Breakpoints)
+                        //  Lookup and set initial breakpoints
+                        for(int i = 0; i < m_Breakpoints.Count; i++)
                         {
-                            SetTargetBreakpoint(breakpoint);
+                            m_Breakpoints[i].address = m_DebugSymbols.GetAddress(m_Breakpoints[i].filename, m_Breakpoints[i].line);
+                            SetTargetBreakpoint(m_Breakpoints[i].address);
                         }
 
                         // Set watchpoints
@@ -929,31 +993,22 @@ namespace MDStudio
         {
             int line = codeEditor.ActiveTextAreaControl.Caret.Line;
 
-            if(m_DebugSymbols != null)
+            if (m_Breakpoints.Find(breakpoint => breakpoint.filename == m_CurrentSourcePath && breakpoint.line == line) == null)
             {
-                uint address = m_DebugSymbols.GetAddress(m_CurrentSourcePath, line + 1);
+                SetBreakpoint(m_CurrentSourcePath, line);
 
-                if (m_Breakpoints.Find(addr => addr == address) == 0)
-                {
-                    SetBreakpoint(m_DebugSymbols.GetAddress(m_CurrentSourcePath, line + 1));
-
-                    if (!codeEditor.Document.BookmarkManager.IsMarked(line))
-                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
-                }
-                else
-                {
-                    RemoveBreakpoint(m_DebugSymbols.GetAddress(m_CurrentSourcePath, line + 1));
-
-                    if (codeEditor.Document.BookmarkManager.IsMarked(line))
-                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
-                }
-
-                codeEditor.Refresh();
+                if (!codeEditor.Document.BookmarkManager.IsMarked(line))
+                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
             }
             else
             {
-                MessageBox.Show("Cannot set breakpoint without debug symbols - build project first", "Error");
+                RemoveBreakpoint(m_CurrentSourcePath, line);
+
+                if (codeEditor.Document.BookmarkManager.IsMarked(line))
+                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
             }
+
+            codeEditor.Refresh();
         }
 
         private void debugToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1035,7 +1090,7 @@ namespace MDStudio
 
             //Set StepOver mode
             m_BreakMode = BreakMode.kStepOver;
-            m_StepOverAddress = nextPC;
+            m_StepOverBreakpoint = new Breakpoint(currentLine.Item1, nextLine, nextPC);
 
             //Run to StepOver breakpoint
             m_Target.Resume();
@@ -1209,14 +1264,12 @@ namespace MDStudio
             this.Activate();
 
             //Populate known breakpoint markers
-            foreach (uint address in m_Breakpoints)
+            foreach (Breakpoint breakpoint in m_Breakpoints)
             {
-                Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(address);
-
-                if (fileLine != null && fileLine.Item2 != 0 && fileLine.Item1.ToLower() == filename.ToLower())
+                if (breakpoint.line != 0 && breakpoint.filename.ToLower() == filename.ToLower())
                 {
-                    if (!codeEditor.Document.BookmarkManager.IsMarked(fileLine.Item2 - 1))
-                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, fileLine.Item2 - 1));
+                    if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line - 1))
+                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line - 1));
                 }
             }
 
@@ -1239,14 +1292,12 @@ namespace MDStudio
                     m_CurrentSourcePath = filename;
 
                     //Populate known breakpoint markers
-                    foreach (uint addr in m_Breakpoints)
+                    foreach (Breakpoint breakpoint in m_Breakpoints)
                     {
-                        Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(addr);
-
-                        if (fileLine != null && fileLine.Item2 != 0 && fileLine.Item1.ToLower() == filename.ToLower())
+                        if (breakpoint.line != 0 && breakpoint.filename.ToLower() == filename.ToLower())
                         {
-                            if (!codeEditor.Document.BookmarkManager.IsMarked(fileLine.Item2 - 1))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, fileLine.Item2 - 1));
+                            if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line - 1))
+                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line - 1));
                         }
                     }
 
@@ -1449,14 +1500,12 @@ namespace MDStudio
                     codeEditor.Document.TextContent = System.IO.File.ReadAllText(m_CurrentSourcePath);
 
                     //Populate known breakpoint markers
-                    foreach(uint address in m_Breakpoints)
+                    foreach(Breakpoint breakpoint in m_Breakpoints)
                     {
-                        Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(address);
-
-                        if(fileLine != null && fileLine.Item2 != 0 && fileLine.Item1 == m_CurrentSourcePath)
+                        if(breakpoint.line != 0 && breakpoint.filename.ToLower() == m_CurrentSourcePath.ToLower())
                         {
-                            if (!codeEditor.Document.BookmarkManager.IsMarked(fileLine.Item2))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, fileLine.Item2));
+                            if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
+                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
                         }
                     }
                 }
@@ -1950,10 +1999,14 @@ namespace MDStudio
         private void breakpointsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             m_BreakpointView = new BreakpointView(this, m_DebugSymbols);
-                
-            foreach(uint addr in m_Breakpoints)
+
+            if(m_DebugSymbols != null)
             {
-                m_BreakpointView.SetBreakpoint(addr);
+                //TODO: Breakpoint view by file/line, not address
+                foreach (Breakpoint breakpoint in m_Breakpoints)
+                {
+                    m_BreakpointView.SetBreakpoint(m_DebugSymbols.GetAddress(breakpoint.filename, breakpoint.line));
+                }
             }
 
             m_BreakpointView.Show();
