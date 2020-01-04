@@ -35,6 +35,8 @@
             this.labelVersion = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -51,7 +53,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(9, 286);
+            this.label1.Location = new System.Drawing.Point(9, 310);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(45, 13);
             this.label1.TabIndex = 1;
@@ -60,7 +62,7 @@
             // buttonOK
             // 
             this.buttonOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.buttonOK.Location = new System.Drawing.Point(151, 281);
+            this.buttonOK.Location = new System.Drawing.Point(151, 305);
             this.buttonOK.Name = "buttonOK";
             this.buttonOK.Size = new System.Drawing.Size(75, 23);
             this.buttonOK.TabIndex = 2;
@@ -70,7 +72,7 @@
             // labelVersion
             // 
             this.labelVersion.AutoSize = true;
-            this.labelVersion.Location = new System.Drawing.Point(60, 286);
+            this.labelVersion.Location = new System.Drawing.Point(60, 310);
             this.labelVersion.Name = "labelVersion";
             this.labelVersion.Size = new System.Drawing.Size(35, 13);
             this.labelVersion.TabIndex = 3;
@@ -94,11 +96,31 @@
             this.label3.TabIndex = 5;
             this.label3.Text = "Additional Code: Matt Phillips";
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(12, 280);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(213, 13);
+            this.label4.TabIndex = 6;
+            this.label4.Text = "In loving memory of Nicolas \"Gouky\" Hamel";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(22, 257);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(194, 13);
+            this.label5.TabIndex = 7;
+            this.label5.Text = "Support: matt@bigevilcorporation.co.uk";
+            // 
             // AboutForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(238, 317);
+            this.ClientSize = new System.Drawing.Size(238, 336);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.labelVersion);
@@ -124,5 +146,7 @@
         private System.Windows.Forms.Label labelVersion;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label label5;
     }
 }
