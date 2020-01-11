@@ -891,18 +891,24 @@ namespace MDStudio
             }
             Console.WriteLine(errorCount + " Error(s)");
 
-            codeEditor.Refresh(); ;
+            codeEditor.Refresh();
+
+            string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
+            string symbolFile = m_PathToProject + @"\" + m_ProjectName + ".symb";
 
             if (errorCount > 0)
             {
                 statusLabel.Text = errorCount + " Error(s)";
-            }   
+            }
+            else if(!File.Exists(binaryFile) || !File.Exists(symbolFile))
+            {
+                statusLabel.Text = "Build error, no output files generated";
+            }
             else
             {
                 statusLabel.Text = "Build ok!";
 
                 //Success, read symbols
-                string symbolFile = m_PathToProject + @"\" + m_ProjectName + ".symb";
                 m_DebugSymbols = new Symbols();
                 m_DebugSymbols.Read(symbolFile);
             }
