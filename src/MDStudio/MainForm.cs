@@ -991,21 +991,23 @@ namespace MDStudio
 
         private void toggleBreakpoint_Click(object sender, EventArgs e)
         {
-            int line = codeEditor.ActiveTextAreaControl.Caret.Line;
+            //Text editor is 0-based, symbols are 1-based
+            int lineEditor = codeEditor.ActiveTextAreaControl.Caret.Line;
+            int lineSymbols = lineEditor + 1;
 
-            if (m_Breakpoints.Find(breakpoint => breakpoint.filename == m_CurrentSourcePath && breakpoint.line == line) == null)
+            if (m_Breakpoints.Find(breakpoint => breakpoint.filename == m_CurrentSourcePath && breakpoint.line == lineSymbols) == null)
             {
-                SetBreakpoint(m_CurrentSourcePath, line);
+                SetBreakpoint(m_CurrentSourcePath, lineSymbols);
 
-                if (!codeEditor.Document.BookmarkManager.IsMarked(line))
-                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
+                if (!codeEditor.Document.BookmarkManager.IsMarked(lineEditor))
+                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineEditor));
             }
             else
             {
-                RemoveBreakpoint(m_CurrentSourcePath, line);
+                RemoveBreakpoint(m_CurrentSourcePath, lineSymbols);
 
-                if (codeEditor.Document.BookmarkManager.IsMarked(line))
-                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
+                if (codeEditor.Document.BookmarkManager.IsMarked(lineEditor))
+                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineEditor));
             }
 
             codeEditor.Refresh();
@@ -1260,7 +1262,10 @@ namespace MDStudio
                 codeEditor.LoadFile(filename);
                 m_CurrentSourcePath = filename;
             }
-            codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber-1;
+
+            //Text editor is 0-based
+            codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber - 1;
+
             this.Activate();
 
             //Populate known breakpoint markers
@@ -1281,7 +1286,9 @@ namespace MDStudio
             Tuple<string, int> currentLine = m_DebugSymbols.GetFileLine(address);
 
             string filename = currentLine.Item1;
-            int lineNumber = currentLine.Item2 - 1;
+
+            //Text editor is 0-based, symbols are 1-based
+            int lineNumberEditor = currentLine.Item2 - 1;
 
             //Load file
             if(filename.Length > 0)
@@ -1304,20 +1311,20 @@ namespace MDStudio
                     codeEditor.ActiveTextAreaControl.Refresh();
                 }
 
-                int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumber));
+                int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
 
                 codeEditor.Document.MarkerStrategy.Clear();
 
-                if(lineNumber < codeEditor.Document.LineSegmentCollection.Count)
+                if(lineNumberEditor < codeEditor.Document.LineSegmentCollection.Count)
                 {
-                    Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumber].Length, MarkerType.SolidBlock, Color.Yellow, Color.Black);//selection.Offset, selection.Length, MarkerType.SolidBlock, Color.DarkRed, Color.White);
+                    Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumberEditor].Length, MarkerType.SolidBlock, Color.Yellow, Color.Black);//selection.Offset, selection.Length, MarkerType.SolidBlock, Color.DarkRed, Color.White);
                     codeEditor.Document.MarkerStrategy.AddMarker(marker);
-                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
-                    codeEditor.ActiveTextAreaControl.CenterViewOn(lineNumber, -1);
+                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
+                    codeEditor.ActiveTextAreaControl.CenterViewOn(lineNumberEditor, -1);
                 }
                 else
                 {
-                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
+                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
                     codeEditor.ActiveTextAreaControl.CenterViewOn(0, -1);
                 }
 
@@ -1848,7 +1855,8 @@ namespace MDStudio
 
                 if(int.TryParse(gotoForm.textLineNumber.Text, out lineNumber))
                 {
-                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
+                    //Text editor is 0-based
+                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber - 1;
                 }
             }
         }
