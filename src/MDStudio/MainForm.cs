@@ -51,8 +51,8 @@ namespace MDStudio
         private string m_ProjectFile;
         private string m_PathToProject;
         private string m_ProjectName;
-        private string m_SourceFileName;
-        private string m_CurrentSourcePath;     //  should be removed...
+        private string m_FileToAssemble;        // File to assemble
+        private string m_CurrentlyEditingFile;  // Currently editing source file
         private List<string> m_ProjectFiles;
         private string m_BuildArgs;
 
@@ -83,6 +83,8 @@ namespace MDStudio
         private State m_State = State.kStopped;
 
         private FileSystemWatcher m_SourceWatcher;
+        private FileSystemEventHandler m_OnFileChanged;
+        private Object m_WatcherCritSec = new object();
 
         class Breakpoint
         {
@@ -222,9 +224,6 @@ namespace MDStudio
             else
                 m_VDPStatus.Hide();
 
-            m_SourceWatcher = new FileSystemWatcher();
-            m_SourceWatcher.EnableRaisingEvents = false;
-
             // Set the syntax-highlighting for C#
             codeEditor.Document.HighlightingStrategy = HighlightingManager.Manager.FindHighlighter("ASM68k");
 
@@ -244,7 +243,10 @@ namespace MDStudio
             m_Timer.Tick += TimerTick;
             m_Timer.Enabled = true;
 
-            if(m_Config.AutoOpenLastProject)
+            // Setup file changed watcher
+            m_OnFileChanged = new FileSystemEventHandler(OnSourceChanged);
+
+            if (m_Config.AutoOpenLastProject)
             {
                 //Open last project
                 OpenProject(m_Config.LastProject);
@@ -259,6 +261,47 @@ namespace MDStudio
 
         private void Form1_Load(object sender, EventArgs e)
         {
+        }
+
+        private void OpenFile(string filename)
+        {
+            if (System.IO.File.Exists(filename))
+            {
+                // Ignore document changed events
+                bool watchingEvents = (m_SourceWatcher == null) || m_SourceWatcher.EnableRaisingEvents;
+                m_SourceWatcher = null;
+                codeEditor.Document.DocumentChanged -= documentChanged;
+
+                // Reset undo state
+                m_Modified = false;
+                undoMenu.Enabled = false;
+
+                // Load file
+                m_CurrentlyEditingFile = filename;
+                codeEditor.LoadFile(filename);
+
+                // Set title bar text
+                this.Text = "MDStudio - " + m_CurrentlyEditingFile;
+
+                //Populate known breakpoint markers
+                foreach (Breakpoint breakpoint in m_Breakpoints)
+                {
+                    if (breakpoint.line != 0 && breakpoint.filename.ToLower() == m_CurrentlyEditingFile.ToLower())
+                    {
+                        if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
+                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
+                    }
+                }
+
+                // Resubscribe to document changed events
+                codeEditor.Document.DocumentChanged += documentChanged;
+                m_SourceWatcher = new FileSystemWatcher();
+                m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentlyEditingFile);
+                m_SourceWatcher.Filter = Path.GetFileName(m_CurrentlyEditingFile);
+                m_SourceWatcher.EnableRaisingEvents = watchingEvents;
+                m_SourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                m_SourceWatcher.Changed += m_OnFileChanged;
+            }
         }
 
         private void StartDebugging()
@@ -614,7 +657,7 @@ namespace MDStudio
             m_ProjectFiles = ScanIncludes(m_PathToProject, m_ProjectFile);
 
             //Add current file and sort
-            m_ProjectFiles.Add(m_CurrentSourcePath);
+            m_ProjectFiles.Add(m_CurrentlyEditingFile);
             m_ProjectFiles.Sort();
 
             //Populate view
@@ -739,7 +782,7 @@ namespace MDStudio
 
                         process.StartInfo.FileName = m_Config.Asm68kPath;
                         process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
-                        process.StartInfo.Arguments = @"/p /c /zd " + m_Config.Asm68kArgs + " " + includeArgs + " " + m_SourceFileName + "," + m_ProjectName + ".bin," + m_ProjectName + ".symb," + m_ProjectName + ".list";
+                        process.StartInfo.Arguments = @"/p /c /zd " + m_Config.Asm68kArgs + " " + includeArgs + " " + m_FileToAssemble + "," + m_ProjectName + ".bin," + m_ProjectName + ".symb," + m_ProjectName + ".list";
                         process.StartInfo.UseShellExecute = false;
                         process.StartInfo.RedirectStandardOutput = true;
                         process.StartInfo.RedirectStandardError = true;
@@ -836,7 +879,7 @@ namespace MDStudio
                     errorCount++;
 
                     //  Mark the line
-                    if(matchError.Groups[1].Value == m_SourceFileName)
+                    if(matchError.Groups[1].Value == m_FileToAssemble)
                     {
                         int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumber - 1));
                         Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumber - 1].Length, MarkerType.SolidBlock, Color.DarkRed, Color.Black);
@@ -899,7 +942,7 @@ namespace MDStudio
 
                 if (Build() == 0)
                 {
-                    string initialSourceFile = m_PathToProject + @"\" + m_SourceFileName;
+                    string initialSourceFile = m_PathToProject + @"\" + m_FileToAssemble;
                     string listingFile = m_PathToProject + @"\" + m_ProjectName + ".list";
                     string symbolFile = m_PathToProject + @"\" + m_ProjectName + ".symb";
                     string baseDirectory = m_PathToProject + @"\";
@@ -995,16 +1038,16 @@ namespace MDStudio
             int lineEditor = codeEditor.ActiveTextAreaControl.Caret.Line;
             int lineSymbols = lineEditor + 1;
 
-            if (m_Breakpoints.Find(breakpoint => breakpoint.filename == m_CurrentSourcePath && breakpoint.line == lineSymbols) == null)
+            if (m_Breakpoints.Find(breakpoint => breakpoint.filename == m_CurrentlyEditingFile && breakpoint.line == lineSymbols) == null)
             {
-                SetBreakpoint(m_CurrentSourcePath, lineSymbols);
+                SetBreakpoint(m_CurrentlyEditingFile, lineSymbols);
 
                 if (!codeEditor.Document.BookmarkManager.IsMarked(lineEditor))
                     codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineEditor));
             }
             else
             {
-                RemoveBreakpoint(m_CurrentSourcePath, lineSymbols);
+                RemoveBreakpoint(m_CurrentlyEditingFile, lineSymbols);
 
                 if (codeEditor.Document.BookmarkManager.IsMarked(lineEditor))
                     codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineEditor));
@@ -1221,7 +1264,7 @@ namespace MDStudio
 
         private void Save(bool saveAs = false)
         {
-            if(m_CurrentSourcePath==null || saveAs)
+            if(m_CurrentlyEditingFile==null || saveAs)
             {
                 SaveFileDialog fileDialog = new SaveFileDialog();
 
@@ -1231,11 +1274,15 @@ namespace MDStudio
 
                 if(fileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    m_CurrentSourcePath = fileDialog.FileName;
-                    m_ProjectFiles.Add(m_CurrentSourcePath);
-                    m_ProjectFiles.Sort();
-                    PopulateFileView();
-                    treeProjectFiles.ExpandAll();
+                    if(!m_CurrentlyEditingFile.Equals(fileDialog.FileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Filename changed in Save As dialog, add to project tree and open new filename
+                        m_ProjectFiles.Add(fileDialog.FileName);
+                        m_ProjectFiles.Sort();
+                        PopulateFileView();
+                        treeProjectFiles.ExpandAll();
+                        OpenFile(fileDialog.FileName);
+                    }
                 }
                 else
                 {
@@ -1245,10 +1292,10 @@ namespace MDStudio
             m_SourceWatcher.EnableRaisingEvents = false;
 
             codeEditor.Encoding = Encoding.ASCII;
-            codeEditor.SaveFile(m_CurrentSourcePath);
+            codeEditor.SaveFile(m_CurrentlyEditingFile);
 
-            m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentSourcePath);
-            m_SourceWatcher.Filter = Path.GetFileName(m_CurrentSourcePath);
+            m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentlyEditingFile);
+            m_SourceWatcher.Filter = Path.GetFileName(m_CurrentlyEditingFile);
             m_SourceWatcher.EnableRaisingEvents = true;
 
             m_Modified = false;
@@ -1257,10 +1304,9 @@ namespace MDStudio
 
         public void GoTo(string filename, int lineNumber)
         {
-            if (m_CurrentSourcePath.ToLower() != filename.ToLower())
+            if (m_CurrentlyEditingFile.ToLower() != filename.ToLower())
             {
-                codeEditor.LoadFile(filename);
-                m_CurrentSourcePath = filename;
+                OpenFile(filename);
             }
 
             //Text editor is 0-based
@@ -1293,10 +1339,9 @@ namespace MDStudio
             //Load file
             if(filename.Length > 0)
             {
-                if (m_CurrentSourcePath.ToLower() != filename.ToLower())
+                if (m_CurrentlyEditingFile.ToLower() != filename.ToLower())
                 {
-                    codeEditor.LoadFile(filename);
-                    m_CurrentSourcePath = filename;
+                    OpenFile(filename);
 
                     //Populate known breakpoint markers
                     foreach (Breakpoint breakpoint in m_Breakpoints)
@@ -1459,66 +1504,74 @@ namespace MDStudio
         {
             if(System.IO.File.Exists(filename))
             {
-                m_SourceWatcher.EnableRaisingEvents = false;
-
-                // Remove events
-                codeEditor.Document.DocumentChanged -= documentChanged;
-                m_Modified = false;
-
+                // Set project paths
                 m_ProjectFile = filename;
-                m_PathToProject = Path.GetDirectoryName(filename); // @"D:\Devt\perso_nas\Megadrive\test\";
-                m_CurrentSourcePath = filename;
-
-                codeEditor.LoadFile(filename);
-
-                undoMenu.Enabled = false;
-
+                m_PathToProject = Path.GetDirectoryName(filename);
                 m_ProjectName = Path.GetFileNameWithoutExtension(filename);
-                m_SourceFileName = Path.GetFileName(filename);
+                m_FileToAssemble = filename;
 
+                // Open first file
+                OpenFile(filename);
+
+                // Populate tree view
                 PopulateFileView();
-
                 treeProjectFiles.ExpandAll();
-
-                // Set events
-                codeEditor.Document.DocumentChanged += documentChanged;
-
-                this.Text = "MDStudio - " + m_CurrentSourcePath;
-
-                //  Set watcher
-                m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentSourcePath);
-                m_SourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                m_SourceWatcher.Filter = Path.GetFileName(m_CurrentSourcePath);
-                m_SourceWatcher.Changed += new FileSystemEventHandler(OnSourceChanged);
-                m_SourceWatcher.EnableRaisingEvents = true;
             }
+        }
+
+        private void WithFileAccessRetry(Action action, int timeoutMs = 5000)
+        {
+            var time = Stopwatch.StartNew();
+            while (time.ElapsedMilliseconds < timeoutMs)
+            {
+                try
+                {
+                    action();
+                    return;
+                }
+                catch (IOException e)
+                {
+                    // access error
+                    if (e.HResult != -2147024864)
+                        throw;
+                }
+            }
+            throw new Exception("Failed to access file within allotted time");
         }
 
         private void OnSourceChanged(object source, FileSystemEventArgs e)
         {
-            this.Invoke(new Action(() =>
+            if(System.Threading.Monitor.TryEnter(m_WatcherCritSec))
             {
+                // Disable further checks
                 m_SourceWatcher.EnableRaisingEvents = false;
 
-                DialogResult dialogResult = MessageBox.Show(this, m_CurrentSourcePath + Environment.NewLine + Environment.NewLine + "This file has been modified by an another program." + Environment.NewLine + Environment.NewLine + "Do you want to reload it?", "Reload", MessageBoxButtons.YesNo);
-
-                if (dialogResult == DialogResult.Yes)
+                // Open file not thread safe, invoke main thread action to open
+                this.Invoke(new Action(() =>
                 {
-                    codeEditor.Document.TextContent = System.IO.File.ReadAllText(m_CurrentSourcePath);
+                    // Did any contents actually change?
+                    string diskContents = null;
 
-                    //Populate known breakpoint markers
-                    foreach(Breakpoint breakpoint in m_Breakpoints)
+                    WithFileAccessRetry(() =>
                     {
-                        if(breakpoint.line != 0 && breakpoint.filename.ToLower() == m_CurrentSourcePath.ToLower())
+                        diskContents = System.IO.File.ReadAllText(m_CurrentlyEditingFile);
+                    });
+
+                    if (diskContents != codeEditor.Document.TextContent)
+                    {
+                        // Ask user
+                        DialogResult dialogResult = MessageBox.Show(this, m_CurrentlyEditingFile + Environment.NewLine + Environment.NewLine + "This file has been modified by an another program." + Environment.NewLine + Environment.NewLine + "Do you want to reload it?", "Reload", MessageBoxButtons.YesNo);
+
+                        if (dialogResult == DialogResult.Yes)
                         {
-                            if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
+                            OpenFile(m_CurrentlyEditingFile);
                         }
                     }
-                }
+                }));
 
+                // Re-enable checks
                 m_SourceWatcher.EnableRaisingEvents = true;
-            }));
+            }
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1540,12 +1593,12 @@ namespace MDStudio
 
         public void UpdateTitle()
         {
-            if (m_CurrentSourcePath != null && m_CurrentSourcePath.Length > 0)
+            if (m_CurrentlyEditingFile != null && m_CurrentlyEditingFile.Length > 0)
             {
                 if (m_Modified)
-                    this.Text = "MDStudio - " + m_CurrentSourcePath + "*";
+                    this.Text = "MDStudio - " + m_CurrentlyEditingFile + "*";
                 else
-                    this.Text = "MDStudio - " + m_CurrentSourcePath;
+                    this.Text = "MDStudio - " + m_CurrentlyEditingFile;
             }
             else
             {
@@ -1880,11 +1933,11 @@ namespace MDStudio
         {
             codeEditor.Document.DocumentChanged -= documentChanged;
 
-            m_SourceFileName = null;
-            m_CurrentSourcePath = null;
+            m_FileToAssemble = null;
+            m_CurrentlyEditingFile = null;
             m_Modified = false;
             codeEditor.Document.TextContent = null;
-            m_SourceWatcher.EnableRaisingEvents = false;
+            m_SourceWatcher = null;
             codeEditor.Refresh();
             codeEditor.Document.UndoStack.ClearAll();
             codeEditor.Document.BookmarkManager.Clear();
