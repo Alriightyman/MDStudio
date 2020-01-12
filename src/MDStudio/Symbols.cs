@@ -25,7 +25,7 @@ namespace MDStudio
             return 0;
         }
 
-        public Tuple<string, int> GetFileLine(uint address)
+        public Tuple<string, int, int> GetFileLine(uint address)
         {
             if (m_Addr2FileLine.ContainsKey(address))
             {
@@ -33,7 +33,7 @@ namespace MDStudio
             }
             else
             {
-                return new Tuple<string, int>("", 0);
+                return new Tuple<string, int, int>("", 0, 0);
             }
         }
 
@@ -59,7 +59,7 @@ namespace MDStudio
 
         public List<SymbolEntry> m_Symbols;
         private List<FilenameSection> m_Filenames;
-        private Dictionary<uint, Tuple<string, int>> m_Addr2FileLine;
+        private Dictionary<uint, Tuple<string, int, int>> m_Addr2FileLine;
         private string m_AssembledFile;
 
         public enum ChunkId : byte
@@ -140,7 +140,9 @@ namespace MDStudio
                     string readString;
 
                     int bytesRead = 0;
-                    int currentLine = 0;
+
+                    // Symbol lines are 1-based, text editor lines are 0-based
+                    int currentLine = 1;
 
                     //Read file header
                     FileHeader fileHeader = new FileHeader();
@@ -189,15 +191,18 @@ namespace MDStudio
                                             filenameSection.filename = readString;
 
                                             //Reset line counter
-                                            currentLine = 0;
+                                            currentLine = 1;
                                         }
 
                                         //Chunk payload contains address
                                         addressEntry.address = chunkHeader.payload;
-                                        addressEntry.lineFrom = currentLine;
-                                        addressEntry.lineTo = filenameHeader.firstLine;
+                                        addressEntry.lineFrom = currentLine - 1;
+                                        addressEntry.lineTo = filenameHeader.firstLine - 1;
                                         currentLine = filenameHeader.firstLine;
                                         filenameSection.addresses.Add(addressEntry);
+
+                                        //Next
+                                        currentLine++;
 
                                         //Add to filename list
                                         m_Filenames.Add(filenameSection);
@@ -208,13 +213,15 @@ namespace MDStudio
 
                             case ChunkId.Address:
                                 {
-                                    //Chunk payload contains address
+                                    //Chunk payload contains address for a single line
                                     addressEntry.address = chunkHeader.payload;
 
                                     //Set line range
-                                    addressEntry.lineFrom = currentLine;
+                                    addressEntry.lineFrom = currentLine - 1;
+                                    addressEntry.lineTo = currentLine - 1;
+
+                                    //Next
                                     currentLine++;
-                                    addressEntry.lineTo = currentLine;
 
                                     //Add
                                     filenameSection.addresses.Add(addressEntry);
@@ -224,17 +231,19 @@ namespace MDStudio
 
                             case ChunkId.AddressWithCount:
                                 {
+                                    //Chunk payload contains address for a rage of lines
+                                    addressEntry.address = chunkHeader.payload;
+
                                     //Read line count
                                     byte lineCount = 0;
                                     bytesRead += Serialise(ref stream, out lineCount);
 
-                                    //Chunk payload contains address
-                                    addressEntry.address = chunkHeader.payload;
-
                                     //Set line range
-                                    addressEntry.lineFrom = currentLine;
+                                    addressEntry.lineFrom = currentLine - 1;
+                                    addressEntry.lineTo = currentLine + (lineCount - 1) - 1;
+
+                                    //Next
                                     currentLine += lineCount;
-                                    addressEntry.lineTo = currentLine;
 
                                     //Add
                                     filenameSection.addresses.Add(addressEntry);
@@ -260,7 +269,7 @@ namespace MDStudio
                                 }
 
                             case ChunkId.EndOfSection:
-                                //Nothing of interest
+                                //Payload contains section size
                                 break;
 
                             default:
@@ -273,7 +282,7 @@ namespace MDStudio
                     pinnedData.Free();
 
                     //Build address to file/line map
-                    m_Addr2FileLine = new Dictionary<uint, Tuple<string, int>>();
+                    m_Addr2FileLine = new Dictionary<uint, Tuple<string, int, int>>();
 
                     foreach (FilenameSection section in m_Filenames)
                     {
@@ -281,7 +290,7 @@ namespace MDStudio
                         {
                             if(!m_Addr2FileLine.ContainsKey(address.address))
                             {
-                                m_Addr2FileLine[address.address] = new Tuple<string, int>(section.filename, address.lineTo);
+                                m_Addr2FileLine[address.address] = new Tuple<string, int, int>(section.filename, address.lineFrom, address.lineTo);
                             }
                         }
                     }

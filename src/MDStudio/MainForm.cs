@@ -88,10 +88,11 @@ namespace MDStudio
 
         class Breakpoint
         {
-            public Breakpoint(string _file, int _line) { filename = _file; line = _line; address = 0; }
-            public Breakpoint(string _file, int _line, uint _address) { filename = _file; line = _line; address = _address; }
+            public Breakpoint(string _file, int _line) { filename = _file; line = _line; address = 0; originalLine = 0; }
+            public Breakpoint(string _file, int _line, uint _address) { filename = _file; line = _line; address = _address; originalLine = 0; }
             public string filename;
             public int line;
+            public int originalLine;
             public uint address;
         }
 
@@ -346,14 +347,14 @@ namespace MDStudio
 
             SetTargetBreakpoint(address);
 
-            Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(address);
+            Tuple<string, int, int> fileLine = m_DebugSymbols.GetFileLine(address);
 
-            m_Breakpoints.Add(new Breakpoint(fileLine.Item1, fileLine.Item2));
+            m_Breakpoints.Add(new Breakpoint(fileLine.Item1, fileLine.Item3));
         }
 
-        public void SetBreakpoint(string filename, int line)
+        public int SetBreakpoint(string filename, int line)
         {
-            if (m_DebugSymbols != null)
+            if (m_State != State.kStopped && m_DebugSymbols != null)
             {
                 //Symbols loaded, add "online" breakpoint by address
                 uint address = m_DebugSymbols.GetAddress(filename, line);
@@ -367,12 +368,18 @@ namespace MDStudio
 
                     SetTargetBreakpoint(address);
                     m_Breakpoints.Add(new Breakpoint(filename, line, address));
+
+                    //Actual line might be different from requested line, look it up
+                    return m_DebugSymbols.GetFileLine(address).Item3;
                 }
+
+                return line;
             }
             else
             {
                 //No symbols yet, add "offline" breakpoint by file/line
                 m_Breakpoints.Add(new Breakpoint(filename, line));
+                return line;
             }
         }
 
@@ -386,14 +393,14 @@ namespace MDStudio
 
             RemoveTargetBreakpoint(address);
 
-            Tuple<string, int> fileLine = m_DebugSymbols.GetFileLine(address);
+            Tuple<string, int, int> fileLine = m_DebugSymbols.GetFileLine(address);
 
-            m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == fileLine.Item1 && breakpoint.line == fileLine.Item2));
+            m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == fileLine.Item1 && breakpoint.line >= fileLine.Item2 && breakpoint.line <= fileLine.Item3));
         }
 
-        public void RemoveBreakpoint(string filename, int line)
+        public int RemoveBreakpoint(string filename, int line)
         {
-            if (m_DebugSymbols != null)
+            if (m_State != State.kStopped && m_DebugSymbols != null)
             {
                 uint address = m_DebugSymbols.GetAddress(filename, line);
                 if (address >= 0)
@@ -407,11 +414,17 @@ namespace MDStudio
                     RemoveTargetBreakpoint(address);
 
                     m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == filename && breakpoint.line == line));
+
+                    //Actual line might be different from requested line, look it up
+                    return m_DebugSymbols.GetFileLine(address).Item3;
                 }
+
+                return line;
             }
             else
             {
-                m_Breakpoints.Remove(new Breakpoint(filename, line));
+                m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == filename && breakpoint.line == line));
+                return line;
             }
         }
 
@@ -1003,11 +1016,36 @@ namespace MDStudio
                         m_Target.LoadBinary(binaryFile);
 
                         //  Lookup and set initial breakpoints
-                        for(int i = 0; i < m_Breakpoints.Count; i++)
+                        for (int i = 0; i < m_Breakpoints.Count; i++)
                         {
                             m_Breakpoints[i].address = m_DebugSymbols.GetAddress(m_Breakpoints[i].filename, m_Breakpoints[i].line);
                             SetTargetBreakpoint(m_Breakpoints[i].address);
+
+                            // Move any breakpoints on lines without addresses
+                            Tuple<string, int, int> fileLine = m_DebugSymbols.GetFileLine(m_Breakpoints[i].address);
+                            if (m_Breakpoints[i].line != fileLine.Item3)
+                            {
+                                //Line differs, backup and set real line
+                                m_Breakpoints[i].originalLine = m_Breakpoints[i].line;
+                                m_Breakpoints[i].line = fileLine.Item3;
+
+                                if(m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    //Remove all breakpoint carets up to the real line
+                                    for (int line = fileLine.Item2; line < fileLine.Item3; line++)
+                                    {
+                                        if (codeEditor.Document.BookmarkManager.IsMarked(line))
+                                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
+                                    }
+
+                                    //Set real breakpoint
+                                    if (!codeEditor.Document.BookmarkManager.IsMarked(fileLine.Item3))
+                                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, fileLine.Item3));
+                                }
+                            }
                         }
+
+                        codeEditor.Refresh();
 
                         // Set watchpoints
                         foreach (uint address in m_Watchpoints)
@@ -1041,23 +1079,21 @@ namespace MDStudio
 
         private void toggleBreakpoint_Click(object sender, EventArgs e)
         {
-            //Text editor is 0-based, symbols are 1-based
-            int lineEditor = codeEditor.ActiveTextAreaControl.Caret.Line;
-            int lineSymbols = lineEditor + 1;
+            int lineNo = codeEditor.ActiveTextAreaControl.Caret.Line;
 
-            if (m_Breakpoints.Find(breakpoint => breakpoint.filename == m_CurrentlyEditingFile && breakpoint.line == lineSymbols) == null)
+            if (m_Breakpoints.Find(breakpoint => breakpoint.filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase) && breakpoint.line == lineNo) == null)
             {
-                SetBreakpoint(m_CurrentlyEditingFile, lineSymbols);
+                lineNo = SetBreakpoint(m_CurrentlyEditingFile, lineNo);
 
-                if (!codeEditor.Document.BookmarkManager.IsMarked(lineEditor))
-                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineEditor));
+                if (!codeEditor.Document.BookmarkManager.IsMarked(lineNo))
+                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineNo));
             }
             else
             {
-                RemoveBreakpoint(m_CurrentlyEditingFile, lineSymbols);
+                lineNo = RemoveBreakpoint(m_CurrentlyEditingFile, lineNo);
 
-                if (codeEditor.Document.BookmarkManager.IsMarked(lineEditor))
-                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineEditor));
+                if (codeEditor.Document.BookmarkManager.IsMarked(lineNo))
+                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineNo));
             }
 
             codeEditor.Refresh();
@@ -1088,12 +1124,12 @@ namespace MDStudio
             uint nextPC = currentPC;
 
             //Get current file/line
-            Tuple<string,int> currentLine = m_DebugSymbols.GetFileLine((uint)currentPC);
-            int nextLine = currentLine.Item2;
+            Tuple<string,int, int> currentLine = m_DebugSymbols.GetFileLine((uint)currentPC);
+            int nextLine = currentLine.Item3;
 
             //Determine if current instruction should be stepped into
             //TODO: Add instruction peek to DGen, determine by opcode
-            string currentLineText = codeEditor.Document.GetText(codeEditor.Document.GetLineSegment(currentLine.Item2 - 1));
+            string currentLineText = codeEditor.Document.GetText(codeEditor.Document.GetLineSegment(currentLine.Item3));
             Match match = Regex.Match(currentLineText, "\\s*?([a-zA-Z.]+)");
             if(match.Success)
             {
@@ -1175,11 +1211,11 @@ namespace MDStudio
 
                                     entry.address = (uint)i * sizeof(short);
                                     entry.hitCount = profileResults[i];
-                                    Tuple<string, int> line = m_DebugSymbols.GetFileLine(entry.address);
+                                    Tuple<string, int, int> line = m_DebugSymbols.GetFileLine(entry.address);
                                     entry.cyclesPerHit = DGenThread.GetDGen().GetInstructionCycleCount(entry.address);
                                     entry.totalCycles = entry.cyclesPerHit * entry.hitCount;
                                     entry.filename = line.Item1;
-                                    entry.line = line.Item2;
+                                    entry.line = line.Item3;
 
                                     m_ProfileResults.Add(entry);
 
@@ -1213,7 +1249,6 @@ namespace MDStudio
                 m_RegisterView.Hide();
 
                 codeEditor.Document.MarkerStrategy.Clear();
-                codeEditor.Refresh();
 
                 statusLabel.Text = "Stopped";
 
@@ -1221,6 +1256,23 @@ namespace MDStudio
                 codeEditor.Document.ReadOnly = false;
 
                 StopDebugging();
+
+                //Restore original breakpoint lines
+                for(int i = 0; i < m_Breakpoints.Count; i++)
+                {
+                    if (m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase) && m_Breakpoints[i].originalLine > 0)
+                    {
+                        if (codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].line))
+                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].line));
+                        if (!codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].originalLine))
+                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].originalLine));
+                    }
+
+                    m_Breakpoints[i].line = m_Breakpoints[i].originalLine;
+                    m_Breakpoints[i].originalLine = 0;
+                }
+
+                codeEditor.Refresh();
             }
         }
 
@@ -1315,9 +1367,8 @@ namespace MDStudio
             {
                 OpenFile(filename);
             }
-
-            //Text editor is 0-based
-            codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber - 1;
+            
+            codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
 
             this.Activate();
 
@@ -1326,8 +1377,8 @@ namespace MDStudio
             {
                 if (breakpoint.line != 0 && breakpoint.filename.ToLower() == filename.ToLower())
                 {
-                    if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line - 1))
-                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line - 1));
+                    if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
+                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
                 }
             }
 
@@ -1336,12 +1387,11 @@ namespace MDStudio
 
         public void GoTo(uint address)
         {
-            Tuple<string, int> currentLine = m_DebugSymbols.GetFileLine(address);
+            Tuple<string, int, int> currentLine = m_DebugSymbols.GetFileLine(address);
 
             string filename = currentLine.Item1;
-
-            //Text editor is 0-based, symbols are 1-based
-            int lineNumberEditor = currentLine.Item2 - 1;
+            
+            int lineNumberEditor = currentLine.Item3;
 
             //Load file
             if(filename.Length > 0)
@@ -1355,8 +1405,8 @@ namespace MDStudio
                     {
                         if (breakpoint.line != 0 && breakpoint.filename.ToLower() == filename.ToLower())
                         {
-                            if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line - 1))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line - 1));
+                            if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
+                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
                         }
                     }
 

@@ -62,7 +62,7 @@ namespace MDStudio
         {
             if(FindBreakpoint(address) == null)
             {
-                Tuple<string, int> fileLine = m_symbols.GetFileLine(address);
+                Tuple<string, int, int> fileLine = m_symbols.GetFileLine(address);
                 if (fileLine != null)
                 {
                     breakpointList.Items.Add(new BreakpointEntry(fileLine.Item1, fileLine.Item2, address));
