@@ -903,6 +903,7 @@ namespace MDStudio
             else if(!File.Exists(binaryFile) || !File.Exists(symbolFile))
             {
                 statusLabel.Text = "Build error, no output files generated";
+                errorCount++;
             }
             else
             {
