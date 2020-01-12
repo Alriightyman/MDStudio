@@ -284,7 +284,7 @@ namespace MDStudio
                 // Set title bar text
                 this.Text = "MDStudio - " + m_CurrentlyEditingFile;
 
-                //Populate known breakpoint markers
+                // Populate known breakpoint markers
                 foreach (Breakpoint breakpoint in m_Breakpoints)
                 {
                     if (breakpoint.line != 0 && breakpoint.filename.ToLower() == m_CurrentlyEditingFile.ToLower())
@@ -302,6 +302,9 @@ namespace MDStudio
                 m_SourceWatcher.EnableRaisingEvents = watchingEvents;
                 m_SourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
                 m_SourceWatcher.Changed += m_OnFileChanged;
+
+                // Refresh
+                codeEditor.Refresh();
             }
         }
 
@@ -1260,16 +1263,19 @@ namespace MDStudio
                 //Restore original breakpoint lines
                 for(int i = 0; i < m_Breakpoints.Count; i++)
                 {
-                    if (m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase) && m_Breakpoints[i].originalLine > 0)
+                    if(m_Breakpoints[i].originalLine > 0)
                     {
-                        if (codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].line))
-                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].line));
-                        if (!codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].originalLine))
-                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].originalLine));
-                    }
+                        if (m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].line))
+                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].line));
+                            if (!codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].originalLine))
+                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].originalLine));
+                        }
 
-                    m_Breakpoints[i].line = m_Breakpoints[i].originalLine;
-                    m_Breakpoints[i].originalLine = 0;
+                        m_Breakpoints[i].line = m_Breakpoints[i].originalLine;
+                        m_Breakpoints[i].originalLine = 0;
+                    }
                 }
 
                 codeEditor.Refresh();
@@ -1371,18 +1377,6 @@ namespace MDStudio
             codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
 
             this.Activate();
-
-            //Populate known breakpoint markers
-            foreach (Breakpoint breakpoint in m_Breakpoints)
-            {
-                if (breakpoint.line != 0 && breakpoint.filename.ToLower() == filename.ToLower())
-                {
-                    if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
-                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
-                }
-            }
-
-            codeEditor.ActiveTextAreaControl.Refresh();
         }
 
         public void GoTo(uint address)
@@ -1399,18 +1393,6 @@ namespace MDStudio
                 if (m_CurrentlyEditingFile.ToLower() != filename.ToLower())
                 {
                     OpenFile(filename);
-
-                    //Populate known breakpoint markers
-                    foreach (Breakpoint breakpoint in m_Breakpoints)
-                    {
-                        if (breakpoint.line != 0 && breakpoint.filename.ToLower() == filename.ToLower())
-                        {
-                            if (!codeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
-                        }
-                    }
-
-                    codeEditor.ActiveTextAreaControl.Refresh();
                 }
 
                 int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
