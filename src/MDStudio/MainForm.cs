@@ -682,24 +682,27 @@ namespace MDStudio
 
             foreach (string path in m_ProjectFiles)
             {
-                subPathAgg = string.Empty;
-
-                foreach (string subPath in path.Split(treeProjectFiles.PathSeparator[0]))
+                if (path != null)
                 {
-                    subPathAgg += subPathAgg.Length > 0 ? treeProjectFiles.PathSeparator[0] + subPath : subPath;
-                    string absPath = System.IO.Path.GetFullPath(subPathAgg);
+                    subPathAgg = string.Empty;
 
-                    TreeNode[] nodes = treeProjectFiles.Nodes.Find(absPath, true);
-                    if (nodes.Length == 0)
+                    foreach (string subPath in path.Split(treeProjectFiles.PathSeparator[0]))
                     {
-                        if (lastNode == null)
-                            lastNode = treeProjectFiles.Nodes.Add(absPath, subPath);
+                        subPathAgg += subPathAgg.Length > 0 ? treeProjectFiles.PathSeparator[0] + subPath : subPath;
+                        string absPath = System.IO.Path.GetFullPath(subPathAgg);
+
+                        TreeNode[] nodes = treeProjectFiles.Nodes.Find(absPath, true);
+                        if (nodes.Length == 0)
+                        {
+                            if (lastNode == null)
+                                lastNode = treeProjectFiles.Nodes.Add(absPath, subPath);
+                            else
+                                lastNode = lastNode.Nodes.Add(absPath, subPath);
+                        }
                         else
-                            lastNode = lastNode.Nodes.Add(absPath, subPath);
-                    }
-                    else
-                    {
-                        lastNode = nodes[0];
+                        {
+                            lastNode = nodes[0];
+                        }
                     }
                 }
 
