@@ -819,6 +819,7 @@ public:
   void debug_show_m68k_regs(void);
   void debug_show_z80_regs(void);
   void debug_dump_mem(uint32_t addr, uint32_t len);
+  unsigned int debug_m68k_disassemble(unsigned int address, char* text);
 #endif
 };
 

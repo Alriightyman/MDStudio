@@ -21,7 +21,7 @@ namespace MDStudio
 
         public override bool LoadBinary(string filename)
         {
-            if(!m_titan.Initialise())
+            if (!m_titan.Initialise())
             {
                 return false;
             }
@@ -146,6 +146,11 @@ namespace MDStudio
 
         public override void RemoveAllWatchPoints()
         {
+        }
+
+        public override uint Disassemble(uint address, ref string text)
+        {
+            return 0;
         }
     }
 }

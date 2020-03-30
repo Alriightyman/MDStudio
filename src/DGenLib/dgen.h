@@ -69,3 +69,5 @@ extern int		GetInputMapping(int input);
 extern int		GetPaletteEntry(int index);
 
 extern unsigned char GetVDPRegisterValue(int index);
+
+extern unsigned int Disassemble(unsigned int address, char* text);

@@ -217,3 +217,8 @@ unsigned char DGenInterface::DGen::GetVDPRegisterValue(int index)
 {
 	return ::GetVDPRegisterValue(index);
 }
+
+unsigned int DGenInterface::DGen::Disassemble(unsigned int address, char* text)
+{
+	return ::Disassemble(address, text);
+}

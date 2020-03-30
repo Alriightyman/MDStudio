@@ -9,6 +9,7 @@ namespace MDStudio
     class TargetDGen : EmulatorTarget
     {
         private DGenThread m_DGenThread;
+        private static string disassembleString = new string('\0', 128);
 
         public TargetDGen()
         {
@@ -196,6 +197,22 @@ namespace MDStudio
         public override uint GetColor(int index)
         {
             return (uint)DGenThread.GetDGen().GetColor(index);
+        }
+
+        public override uint Disassemble(uint address, ref string text)
+        {
+            uint size = 0;
+
+            unsafe
+            {
+                fixed (char* cstr = disassembleString)
+                {
+                    size = DGenThread.GetDGen().Disassemble(address, (sbyte*)cstr);
+                    text = System.Runtime.InteropServices.Marshal.PtrToStringAnsi((System.IntPtr)cstr);
+                }
+            }
+
+            return size;
         }
     }
 }

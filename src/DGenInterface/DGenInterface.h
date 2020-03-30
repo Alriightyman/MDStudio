@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <string>
+
 using namespace System;
 
 namespace DGenInterface {
@@ -96,5 +98,7 @@ namespace DGenInterface {
 		int		GetColor(int index);
 
 		unsigned char	GetVDPRegisterValue(int index);
+
+		unsigned int Disassemble(unsigned int address, char* text);
 	};
 }

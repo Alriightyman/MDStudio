@@ -2209,6 +2209,29 @@ void md::debug_print_z80_disassemble(uint16_t from, unsigned int num)
 	fflush(stdout);
 }
 
+unsigned int md::debug_m68k_disassemble(unsigned int address, char* text)
+{
+	unsigned int sz = 0;
+
+	if (address < romlen)
+	{
+#ifdef WITH_MUSA
+		char disasm[MAX_DISASM] = { 0 };
+
+		md_set_musa(1);	// assign static in md:: so C can get at it (HACK)
+
+		sz = m68k_disassemble(disasm, address, M68K_CPU_TYPE_68040);
+		sprintf(text, "0x%06x: %s\n", address, disasm);
+
+		md_set_musa(0);
+#else
+		text = "Disassembly unsupported by this 68000 core";
+#endif
+	}
+
+	return sz;
+}
+
 /**
  * Leave debugger.
  */

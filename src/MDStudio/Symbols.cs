@@ -33,9 +33,11 @@ namespace MDStudio
             }
             else
             {
-                return new Tuple<string, int, int>("", 0, 0);
+                return new Tuple<string, int, int>("", -1, -1);
             }
         }
+
+        public Dictionary<uint, Tuple<string, int, int>> AddressToFileLine { get { return m_Addr2FileLine; } }
 
         private struct AddressEntry
         {

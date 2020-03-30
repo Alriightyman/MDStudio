@@ -715,3 +715,8 @@ unsigned char GetVDPRegisterValue(int index)
 {
 	return s_DGenInstance->vdp.reg[index];
 }
+
+unsigned int Disassemble(unsigned int address, char* text)
+{
+	return s_DGenInstance->debug_m68k_disassemble(address, text);
+}

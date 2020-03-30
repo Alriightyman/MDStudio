@@ -69,7 +69,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>VDP_H56_MODE=1;VDP_H54_MODE=1;VRAM_128KB=1;WITH_MUSA;WITH_CZ80;WITH_DEBUGGER;WITH_PROFILER;_CRT_SECURE_NO_WARNINGS;NO_COMPLETION;_DZ80_EXCLUDE_SCRIPT;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VDP_H56_MODE=0;VDP_H54_MODE=0;VRAM_128KB=0;WITH_MUSA;WITH_CZ80;WITH_DEBUGGER;WITH_PROFILER;_CRT_SECURE_NO_WARNINGS;NO_COMPLETION;_DZ80_EXCLUDE_SCRIPT;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\3rdParty\SDL2-2.0.12\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

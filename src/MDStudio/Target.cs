@@ -80,6 +80,9 @@ namespace MDStudio
         public abstract void RemoveWatchpoint(uint addr);
         public abstract void RemoveAllBreakpoints();
         public abstract void RemoveAllWatchPoints();
+
+        //Disassembly
+        public abstract uint Disassemble(uint address, ref string text);
     }
 
     abstract class EmulatorTarget : Target

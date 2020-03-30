@@ -47,6 +47,12 @@ namespace MDStudio
             kLogPoint
         };
 
+        enum SourceMode
+        {
+            Source,
+            Disassembly
+        }
+
         private readonly Timer m_Timer = new Timer();
         private string m_ProjectFile;
         private string m_PathToProject;
@@ -58,6 +64,11 @@ namespace MDStudio
 
         public Target m_Target;
         public Symbols m_DebugSymbols;
+        private string m_DisassemblyText;
+        private List<Tuple<uint, int, string>> m_Disassembly;
+        private static int s_MaxDisassemblyLines = 200;
+        private uint m_DisassembledFrom = 0;
+        private uint m_DisassembledTo = 0;
 
         private RegisterView m_RegisterView;
         private MemoryView m_MemoryView;
@@ -97,6 +108,7 @@ namespace MDStudio
         }
 
         private BreakMode m_BreakMode = BreakMode.kBreakpoint;
+        private SourceMode m_SourceMode = SourceMode.Source;
         private Breakpoint m_StepOverBreakpoint;
 
         private List<Breakpoint> m_Breakpoints;
@@ -305,7 +317,31 @@ namespace MDStudio
 
                 // Refresh
                 codeEditor.Refresh();
+
+                m_SourceMode = SourceMode.Source;
             }
+        }
+
+        private void SetDisassemblyText(string text)
+        {
+            // Ignore document changed events
+            bool watchingEvents = (m_SourceWatcher == null) || m_SourceWatcher.EnableRaisingEvents;
+            m_SourceWatcher = null;
+            codeEditor.Document.DocumentChanged -= documentChanged;
+
+            // Reset undo state
+            m_Modified = false;
+            undoMenu.Enabled = false;
+
+            // Load file
+            m_CurrentlyEditingFile = "Disassembly";
+            codeEditor.Text = text;
+
+            // Set title bar text
+            this.Text = "MDStudio - " + "Disassembly";
+
+            // Refresh
+            codeEditor.Refresh();
         }
 
         private void StartDebugging()
@@ -949,6 +985,11 @@ namespace MDStudio
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            Run();
+        }
+
+        private void Run()
+        {
             if (m_State == State.kDebugging)
             {
                 codeEditor.Document.MarkerStrategy.Clear();
@@ -1083,6 +1124,45 @@ namespace MDStudio
             }
         }
 
+        private void Disassemble(uint fromAddr)
+        {
+            if(m_DebugSymbols != null)
+            {
+                m_Disassembly = new List<Tuple<uint, int, string>>();
+
+                int lineNo = 0;
+                uint address = fromAddr;
+                uint size = 0;
+                int textSize = 0;
+
+                for(int i = 0; i < s_MaxDisassemblyLines; i++)
+                {
+                    string text = string.Empty;
+                    size = m_Target.Disassemble(address, ref text);
+
+                    if (size == 0)
+                        break;
+
+                    m_Disassembly.Add(new Tuple<uint, int, string>(address, lineNo, text));
+                    textSize = text.Length;
+                    lineNo++;
+                    address += size;
+                }
+
+                m_DisassembledFrom = fromAddr;
+                m_DisassembledTo = address;
+
+                StringBuilder builder = new StringBuilder(textSize);
+
+                foreach (var line in m_Disassembly)
+                {
+                    builder.Append(line.Item3);
+                }
+
+                m_DisassemblyText = builder.ToString();
+            }
+        }
+
         private void toggleBreakpoint_Click(object sender, EventArgs e)
         {
             int lineNo = codeEditor.ActiveTextAreaControl.Caret.Line;
@@ -1125,70 +1205,78 @@ namespace MDStudio
 
         private void stepOverMenu_Click(object sender, EventArgs e)
         {
-            //Get current address
-            uint currentPC = m_Target.GetPC();
-            uint nextPC = currentPC;
-
-            //Get current file/line
-            Tuple<string,int, int> currentLine = m_DebugSymbols.GetFileLine((uint)currentPC);
-            int nextLine = currentLine.Item3;
-
-            //Determine if current instruction should be stepped into
-            //TODO: Add instruction peek to DGen, determine by opcode
-            string currentLineText = codeEditor.Document.GetText(codeEditor.Document.GetLineSegment(currentLine.Item3));
-            Match match = Regex.Match(currentLineText, "\\s*?([a-zA-Z.]+)");
-            if(match.Success)
+            //TODO: Breakpoints in disassembly mode
+            if (m_SourceMode == SourceMode.Disassembly)
             {
-                string opcode = match.Groups[1].ToString().ToUpper();
-
-                //Strip whitespace
-                Regex.Replace(opcode, @"\s+", "");
-
-                //Strip all after .
-                int dotPos = opcode.LastIndexOf(".");
-                if(dotPos >= 0)
-                {
-                    opcode = opcode.Substring(0, dotPos);
-                }
-
-                if (kStepIntoInstrs.Contains(opcode))
-                {
-                    stepIntoMenu_Click(sender, e);
-                    return;
-                }
+                stepIntoMenu_Click(sender, e);
             }
-
-            //Get total num lines
-            //TODO: Verify current filename in editor matches emulator?
-            int fileSizeLines = codeEditor.Document.TotalNumberOfLines;
-
-            //Ignore lines with same address as current
-            while (currentPC == nextPC)
+            else
             {
-                //Get next line
-                nextLine++;
+                //Get current address
+                uint currentPC = m_Target.GetPC();
+                uint nextPC = currentPC;
 
-                //If next line is in another file, step into instead
-                if (nextLine > fileSizeLines)
+                //Get current file/line
+                Tuple<string, int, int> currentLine = m_DebugSymbols.GetFileLine((uint)currentPC);
+                int nextLine = currentLine.Item3;
+
+                //Determine if current instruction should be stepped into
+                //TODO: Add instruction peek to DGen, determine by opcode
+                string currentLineText = codeEditor.Document.GetText(codeEditor.Document.GetLineSegment(currentLine.Item3));
+                Match match = Regex.Match(currentLineText, "\\s*?([a-zA-Z.]+)");
+                if (match.Success)
                 {
-                    stepIntoMenu_Click(sender, e);
-                    return;
+                    string opcode = match.Groups[1].ToString().ToUpper();
+
+                    //Strip whitespace
+                    Regex.Replace(opcode, @"\s+", "");
+
+                    //Strip all after .
+                    int dotPos = opcode.LastIndexOf(".");
+                    if (dotPos >= 0)
+                    {
+                        opcode = opcode.Substring(0, dotPos);
+                    }
+
+                    if (kStepIntoInstrs.Contains(opcode))
+                    {
+                        stepIntoMenu_Click(sender, e);
+                        return;
+                    }
                 }
 
-                //Get address of next line
-                nextPC = m_DebugSymbols.GetAddress(currentLine.Item1, nextLine);
+                //Get total num lines
+                //TODO: Verify current filename in editor matches emulator?
+                int fileSizeLines = codeEditor.Document.TotalNumberOfLines;
+
+                //Ignore lines with same address as current
+                while (currentPC == nextPC)
+                {
+                    //Get next line
+                    nextLine++;
+
+                    //If next line is in another file, step into instead
+                    if (nextLine > fileSizeLines)
+                    {
+                        stepIntoMenu_Click(sender, e);
+                        return;
+                    }
+
+                    //Get address of next line
+                    nextPC = m_DebugSymbols.GetAddress(currentLine.Item1, nextLine);
+                }
+
+                //Set breakpoint at next address
+                m_Target.AddBreakpoint(nextPC);
+
+                //Set StepOver mode
+                m_BreakMode = BreakMode.kStepOver;
+                m_StepOverBreakpoint = new Breakpoint(currentLine.Item1, nextLine, nextPC);
+
+                //Run to StepOver breakpoint
+                m_Target.Resume();
+                m_State = State.kRunning;
             }
-
-            //Set breakpoint at next address
-            m_Target.AddBreakpoint(nextPC);
-
-            //Set StepOver mode
-            m_BreakMode = BreakMode.kStepOver;
-            m_StepOverBreakpoint = new Breakpoint(currentLine.Item1, nextLine, nextPC);
-
-            //Run to StepOver breakpoint
-            m_Target.Resume();
-            m_State = State.kRunning;
         }
 
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1387,37 +1475,62 @@ namespace MDStudio
             Tuple<string, int, int> currentLine = m_DebugSymbols.GetFileLine(address);
 
             string filename = currentLine.Item1;
-            
+            int lineNumberSymbols = currentLine.Item2;
             int lineNumberEditor = currentLine.Item3;
 
-            //Load file
-            if(filename.Length > 0)
+            if(lineNumberSymbols >= 0 && filename.Length > 0)
             {
+                //Load file
                 if (m_CurrentlyEditingFile.ToLower() != filename.ToLower())
                 {
                     OpenFile(filename);
                 }
-
-                int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
-
-                codeEditor.Document.MarkerStrategy.Clear();
-
-                if(lineNumberEditor < codeEditor.Document.LineSegmentCollection.Count)
+            }
+            else
+            {
+                //Display disassembly
+                if(m_DisassemblyText == null || m_DisassemblyText.Length == 0 || address < m_DisassembledFrom || address >= m_DisassembledTo)
                 {
-                    Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumberEditor].Length, MarkerType.SolidBlock, Color.Yellow, Color.Black);//selection.Offset, selection.Length, MarkerType.SolidBlock, Color.DarkRed, Color.White);
-                    codeEditor.Document.MarkerStrategy.AddMarker(marker);
-                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
-                    codeEditor.ActiveTextAreaControl.CenterViewOn(lineNumberEditor, -1);
+                    Disassemble(address);
+                }
+
+                if (m_DisassemblyText != null && m_DisassemblyText.Length > 0)
+                {
+                    SetDisassemblyText(m_DisassemblyText);
+                    Tuple<uint, int, string> lineNo = m_Disassembly.FirstOrDefault(entry => entry.Item1 == address);
+                    if (lineNo != null)
+                        lineNumberEditor = lineNo.Item2;
+                    else
+                        lineNumberEditor = 0;
                 }
                 else
                 {
-                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
-                    codeEditor.ActiveTextAreaControl.CenterViewOn(0, -1);
+                    SetDisassemblyText("Disassembly unavailable");
+                    lineNumberEditor = 0;
                 }
 
-                codeEditor.ActiveTextAreaControl.Caret.Column = 0;
-                codeEditor.ActiveTextAreaControl.Invalidate();
+                m_SourceMode = SourceMode.Disassembly;
             }
+
+            int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
+
+            codeEditor.Document.MarkerStrategy.Clear();
+
+            if (lineNumberEditor < codeEditor.Document.LineSegmentCollection.Count)
+            {
+                Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumberEditor].Length, MarkerType.SolidBlock, Color.Yellow, Color.Black);//selection.Offset, selection.Length, MarkerType.SolidBlock, Color.DarkRed, Color.White);
+                codeEditor.Document.MarkerStrategy.AddMarker(marker);
+                codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
+                codeEditor.ActiveTextAreaControl.CenterViewOn(lineNumberEditor, -1);
+            }
+            else
+            {
+                codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
+                codeEditor.ActiveTextAreaControl.CenterViewOn(0, -1);
+            }
+
+            codeEditor.ActiveTextAreaControl.Caret.Column = 0;
+            codeEditor.ActiveTextAreaControl.Invalidate();
         }
 
         public void UpdateViewBuildLog(bool flag)
