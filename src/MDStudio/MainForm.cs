@@ -1420,7 +1420,7 @@ namespace MDStudio
 
         private void Save(bool saveAs = false)
         {
-            if(m_CurrentlyEditingFile==null || saveAs)
+            if(m_SourceMode == SourceMode.Source && (m_CurrentlyEditingFile==null || saveAs))
             {
                 SaveFileDialog fileDialog = new SaveFileDialog();
 
@@ -1696,36 +1696,39 @@ namespace MDStudio
 
         private void OnSourceChanged(object source, FileSystemEventArgs e)
         {
-            if(System.Threading.Monitor.TryEnter(m_WatcherCritSec))
+            if (m_SourceMode == SourceMode.Source)
             {
-                // Disable further checks
-                m_SourceWatcher.EnableRaisingEvents = false;
-
-                // Open file not thread safe, invoke main thread action to open
-                this.Invoke(new Action(() =>
+                if (System.Threading.Monitor.TryEnter(m_WatcherCritSec))
                 {
+                    // Disable further checks
+                    m_SourceWatcher.EnableRaisingEvents = false;
+
+                    // Open file not thread safe, invoke main thread action to open
+                    this.Invoke(new Action(() =>
+                    {
                     // Did any contents actually change?
                     string diskContents = null;
 
-                    WithFileAccessRetry(() =>
-                    {
-                        diskContents = System.IO.File.ReadAllText(m_CurrentlyEditingFile);
-                    });
+                        WithFileAccessRetry(() =>
+                        {
+                            diskContents = System.IO.File.ReadAllText(m_CurrentlyEditingFile);
+                        });
 
-                    if (diskContents != codeEditor.Document.TextContent)
-                    {
+                        if (diskContents != codeEditor.Document.TextContent)
+                        {
                         // Ask user
                         DialogResult dialogResult = MessageBox.Show(this, m_CurrentlyEditingFile + Environment.NewLine + Environment.NewLine + "This file has been modified by an another program." + Environment.NewLine + Environment.NewLine + "Do you want to reload it?", "Reload", MessageBoxButtons.YesNo);
 
-                        if (dialogResult == DialogResult.Yes)
-                        {
-                            OpenFile(m_CurrentlyEditingFile);
+                            if (dialogResult == DialogResult.Yes)
+                            {
+                                OpenFile(m_CurrentlyEditingFile);
+                            }
                         }
-                    }
-                }));
+                    }));
 
-                // Re-enable checks
-                m_SourceWatcher.EnableRaisingEvents = true;
+                    // Re-enable checks
+                    m_SourceWatcher.EnableRaisingEvents = true;
+                }
             }
         }
 
