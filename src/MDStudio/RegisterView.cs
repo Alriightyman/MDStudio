@@ -36,6 +36,16 @@ namespace MDStudio
 
         private const int kNumDataRegs = 8;
 
+        public void SetStack(List<Tuple<uint, uint>> stack)
+        {
+            listStack.Items.Clear();
+
+            foreach (Tuple<uint, uint> stackValue in stack)
+            {
+                listStack.Items.Add(stackValue.Item1.ToString("X8") + " : " + stackValue.Item2.ToString("X8"));
+            }
+        }
+
         public void SetRegs(uint d0, uint d1, uint d2, uint d3, uint d4, uint d5, uint d6, uint d7,
                             uint a0, uint a1, uint a2, uint a3, uint a4, uint a5, uint a6, uint sp, uint usp,
                             uint sr, uint pc)

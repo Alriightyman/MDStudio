@@ -434,7 +434,7 @@ namespace MDStudio
 
             Tuple<string, int, int> fileLine = m_DebugSymbols.GetFileLine(address);
 
-            m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == fileLine.Item1 && breakpoint.line >= fileLine.Item2 && breakpoint.line <= fileLine.Item3));
+            m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename.Equals(fileLine.Item1, StringComparison.OrdinalIgnoreCase) && breakpoint.line >= fileLine.Item2 && breakpoint.line <= fileLine.Item3));
         }
 
         public int RemoveBreakpoint(string filename, int line)
@@ -452,7 +452,7 @@ namespace MDStudio
 
                     RemoveTargetBreakpoint(address);
 
-                    m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == filename && breakpoint.line == line));
+                    m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename.Equals(filename, StringComparison.OrdinalIgnoreCase) && breakpoint.line == line));
 
                     //Actual line might be different from requested line, look it up
                     return m_DebugSymbols.GetFileLine(address).Item3;
@@ -462,7 +462,7 @@ namespace MDStudio
             }
             else
             {
-                m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename == filename && breakpoint.line == line));
+                m_Breakpoints.Remove(m_Breakpoints.Find(breakpoint => breakpoint.filename.Equals(filename, StringComparison.OrdinalIgnoreCase) && breakpoint.line == line));
                 return line;
             }
         }
@@ -571,6 +571,46 @@ namespace MDStudio
                         m_Target.GetZ80Reg(Z80Regs.Z80_REG_IY),
                         m_Target.GetZ80Reg(Z80Regs.Z80_REG_SP),
                         m_Target.GetZ80Reg(Z80Regs.Z80_REG_PC));
+
+                    //Read stack
+                    int maxStack = 20;
+                    uint stackTop = m_Target.ReadLong(0x0000) & 0x00FFFFFF;
+                    uint stackAddr = aregs[7] & 0x00FFFFFF;
+                    List<Tuple<uint,uint>> stack = new List<Tuple<uint, uint>>();
+
+                    //ReadLong is returning bad values, hack to use byte read for now
+                    uint ReadLong(uint address)
+                    {
+                        byte[] buffer = new byte[4];
+                        m_Target.ReadMemory(address, 4, buffer);
+                        return (uint)(buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
+                    }
+
+                    for (int i = 0; i < maxStack; i++)
+                    {
+                        uint stackValue = ReadLong(stackTop);
+                        stack.Insert(0, new Tuple<uint, uint>(stackTop, stackValue));
+
+                        stackTop -= 2;
+                        if (stackAddr == stackTop)
+                        {
+                            //Stack ended on word boundary, read last word
+                            stackValue = (uint)m_Target.ReadWord(stackTop) << 16;
+                            stack.Insert(0, new Tuple<uint, uint>(stackTop, stackValue));
+                            break;
+                        }
+
+                        stackTop -= 2;
+                        if (stackAddr == stackTop)
+                        {
+                            //Stack ended on word boundary, read last long
+                            stackValue = ReadLong(stackTop);
+                            stack.Insert(0, new Tuple<uint, uint>(stackTop, stackValue));
+                            break;
+                        }
+                    }
+
+                    m_RegisterView.SetStack(stack);
 
                     //Dereference ARegs and fill memory previews
                     unsafe
@@ -1027,6 +1067,12 @@ namespace MDStudio
                         m_BreakpointView.UpdateSymbols(m_DebugSymbols);
                     }
 
+                    //Clear last disassembly
+                    m_DisassemblyText = null;
+                    m_Disassembly = null;
+                    m_DisassembledFrom = 0;
+                    m_DisassembledTo = 0;
+
 #if UMDK_SUPPORT
                     if (UMDKEnabledMenuOption.Checked)
                     {
@@ -1420,39 +1466,42 @@ namespace MDStudio
 
         private void Save(bool saveAs = false)
         {
-            if(m_SourceMode == SourceMode.Source && (m_CurrentlyEditingFile==null || saveAs))
+            if (m_SourceMode == SourceMode.Source)
             {
-                SaveFileDialog fileDialog = new SaveFileDialog();
-
-                fileDialog.Filter = "Source (*.asm;*.s;*.i)|*.ASM;*.S;*.I|All files (*.*)|*.*";
-                fileDialog.FilterIndex = 1;
-                fileDialog.RestoreDirectory = true;
-
-                if(fileDialog.ShowDialog() == DialogResult.OK)
+                if (m_CurrentlyEditingFile == null || saveAs)
                 {
-                    if(!m_CurrentlyEditingFile.Equals(fileDialog.FileName, StringComparison.OrdinalIgnoreCase))
+                    SaveFileDialog fileDialog = new SaveFileDialog();
+
+                    fileDialog.Filter = "Source (*.asm;*.s;*.i)|*.ASM;*.S;*.I|All files (*.*)|*.*";
+                    fileDialog.FilterIndex = 1;
+                    fileDialog.RestoreDirectory = true;
+
+                    if (fileDialog.ShowDialog() == DialogResult.OK)
                     {
-                        // Filename changed in Save As dialog, add to project tree and open new filename
-                        m_ProjectFiles.Add(fileDialog.FileName);
-                        m_ProjectFiles.Sort();
-                        PopulateFileView();
-                        treeProjectFiles.ExpandAll();
-                        OpenFile(fileDialog.FileName);
+                        if (!m_CurrentlyEditingFile.Equals(fileDialog.FileName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Filename changed in Save As dialog, add to project tree and open new filename
+                            m_ProjectFiles.Add(fileDialog.FileName);
+                            m_ProjectFiles.Sort();
+                            PopulateFileView();
+                            treeProjectFiles.ExpandAll();
+                            OpenFile(fileDialog.FileName);
+                        }
+                    }
+                    else
+                    {
+                        return;
                     }
                 }
-                else
-                {
-                    return;
-                }
+                m_SourceWatcher.EnableRaisingEvents = false;
+
+                codeEditor.Encoding = Encoding.ASCII;
+                codeEditor.SaveFile(m_CurrentlyEditingFile);
+
+                m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentlyEditingFile);
+                m_SourceWatcher.Filter = Path.GetFileName(m_CurrentlyEditingFile);
+                m_SourceWatcher.EnableRaisingEvents = true;
             }
-            m_SourceWatcher.EnableRaisingEvents = false;
-
-            codeEditor.Encoding = Encoding.ASCII;
-            codeEditor.SaveFile(m_CurrentlyEditingFile);
-
-            m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentlyEditingFile);
-            m_SourceWatcher.Filter = Path.GetFileName(m_CurrentlyEditingFile);
-            m_SourceWatcher.EnableRaisingEvents = true;
 
             m_Modified = false;
             UpdateTitle();
