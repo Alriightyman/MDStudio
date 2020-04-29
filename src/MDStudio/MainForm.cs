@@ -864,15 +864,10 @@ namespace MDStudio
                         string includeArgs = "";
                         if(m_Config.Asm68kIncludePaths != null && m_Config.Asm68kIncludePaths.Length > 0)
                         {
-                            includeArgs += "/j";
-
-                            foreach(string include in m_Config.Asm68kIncludePaths)
+                            foreach (string include in m_Config.Asm68kIncludePaths)
                             {
-                                includeArgs += " ";
-                                includeArgs += include;
+                                includeArgs += "/j " + include + "\\* ";
                             }
-
-                            includeArgs += "*";
                         }
 
                         process.StartInfo.FileName = m_Config.Asm68kPath;
