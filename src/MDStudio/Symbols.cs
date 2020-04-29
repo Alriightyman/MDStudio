@@ -12,7 +12,8 @@ namespace MDStudio
         public uint GetAddress(string filename, int lineNumber)
         {
             //TODO: Slow
-            int sectionIdx = m_Filenames.FindIndex(element => element.filename.ToUpper() == filename.ToUpper());
+            string path = System.IO.Path.GetFullPath(filename).ToUpper();
+            int sectionIdx = m_Filenames.FindIndex(element => element.filename == path);
             if(sectionIdx >= 0)
             {
                 int addressIdx = m_Filenames[sectionIdx].addresses.FindIndex(element => (lineNumber >= element.lineFrom && lineNumber <= element.lineTo));
@@ -190,7 +191,16 @@ namespace MDStudio
                                             //This is the first address in a filename chunk
                                             filenameSection = new FilenameSection();
                                             filenameSection.addresses = new List<AddressEntry>();
-                                            filenameSection.filename = readString;
+
+                                            try
+                                            {
+                                                string pathSanitised = System.IO.Path.GetFullPath(readString).ToUpper();
+                                                filenameSection.filename = pathSanitised;
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                Console.WriteLine("Exception caught sanitising symbol path \'" + readString + "\': " + e.Message);
+                                            }
 
                                             //Reset line counter
                                             currentLine = 1;
