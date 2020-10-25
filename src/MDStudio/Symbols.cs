@@ -143,6 +143,7 @@ namespace MDStudio
                     string readString;
 
                     int bytesRead = 0;
+                    int totalBytes = data.Length;
 
                     // Symbol lines are 1-based, text editor lines are 0-based
                     int currentLine = 1;
@@ -150,6 +151,14 @@ namespace MDStudio
                     //Read file header
                     FileHeader fileHeader = new FileHeader();
                     bytesRead += Serialise(ref stream, out fileHeader);
+
+                    void CheckSize(int chunkLength)
+                    {
+                        if((bytesRead + chunkLength) >= totalBytes)
+                        {
+                            throw new Exception("Bad chunk length or malformed file");
+                        }
+                    }
 
                     //Iterate over chunks
                     while (bytesRead < data.Length)
@@ -167,6 +176,7 @@ namespace MDStudio
                                     filenameHeader.length = Endian.Swap(filenameHeader.length);
 
                                     //Read string
+                                    CheckSize(filenameHeader.length);
                                     bytesRead += Serialise(ref stream, filenameHeader.length, out readString);
 
                                     if (filenameHeader.flags == 0x1)
@@ -270,6 +280,7 @@ namespace MDStudio
                                     bytesRead += Serialise(ref stream, out stringLength);
 
                                     //Read string
+                                    CheckSize(stringLength);
                                     bytesRead += Serialise(ref stream, stringLength, out symbolEntry.name);
 
                                     //Payload contains address

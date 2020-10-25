@@ -1001,7 +1001,16 @@ namespace MDStudio
 
                 //Success, read symbols
                 m_DebugSymbols = new Symbols();
-                m_DebugSymbols.Read(symbolFile);
+
+                try
+                {
+                    m_DebugSymbols.Read(symbolFile);
+                }
+                catch(Exception exception)
+                {
+                    Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
+                    m_DebugSymbols = new Symbols();
+                }
             }
 
             return errorCount;
@@ -1054,10 +1063,17 @@ namespace MDStudio
                     m_RegisterView.Show();
 
                     //Read symbols
-                    m_DebugSymbols = new Symbols();
-                    m_DebugSymbols.Read(symbolFile);
+                    try
+                    {
+                        m_DebugSymbols.Read(symbolFile);
+                    }
+                    catch (Exception exception)
+                    {
+                        Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
+                        m_DebugSymbols = new Symbols();
+                    }
 
-                    if(m_BreakpointView != null)
+                    if (m_BreakpointView != null)
                     {
                         m_BreakpointView.UpdateSymbols(m_DebugSymbols);
                     }
