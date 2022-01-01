@@ -114,9 +114,10 @@ namespace MDStudio
 
         private int Serialise(ref IntPtr bytes, int length, out string value)
         {
-            var byteArray = new byte[length];
+            var byteArray = new byte[length + 1];
             System.Runtime.InteropServices.Marshal.Copy(bytes, byteArray, 0, length);
             value = System.Text.Encoding.Default.GetString(byteArray, 0, length);
+            byteArray[length] = 0;
             bytes += length;
             return length;
         }
