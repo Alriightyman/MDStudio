@@ -67,11 +67,12 @@ namespace MDStudio
 
         public enum ChunkId : byte
         {
-            Filename = 0x88,            // A filename with start address and line count
+            Equate = 0x01,              // EQU name
+            Symbol = 0x2,               // Symbol table entry
             Address = 0x80,             // An address of next line
             AddressWithCount = 0x82,    // An address with line count
+            Filename = 0x88,            // A filename with start address and line count
             EndOfSection = 0x8A,        // End of section
-            Symbol = 0x2                // Symbol table entry
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -155,7 +156,7 @@ namespace MDStudio
 
                     void CheckSize(int chunkLength)
                     {
-                        if((bytesRead + chunkLength) >= totalBytes)
+                        if((bytesRead + chunkLength) > totalBytes)
                         {
                             throw new Exception("Bad chunk length or malformed file");
                         }
@@ -270,6 +271,22 @@ namespace MDStudio
 
                                     //Add
                                     filenameSection.addresses.Add(addressEntry);
+
+                                    break;
+                                }
+
+                            case ChunkId.Equate:
+                                {
+                                    //Read equate string length
+                                    byte stringLength = 0;
+                                    bytesRead += Serialise(ref stream, out stringLength);
+
+                                    //Read string
+                                    string str;
+                                    CheckSize(stringLength);
+                                    bytesRead += Serialise(ref stream, stringLength, out str);
+
+                                    Console.WriteLine($"EQU: {str}");
 
                                     break;
                                 }
