@@ -20,7 +20,7 @@ namespace MDStudio
         public interface ISymbols
         {
             Dictionary<uint, Tuple<string, int, int>> AddressToFileLine { get; }
-            List<SymbolEntry> m_Symbols { get; }
+            List<SymbolEntry> Symbols { get; }
             uint GetAddress(string filename, int lineNumber);
             Tuple<string, int, int> GetFileLine(uint address);
             bool Read(string filename);
@@ -28,13 +28,6 @@ namespace MDStudio
 
         public class AsSymbols : ISymbols
         {
-            public Dictionary<uint, Tuple<string, int, int>> AddressToFileLine => Addr2FileLine;
-
-            public List<SymbolEntry> m_Symbols { get; private set; }
-            private List<FilenameSection> FilenameSections = new List<FilenameSection>();
-            public List<SymbolEntry> Symbols { get; private set; } = new List<SymbolEntry>();
-            private Dictionary<uint, Tuple<string, int, int>> Addr2FileLine;
-
             private struct AddressEntry
             {                
                 public uint Address;
@@ -56,6 +49,11 @@ namespace MDStudio
                 public int DateSize;
                 public int Unused;
             }
+
+            public Dictionary<uint, Tuple<string, int, int>> AddressToFileLine => Addr2FileLine;
+            public List<SymbolEntry> Symbols { get; private set; } = new List<SymbolEntry>();
+            private List<FilenameSection> FilenameSections = new List<FilenameSection>();
+            private Dictionary<uint, Tuple<string, int, int>> Addr2FileLine;
 
             public uint GetAddress(string filename, int lineNumber)
             {
@@ -86,7 +84,10 @@ namespace MDStudio
             }
 
             public bool Read(string filename)
-            {                
+            {
+                // clear symbol information first
+                Clear();
+
                 string fileContents = System.IO.File.ReadAllText(filename);
 
                 if (fileContents.Length > 0)
@@ -124,7 +125,7 @@ namespace MDStudio
 
                     int currentLine = 1;
 
-                    // parse filename
+                    // parse filenames and address
                     string[] filenameSection = segments[0].Split(new string[] { "File" }, StringSplitOptions.RemoveEmptyEntries);
 
                     foreach (var data in filenameSection)
@@ -133,6 +134,7 @@ namespace MDStudio
                         currentLine = ReadFilenameData(segmentdata, currentLine);
                     }
 
+                    // parse through the symbol data
                     for (int i = 1; i < segments.Count; i++)
                     {
                         string[] symbolSegData = segments[i].Split('\n', '\r');
@@ -181,9 +183,15 @@ namespace MDStudio
                     else
                     {
                         var symbolInfo = line.Split(' ', '\t').Where(l => l != String.Empty).ToArray();
+
                         var symbol = new SymbolEntry();
                         symbol.name = symbolInfo[0];
-                        symbol.address = UInt32.Parse(symbolInfo[2], System.Globalization.NumberStyles.HexNumber);
+                        
+                        // AS' MAP file, for some reason, writes out RAM addresses as 64 bit integers. So, we parse
+                        // the 64 bit value, and then cast it back to a 32 bit value. AND by 0xFFFFFFFF, 
+                        // probably doesn't matter, but I do it remove the extra junk.
+                        var value = UInt64.Parse(symbolInfo[2], System.Globalization.NumberStyles.HexNumber);
+                        symbol.address = (uint)(value & 0xFFFFFFFF);
                         Symbols.Add(symbol);
                     }
                 }
@@ -211,7 +219,7 @@ namespace MDStudio
                     {                        
 
                         int fileIndex = line.IndexOf(' ') + 1;
-                        string filename = line.Substring(fileIndex);
+                        string filename = line.Substring(fileIndex).ToUpper();
                         int sectionIdx = FilenameSections.FindIndex(element => element.Filename == filename);
                         if (sectionIdx >= 0)
                         {
@@ -236,7 +244,11 @@ namespace MDStudio
                             AddressEntry address = new AddressEntry();
                             string[] split = pair.Split(':');
                             address.LineTo = Convert.ToInt32(split[0]) - 1;
-                            address.Address = uint.Parse(split[1], System.Globalization.NumberStyles.HexNumber);
+
+                            // Parsing as a 64 bit value, just in case. 
+                            var value = UInt64.Parse(split[1], System.Globalization.NumberStyles.HexNumber);
+                            address.Address = (uint)(value & 0xFFFFFFFF);
+
                             address.LineFrom = currentLine - 1;
                             currentLine = address.LineTo;
                             addresses.Add(address);
@@ -244,13 +256,27 @@ namespace MDStudio
                     }
                 }
 
-                filenameSection.Addresses = addresses;
+                if(filenameSection.Addresses == null)
+                {
+                    filenameSection.Addresses = new List<AddressEntry>();
+                }
 
-                FilenameSections.Add(filenameSection);
+                filenameSection.Addresses.AddRange(addresses);
+
+                if (!FilenameSections.Any(element => element.Filename == filenameSection.Filename))
+                {
+                    FilenameSections.Add(filenameSection);
+                }
 
                 return currentLine;
             }
 
+            private void Clear()
+            {
+                FilenameSections?.Clear();
+                Symbols?.Clear();
+                Addr2FileLine?.Clear();
+            }
         }
 
         public class Asm68kSymbols : ISymbols
@@ -300,7 +326,7 @@ namespace MDStudio
                 public List<AddressEntry> addresses;
             }
 
-            public List<SymbolEntry> m_Symbols { get; private set; }
+            public List<SymbolEntry> Symbols { get; private set; }
             private List<FilenameSection> m_Filenames;
             private Dictionary<uint, Tuple<string, int, int>> m_Addr2FileLine;
             private string m_AssembledFile;
@@ -367,7 +393,7 @@ namespace MDStudio
             {
                 //try
                 {
-                    m_Symbols = new List<SymbolEntry>();
+                    Symbols = new List<SymbolEntry>();
                     m_Filenames = new List<FilenameSection>();
                     byte[] data = System.IO.File.ReadAllBytes(filename);
 
@@ -544,7 +570,7 @@ namespace MDStudio
                                         //Payload contains address
                                         symbolEntry.address = chunkHeader.payload;
 
-                                        m_Symbols.Add(symbolEntry);
+                                        Symbols.Add(symbolEntry);
 
                                         break;
                                     }

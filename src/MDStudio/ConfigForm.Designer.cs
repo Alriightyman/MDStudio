@@ -74,8 +74,6 @@
             this.Asm68k_radio_button = new System.Windows.Forms.RadioButton();
             this.AS_radio_button = new System.Windows.Forms.RadioButton();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.label18 = new System.Windows.Forms.Label();
-            this.postBuildArgs_Textbox = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.P2Bin_textBox = new System.Windows.Forms.TextBox();
             this.label19 = new System.Windows.Forms.Label();
@@ -87,7 +85,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(54, 157);
+            this.label1.Location = new System.Drawing.Point(57, 131);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(83, 13);
             this.label1.TabIndex = 0;
@@ -95,25 +93,26 @@
             // 
             // asmPath
             // 
-            this.asmPath.Location = new System.Drawing.Point(136, 154);
+            this.asmPath.Location = new System.Drawing.Point(148, 128);
             this.asmPath.Name = "asmPath";
             this.asmPath.Size = new System.Drawing.Size(283, 20);
             this.asmPath.TabIndex = 1;
+            this.toolTip1.SetToolTip(this.asmPath, "Assembler Path to AS or ASM68K");
             // 
             // okBtn
             // 
             this.okBtn.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.okBtn.Location = new System.Drawing.Point(340, 623);
+            this.okBtn.Location = new System.Drawing.Point(352, 597);
             this.okBtn.Name = "okBtn";
             this.okBtn.Size = new System.Drawing.Size(75, 23);
             this.okBtn.TabIndex = 2;
-            this.okBtn.Text = "&Ok";
+            this.okBtn.Text = "&OK";
             this.okBtn.UseVisualStyleBackColor = true;
             this.okBtn.Click += new System.EventHandler(this.okBtn_Click);
             // 
             // pathButton
             // 
-            this.pathButton.Location = new System.Drawing.Point(423, 152);
+            this.pathButton.Location = new System.Drawing.Point(435, 126);
             this.pathButton.Name = "pathButton";
             this.pathButton.Size = new System.Drawing.Size(24, 23);
             this.pathButton.TabIndex = 3;
@@ -124,7 +123,7 @@
             // cancelBtn
             // 
             this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.Location = new System.Drawing.Point(243, 623);
+            this.cancelBtn.Location = new System.Drawing.Point(255, 597);
             this.cancelBtn.Name = "cancelBtn";
             this.cancelBtn.Size = new System.Drawing.Size(75, 23);
             this.cancelBtn.TabIndex = 4;
@@ -135,7 +134,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(77, 184);
+            this.label2.Location = new System.Drawing.Point(80, 158);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(57, 13);
             this.label2.TabIndex = 5;
@@ -143,7 +142,7 @@
             // 
             // asmArgs
             // 
-            this.asmArgs.Location = new System.Drawing.Point(136, 181);
+            this.asmArgs.Location = new System.Drawing.Point(148, 155);
             this.asmArgs.Name = "asmArgs";
             this.asmArgs.Size = new System.Drawing.Size(283, 20);
             this.asmArgs.TabIndex = 6;
@@ -151,7 +150,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(29, 222);
+            this.label3.Location = new System.Drawing.Point(41, 196);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(99, 13);
             this.label3.TabIndex = 7;
@@ -161,7 +160,7 @@
             // 
             this.emuResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.emuResolution.FormattingEnabled = true;
-            this.emuResolution.Location = new System.Drawing.Point(136, 219);
+            this.emuResolution.Location = new System.Drawing.Point(148, 193);
             this.emuResolution.Name = "emuResolution";
             this.emuResolution.Size = new System.Drawing.Size(144, 21);
             this.emuResolution.TabIndex = 8;
@@ -184,7 +183,7 @@
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.inputUp);
             this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Location = new System.Drawing.Point(7, 479);
+            this.groupBox1.Location = new System.Drawing.Point(19, 453);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(408, 138);
             this.groupBox1.TabIndex = 9;
@@ -339,7 +338,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(15, 246);
+            this.label12.Location = new System.Drawing.Point(27, 220);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(115, 13);
             this.label12.TabIndex = 10;
@@ -350,7 +349,7 @@
             this.autoOpenLastProject.AutoSize = true;
             this.autoOpenLastProject.Checked = true;
             this.autoOpenLastProject.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.autoOpenLastProject.Location = new System.Drawing.Point(136, 246);
+            this.autoOpenLastProject.Location = new System.Drawing.Point(148, 220);
             this.autoOpenLastProject.Name = "autoOpenLastProject";
             this.autoOpenLastProject.Size = new System.Drawing.Size(15, 14);
             this.autoOpenLastProject.TabIndex = 11;
@@ -359,7 +358,7 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(41, 322);
+            this.label13.Location = new System.Drawing.Point(53, 296);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(87, 13);
             this.label13.TabIndex = 12;
@@ -367,14 +366,14 @@
             // 
             // megaUSBPath
             // 
-            this.megaUSBPath.Location = new System.Drawing.Point(134, 319);
+            this.megaUSBPath.Location = new System.Drawing.Point(146, 293);
             this.megaUSBPath.Name = "megaUSBPath";
             this.megaUSBPath.Size = new System.Drawing.Size(281, 20);
             this.megaUSBPath.TabIndex = 13;
             // 
             // pathMegaUSBButton
             // 
-            this.pathMegaUSBButton.Location = new System.Drawing.Point(423, 317);
+            this.pathMegaUSBButton.Location = new System.Drawing.Point(435, 291);
             this.pathMegaUSBButton.Name = "pathMegaUSBButton";
             this.pathMegaUSBButton.Size = new System.Drawing.Size(24, 23);
             this.pathMegaUSBButton.TabIndex = 14;
@@ -386,7 +385,7 @@
             // 
             this.modeNTSC.AutoSize = true;
             this.modeNTSC.Checked = true;
-            this.modeNTSC.Location = new System.Drawing.Point(134, 269);
+            this.modeNTSC.Location = new System.Drawing.Point(146, 243);
             this.modeNTSC.Name = "modeNTSC";
             this.modeNTSC.Size = new System.Drawing.Size(54, 17);
             this.modeNTSC.TabIndex = 15;
@@ -397,7 +396,7 @@
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(81, 268);
+            this.label14.Location = new System.Drawing.Point(93, 242);
             this.label14.Name = "label14";
             this.label14.Size = new System.Drawing.Size(47, 13);
             this.label14.TabIndex = 16;
@@ -407,7 +406,7 @@
             // modePAL
             // 
             this.modePAL.AutoSize = true;
-            this.modePAL.Location = new System.Drawing.Point(194, 269);
+            this.modePAL.Location = new System.Drawing.Point(206, 243);
             this.modePAL.Name = "modePAL";
             this.modePAL.Size = new System.Drawing.Size(45, 17);
             this.modePAL.TabIndex = 17;
@@ -417,7 +416,7 @@
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(81, 292);
+            this.label15.Location = new System.Drawing.Point(93, 266);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(44, 13);
             this.label15.TabIndex = 18;
@@ -427,7 +426,7 @@
             // 
             this.emuRegion.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.emuRegion.FormattingEnabled = true;
-            this.emuRegion.Location = new System.Drawing.Point(134, 289);
+            this.emuRegion.Location = new System.Drawing.Point(146, 263);
             this.emuRegion.Name = "emuRegion";
             this.emuRegion.Size = new System.Drawing.Size(144, 21);
             this.emuRegion.TabIndex = 19;
@@ -436,7 +435,7 @@
             // 
             this.targetList.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.targetList.FormattingEnabled = true;
-            this.targetList.Location = new System.Drawing.Point(136, 6);
+            this.targetList.Location = new System.Drawing.Point(148, 6);
             this.targetList.Name = "targetList";
             this.targetList.Size = new System.Drawing.Size(279, 21);
             this.targetList.TabIndex = 20;
@@ -444,7 +443,7 @@
             // label16
             // 
             this.label16.AutoSize = true;
-            this.label16.Location = new System.Drawing.Point(87, 9);
+            this.label16.Location = new System.Drawing.Point(99, 9);
             this.label16.Name = "label16";
             this.label16.Size = new System.Drawing.Size(41, 13);
             this.label16.TabIndex = 21;
@@ -453,7 +452,7 @@
             // label17
             // 
             this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(29, 352);
+            this.label17.Location = new System.Drawing.Point(41, 326);
             this.label17.Name = "label17";
             this.label17.Size = new System.Drawing.Size(99, 13);
             this.label17.TabIndex = 22;
@@ -462,14 +461,14 @@
             // listIncludes
             // 
             this.listIncludes.FormattingEnabled = true;
-            this.listIncludes.Location = new System.Drawing.Point(134, 352);
+            this.listIncludes.Location = new System.Drawing.Point(146, 326);
             this.listIncludes.Name = "listIncludes";
             this.listIncludes.Size = new System.Drawing.Size(281, 121);
             this.listIncludes.TabIndex = 23;
             // 
             // btnIncludeAdd
             // 
-            this.btnIncludeAdd.Location = new System.Drawing.Point(423, 352);
+            this.btnIncludeAdd.Location = new System.Drawing.Point(435, 326);
             this.btnIncludeAdd.Name = "btnIncludeAdd";
             this.btnIncludeAdd.Size = new System.Drawing.Size(24, 23);
             this.btnIncludeAdd.TabIndex = 24;
@@ -479,7 +478,7 @@
             // 
             // btnInlcudesRemove
             // 
-            this.btnInlcudesRemove.Location = new System.Drawing.Point(423, 381);
+            this.btnInlcudesRemove.Location = new System.Drawing.Point(435, 355);
             this.btnInlcudesRemove.Name = "btnInlcudesRemove";
             this.btnInlcudesRemove.Size = new System.Drawing.Size(24, 23);
             this.btnInlcudesRemove.TabIndex = 25;
@@ -497,6 +496,7 @@
             this.Asm68k_radio_button.TabIndex = 26;
             this.Asm68k_radio_button.TabStop = true;
             this.Asm68k_radio_button.Text = "ASM68k";
+            this.toolTip1.SetToolTip(this.Asm68k_radio_button, "Use ASM68K Assembler");
             this.Asm68k_radio_button.UseVisualStyleBackColor = true;
             // 
             // AS_radio_button
@@ -507,6 +507,7 @@
             this.AS_radio_button.Size = new System.Drawing.Size(123, 17);
             this.AS_radio_button.TabIndex = 27;
             this.AS_radio_button.Text = "AS Macro Assembler";
+            this.toolTip1.SetToolTip(this.AS_radio_button, "Use AS Macro Assembler");
             this.AS_radio_button.UseVisualStyleBackColor = true;
             this.AS_radio_button.CheckedChanged += new System.EventHandler(this.AS_radio_button_CheckedChanged);
             // 
@@ -514,50 +515,36 @@
             // 
             this.groupBox2.Controls.Add(this.Asm68k_radio_button);
             this.groupBox2.Controls.Add(this.AS_radio_button);
-            this.groupBox2.Location = new System.Drawing.Point(134, 33);
+            this.groupBox2.Location = new System.Drawing.Point(146, 33);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(285, 63);
             this.groupBox2.TabIndex = 28;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Assembler";
             // 
-            // label18
-            // 
-            this.label18.AutoSize = true;
-            this.label18.Location = new System.Drawing.Point(25, 131);
-            this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(112, 13);
-            this.label18.TabIndex = 29;
-            this.label18.Text = "Post Build Commands:";
-            // 
-            // postBuildArgs_Textbox
-            // 
-            this.postBuildArgs_Textbox.Location = new System.Drawing.Point(136, 128);
-            this.postBuildArgs_Textbox.Name = "postBuildArgs_Textbox";
-            this.postBuildArgs_Textbox.Size = new System.Drawing.Size(283, 20);
-            this.postBuildArgs_Textbox.TabIndex = 30;
-            // 
             // P2Bin_textBox
             // 
             this.P2Bin_textBox.Enabled = false;
-            this.P2Bin_textBox.Location = new System.Drawing.Point(136, 102);
+            this.P2Bin_textBox.Location = new System.Drawing.Point(148, 102);
             this.P2Bin_textBox.Name = "P2Bin_textBox";
             this.P2Bin_textBox.Size = new System.Drawing.Size(283, 20);
             this.P2Bin_textBox.TabIndex = 33;
+            this.toolTip1.SetToolTip(this.P2Bin_textBox, "Path a program to convert .p to .bin.  fdp2bin.exe is included.  Only needed for " +
+        "AS builds");
             // 
             // label19
             // 
             this.label19.AutoSize = true;
-            this.label19.Location = new System.Drawing.Point(50, 105);
+            this.label19.Location = new System.Drawing.Point(4, 105);
             this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(86, 13);
+            this.label19.Size = new System.Drawing.Size(133, 13);
             this.label19.TabIndex = 32;
-            this.label19.Text = "P to Binary Path:";
+            this.label19.Text = "P to Binary Path (AS Only):";
             // 
             // P2Bin_button
             // 
             this.P2Bin_button.Enabled = false;
-            this.P2Bin_button.Location = new System.Drawing.Point(425, 102);
+            this.P2Bin_button.Location = new System.Drawing.Point(435, 102);
             this.P2Bin_button.Name = "P2Bin_button";
             this.P2Bin_button.Size = new System.Drawing.Size(24, 23);
             this.P2Bin_button.TabIndex = 34;
@@ -569,12 +556,10 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(456, 685);
+            this.ClientSize = new System.Drawing.Size(479, 632);
             this.Controls.Add(this.P2Bin_button);
             this.Controls.Add(this.P2Bin_textBox);
             this.Controls.Add(this.label19);
-            this.Controls.Add(this.postBuildArgs_Textbox);
-            this.Controls.Add(this.label18);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.btnInlcudesRemove);
             this.Controls.Add(this.btnIncludeAdd);
@@ -660,10 +645,8 @@
         private System.Windows.Forms.Button btnInlcudesRemove;
         public System.Windows.Forms.ListBox listIncludes;
         private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.Label label18;
         public System.Windows.Forms.RadioButton Asm68k_radio_button;
         public System.Windows.Forms.RadioButton AS_radio_button;
-        public System.Windows.Forms.TextBox postBuildArgs_Textbox;
         private System.Windows.Forms.ToolTip toolTip1;
         public System.Windows.Forms.TextBox P2Bin_textBox;
         private System.Windows.Forms.Label label19;

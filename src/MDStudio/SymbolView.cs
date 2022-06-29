@@ -48,7 +48,7 @@ namespace MDStudio
                 listSymbols.Enabled = true;
                 listSymbols.Items.Clear();
 
-                foreach (Debugging.SymbolEntry symbol in m_symbols.m_Symbols)
+                foreach (Debugging.SymbolEntry symbol in m_symbols.Symbols)
                 {
                     SymbolEntry entry = new SymbolEntry();
                     entry.Text = symbol.name;

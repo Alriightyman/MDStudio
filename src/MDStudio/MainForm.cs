@@ -62,7 +62,7 @@ namespace MDStudio
         private string m_CurrentlyEditingFile;  // Currently editing source file
         private List<string> m_ProjectFiles;
         private string m_BuildArgs;
-
+        private bool m_AlreadyBuilt;
         public Target m_Target;
         public ISymbols m_DebugSymbols;
         private string m_DisassemblyText;
@@ -292,6 +292,7 @@ namespace MDStudio
 
                 // Load file
                 m_CurrentlyEditingFile = filename;
+
                 codeEditor.LoadFile(filename);
 
                 // Set title bar text
@@ -747,8 +748,11 @@ namespace MDStudio
         private void PopulateFileView()
         {
             //Scan for includes
-            m_ProjectFiles = ScanIncludes(m_PathToProject, m_ProjectFile);
-
+            // Disabling for now. Cannot load very large, complicated projects. 
+            // I let it sit for about 8 hours and it still couldn't complete loading. 
+            // Consider building a project file format to load instead. 
+            // m_ProjectFiles = ScanIncludes(m_PathToProject, m_ProjectFile);
+            m_ProjectFiles = new List<string>();
             //Add current file and sort
             m_ProjectFiles.Add(m_CurrentlyEditingFile);
             m_ProjectFiles.Sort();
@@ -832,7 +836,7 @@ namespace MDStudio
 
         private int Build()
         {
-            
+            Stopwatch sw = Stopwatch.StartNew();
             if (m_Config.AssemblerPath == null || m_Config.AssemblerPath.Length == 0)
             {
                 MessageBox.Show("Assembler Path not set");
@@ -850,7 +854,7 @@ namespace MDStudio
                 m_BuildLog.Show();
 
             Console.WriteLine("compile");
-
+            statusLabel.Text = "Building...";
             StringBuilder processStandardOutput = new StringBuilder();
             StringBuilder processErrorOutput = new StringBuilder();
             bool use_asm68k = m_Config.UseASM68K;
@@ -902,14 +906,11 @@ namespace MDStudio
                                 }
                                 else
                                 {
-                                    // only care about Errors, not warnings..
-                                    if (e.Data.Contains("Error:"))
-                                    {
-                                        processErrorOutput.AppendLine(e.Data);
-                                    }
+                                    processErrorOutput.AppendLine(e.Data);
                                 }
                             };
-
+                            
+                            // I don't think this is needed here.
                             //process.Start();
 
                             process.BeginOutputReadLine();
@@ -982,55 +983,34 @@ namespace MDStudio
             }
             Console.WriteLine(errorCount + " Error(s)");
 
-            codeEditor.Refresh();
+            codeEditor.Refresh();            
 
             string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
             string pFile = m_PathToProject + @"\" + m_ProjectName + ".p";
             string symbolFile = m_PathToProject + @"\" + m_ProjectName + (use_asm68k ? ".symb" : ".map");
+            sw.Stop();
+            string buildTime = $"Build Time: {sw.Elapsed.Minutes}:{sw.Elapsed.Seconds}:{sw.Elapsed.Milliseconds}";
 
             if (errorCount > 0)
-            {
-                statusLabel.Text = errorCount + " Error(s)";
+            {                
+                statusLabel.Text = errorCount + " Error(s) " + buildTime;
             }
             else if( ((use_asm68k && !File.Exists(binaryFile) || !File.Exists(symbolFile)) || (!use_asm68k && !File.Exists(pFile))))
             {
-                statusLabel.Text = "Build error, no output files generated";
+                statusLabel.Text = "Build error, no output files generated ";
                 statusLabel.Text += use_asm68k ? $"{m_ProjectName}.bin exists: {File.Exists(binaryFile)}, {m_ProjectName}.symb exists: {File.Exists(symbolFile)}" : $"{m_ProjectName}.p exists: {File.Exists(pFile)}, {m_ProjectName}.map exists: {File.Exists(symbolFile)}";
+                statusLabel.Text += " " + buildTime;
                 errorCount++;
             }
             else
-            {
-                statusLabel.Text = "Build ok!";
-
-               
-
-                //Success, read symbols
-                if (m_Config.UseASM68K)
-                {
-                    m_DebugSymbols = new Asm68kSymbols();
-                }
-                else
+            {               
+                if (!m_Config.UseASM68K)
                 {
                     RunP2Bin(m_ProjectName, m_PathToProject);
-                    m_DebugSymbols = new AsSymbols();
                 }
 
-                try
-                {
-                    m_DebugSymbols.Read(symbolFile);
-                }
-                catch(Exception exception)
-                {
-                    Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
-                    if (m_Config.UseASM68K)
-                    {
-                        m_DebugSymbols = new Asm68kSymbols();
-                    }
-                    else
-                    {
-                        m_DebugSymbols = new AsSymbols();
-                    }
-                }
+                statusLabel.Text = "Build ok! " + buildTime;
+                m_AlreadyBuilt = true;
             }
 
             return errorCount;
@@ -1130,7 +1110,7 @@ namespace MDStudio
             // -A : stores the list of global symbols in another, more compact form
             // -L : writes assembler listing into a file
             // -g MAP : This switch instructs AS to create an additional file that contains debug information for the program
-            process.StartInfo.Arguments = @"-q -c -A -L -g MAP " + m_Config.AssemblerArgs + " " + m_FileToAssemble;
+            process.StartInfo.Arguments = @" -x -xx -n -q -c -A -L -g MAP " + m_Config.AssemblerArgs + " \"" + m_FileToAssemble + "\"";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -1191,7 +1171,9 @@ namespace MDStudio
             {
                 Save();
 
-                if (Build() == 0)
+                // if we have already compiled, no reason to do it again.
+                // this should speed up for simple Runs
+                if (m_AlreadyBuilt || Build() == 0)
                 {
                     string initialSourceFile = m_PathToProject + @"\" + m_FileToAssemble;
                     string listingFile = m_PathToProject + @"\" + m_ProjectName + ".list";
@@ -1213,6 +1195,19 @@ namespace MDStudio
                     //Read symbols
                     try
                     {
+                        // Need to initialize the symbol data before read
+                        if (m_DebugSymbols == null)
+                        {
+                            if (m_Config.UseASM68K)
+                            {
+                                m_DebugSymbols = new Asm68kSymbols();
+                            }
+                            else
+                            {
+                                m_DebugSymbols = new AsSymbols();
+                            }
+                        }
+
                         m_DebugSymbols.Read(symbolFile);
                     }
                     catch (Exception exception)
@@ -1882,7 +1877,7 @@ namespace MDStudio
                 m_PathToProject = Path.GetDirectoryName(filename);
                 m_ProjectName = Path.GetFileNameWithoutExtension(filename);
                 m_FileToAssemble = filename;
-
+             
                 // Open first file
                 OpenFile(filename);
 
@@ -1987,7 +1982,7 @@ namespace MDStudio
         private void documentChanged(object sender, EventArgs e)
         {
             m_Modified = true;
-
+            m_AlreadyBuilt = false;
             UpdateTitle();
 
             ClearSearch();

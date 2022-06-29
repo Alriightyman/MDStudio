@@ -57,6 +57,7 @@
             this.viewCRAMmenu = new System.Windows.Forms.ToolStripMenuItem();
             this.viewVDPStatusMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.profilerVDPStatusMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.breakpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.buildToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.compileMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.runMenu = new System.Windows.Forms.ToolStripMenuItem();
@@ -90,7 +91,6 @@
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.treeProjectFiles = new System.Windows.Forms.TreeView();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
-            this.breakpointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.statusStrip.SuspendLayout();
@@ -309,30 +309,37 @@
             // viewBuildLogMenu
             // 
             this.viewBuildLogMenu.Name = "viewBuildLogMenu";
-            this.viewBuildLogMenu.Size = new System.Drawing.Size(180, 22);
+            this.viewBuildLogMenu.Size = new System.Drawing.Size(146, 22);
             this.viewBuildLogMenu.Text = "Build Log";
             this.viewBuildLogMenu.Click += new System.EventHandler(this.viewBuildLogMenu_Click);
             // 
             // viewCRAMmenu
             // 
             this.viewCRAMmenu.Name = "viewCRAMmenu";
-            this.viewCRAMmenu.Size = new System.Drawing.Size(180, 22);
+            this.viewCRAMmenu.Size = new System.Drawing.Size(146, 22);
             this.viewCRAMmenu.Text = "CRAM Viewer";
             this.viewCRAMmenu.Click += new System.EventHandler(this.viewCRAMBtn_Click);
             // 
             // viewVDPStatusMenu
             // 
             this.viewVDPStatusMenu.Name = "viewVDPStatusMenu";
-            this.viewVDPStatusMenu.Size = new System.Drawing.Size(180, 22);
+            this.viewVDPStatusMenu.Size = new System.Drawing.Size(146, 22);
             this.viewVDPStatusMenu.Text = "VDP Status";
             this.viewVDPStatusMenu.Click += new System.EventHandler(this.viewVDPStatusMenu_Click);
             // 
             // profilerVDPStatusMenu
             // 
             this.profilerVDPStatusMenu.Name = "profilerVDPStatusMenu";
-            this.profilerVDPStatusMenu.Size = new System.Drawing.Size(180, 22);
+            this.profilerVDPStatusMenu.Size = new System.Drawing.Size(146, 22);
             this.profilerVDPStatusMenu.Text = "&Profiler";
             this.profilerVDPStatusMenu.Click += new System.EventHandler(this.profilerToolStripMenuItem_Click);
+            // 
+            // breakpointsToolStripMenuItem
+            // 
+            this.breakpointsToolStripMenuItem.Name = "breakpointsToolStripMenuItem";
+            this.breakpointsToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+            this.breakpointsToolStripMenuItem.Text = "Breakpoints";
+            this.breakpointsToolStripMenuItem.Click += new System.EventHandler(this.breakpointsToolStripMenuItem_Click);
             // 
             // buildToolStripMenuItem
             // 
@@ -478,7 +485,7 @@
             this.toolsToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.vdpToolsRegistersMenu});
             this.toolsToolStripMenuItem1.Name = "toolsToolStripMenuItem1";
-            this.toolsToolStripMenuItem1.Size = new System.Drawing.Size(47, 20);
+            this.toolsToolStripMenuItem1.Size = new System.Drawing.Size(46, 20);
             this.toolsToolStripMenuItem1.Text = "&Tools";
             // 
             // vdpToolsRegistersMenu
@@ -615,13 +622,6 @@
             this.splitContainer.Size = new System.Drawing.Size(860, 420);
             this.splitContainer.SplitterDistance = 155;
             this.splitContainer.TabIndex = 8;
-            // 
-            // breakpointsToolStripMenuItem
-            // 
-            this.breakpointsToolStripMenuItem.Name = "breakpointsToolStripMenuItem";
-            this.breakpointsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.breakpointsToolStripMenuItem.Text = "Breakpoints";
-            this.breakpointsToolStripMenuItem.Click += new System.EventHandler(this.breakpointsToolStripMenuItem_Click);
             // 
             // MainForm
             // 
