@@ -1,350 +1,591 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Data                         ;
 
 namespace MDStudio
 {
-    public class Symbols
+    namespace Debugging
     {
-        public uint GetAddress(string filename, int lineNumber)
-        {
-            //TODO: Slow
-            string path = System.IO.Path.GetFullPath(filename).ToUpper();
-            int sectionIdx = m_Filenames.FindIndex(element => element.filename == path);
-            if(sectionIdx >= 0)
-            {
-                int addressIdx = m_Filenames[sectionIdx].addresses.FindIndex(element => (lineNumber >= element.lineFrom && lineNumber <= element.lineTo));
-                if (addressIdx >= 0)
-                {
-                    return m_Filenames[sectionIdx].addresses[addressIdx].address;
-                }
-            }
-            
-            return 0;
-        }
-
-        public Tuple<string, int, int> GetFileLine(uint address)
-        {
-            if (m_Addr2FileLine.ContainsKey(address))
-            {
-                return m_Addr2FileLine[address];
-            }
-            else
-            {
-                return new Tuple<string, int, int>("", -1, -1);
-            }
-        }
-
-        public Dictionary<uint, Tuple<string, int, int>> AddressToFileLine { get { return m_Addr2FileLine; } }
-
-        private struct AddressEntry
-        {
-            public uint address;
-            public byte flags;
-            public int lineFrom;
-            public int lineTo;
-        }
-
         public struct SymbolEntry
         {
             public uint address;
             public string name;
         }
 
-        private struct FilenameSection
+        public interface ISymbols
         {
-            public string filename;
-            public List<AddressEntry> addresses;
+            Dictionary<uint, Tuple<string, int, int>> AddressToFileLine { get; }
+            List<SymbolEntry> m_Symbols { get; }
+            uint GetAddress(string filename, int lineNumber);
+            Tuple<string, int, int> GetFileLine(uint address);
+            bool Read(string filename);
         }
 
-        public List<SymbolEntry> m_Symbols;
-        private List<FilenameSection> m_Filenames;
-        private Dictionary<uint, Tuple<string, int, int>> m_Addr2FileLine;
-        private string m_AssembledFile;
-
-        public enum ChunkId : byte
+        public class AsSymbols : ISymbols
         {
-            Equate = 0x01,              // EQU name
-            Symbol = 0x2,               // Symbol table entry
-            Address = 0x80,             // An address of next line
-            AddressWithCount = 0x82,    // An address with line count
-            Filename = 0x88,            // A filename with start address and line count
-            EndOfSection = 0x8A,        // End of section
-        }
+            public Dictionary<uint, Tuple<string, int, int>> AddressToFileLine => Addr2FileLine;
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FileHeader
-        {
-            public uint unknown1;
-            public uint unknown2;
-        }
+            public List<SymbolEntry> m_Symbols { get; private set; }
+            private List<FilenameSection> FilenameSections = new List<FilenameSection>();
+            public List<SymbolEntry> Symbols { get; private set; } = new List<SymbolEntry>();
+            private Dictionary<uint, Tuple<string, int, int>> Addr2FileLine;
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct FilenameHeader
-        {
-            public byte firstLine;
-            public byte flags;
-            public byte unknown;
-            public short length;
-        }
+            private struct AddressEntry
+            {                
+                public uint Address;
+                public int LineFrom;
+                public int LineTo;
+            }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct ChunkHeader
-        {
-            public uint payload;
-            public ChunkId chunkId;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct SymbolChunk
-        {
-            public uint address;
-            public byte flags;
-            public byte stringLen;
-        }
-
-        private int Serialise<T>(ref IntPtr bytes, out T value) where T : struct
-        {
-            value = (T)Marshal.PtrToStructure(bytes, typeof(T));
-            bytes += Marshal.SizeOf<T>();
-            return Marshal.SizeOf<T>();
-        }
-
-        private int Serialise(ref IntPtr bytes, int length, out string value)
-        {
-            var byteArray = new byte[length + 1];
-            System.Runtime.InteropServices.Marshal.Copy(bytes, byteArray, 0, length);
-            value = System.Text.Encoding.Default.GetString(byteArray, 0, length);
-            byteArray[length] = 0;
-            bytes += length;
-            return length;
-        }
-
-        public bool Read(string filename)
-        {
-            //try
+            private struct FilenameSection
             {
-                m_Symbols = new List<SymbolEntry>();
-                m_Filenames = new List<FilenameSection>();
-                byte[] data = System.IO.File.ReadAllBytes(filename);
+                public string Filename;
+                public List<AddressEntry> Addresses;
+            }
+           
+            private struct SymbolSegment
+            {
+                public string Name;
+                public string Type;
+                public string Value;
+                public int DateSize;
+                public int Unused;
+            }
 
-                if (data.Length > 0)
+            public uint GetAddress(string filename, int lineNumber)
+            {
+                string path = System.IO.Path.GetFullPath(filename).ToUpper();
+                int sectionIdx = FilenameSections.FindIndex(element => element.Filename == path);
+                if (sectionIdx >= 0)
                 {
-                    GCHandle pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
-                    IntPtr stream = pinnedData.AddrOfPinnedObject();
-
-                    FilenameHeader filenameHeader = new FilenameHeader();
-                    ChunkHeader chunkHeader = new ChunkHeader();
-                    FilenameSection filenameSection = new FilenameSection();
-                    AddressEntry addressEntry = new AddressEntry();
-                    SymbolChunk symbolChunk = new SymbolChunk();
-                    SymbolEntry symbolEntry = new SymbolEntry();
-                    string readString;
-
-                    int bytesRead = 0;
-                    int totalBytes = data.Length;
-
-                    // Symbol lines are 1-based, text editor lines are 0-based
-                    int currentLine = 1;
-
-                    //Read file header
-                    FileHeader fileHeader = new FileHeader();
-                    bytesRead += Serialise(ref stream, out fileHeader);
-
-                    void CheckSize(int chunkLength)
+                    int addressIdx = FilenameSections[sectionIdx].Addresses.FindIndex(element => (lineNumber >= element.LineFrom && lineNumber <= element.LineTo));
+                    if (addressIdx >= 0)
                     {
-                        if((bytesRead + chunkLength) > totalBytes)
+                        return FilenameSections[sectionIdx].Addresses[addressIdx].Address;
+                    }
+                }
+
+                return 0;
+            }
+
+            public Tuple<string, int, int> GetFileLine(uint address)
+            {
+                if (Addr2FileLine.ContainsKey(address))
+                {
+                    return Addr2FileLine[address];
+                }
+                else
+                {
+                    return new Tuple<string, int, int>("", -1, -1);
+                }
+            }
+
+            public bool Read(string filename)
+            {                
+                string fileContents = System.IO.File.ReadAllText(filename);
+
+                if (fileContents.Length > 0)
+                {
+                    List<int> indexes = new List<int>();
+                    List<string> segments = new List<string>();
+                    
+                    // get index of segments from file 
+                    int index = fileContents.IndexOf("Segment");
+                    indexes.Add(index);         // should be zero.
+
+                    int currentIndex = 0;
+                    while (currentIndex != -1)
+                    {
+                        currentIndex = fileContents.IndexOf("Symbols in Segment", currentIndex);
+                        
+                        // -1 means that an index couldn't be found.
+                        if (currentIndex == -1)
                         {
-                            throw new Exception("Bad chunk length or malformed file");
+                            break;
                         }
+                        
+                        // index found, add it to the list and increment it for the next search
+                        indexes.Add(currentIndex++);
                     }
 
-                    //Iterate over chunks
-                    while (bytesRead < data.Length)
+                    // add the file size as the last index (might remove this)
+                    indexes.Add(fileContents.Length);
+
+                    // collect the segments
+                    for (int i = 0; i < indexes.Count - 1; i++)
                     {
-                        //Read chunk header
-                        bytesRead += Serialise(ref stream, out chunkHeader);
+                        segments.Add(fileContents.Substring(indexes[i], indexes[i + 1] - indexes[i]));
+                    }
 
-                        //What is it?
-                        switch (chunkHeader.chunkId)
+                    int currentLine = 1;
+
+                    // parse filename
+                    string[] filenameSection = segments[0].Split(new string[] { "File" }, StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (var data in filenameSection)
+                    {
+                        string[] segmentdata = data.Split('\n', '\r');
+                        currentLine = ReadFilenameData(segmentdata, currentLine);
+                    }
+
+                    for (int i = 1; i < segments.Count; i++)
+                    {
+                        string[] symbolSegData = segments[i].Split('\n', '\r');
+                        currentLine = ReadSymbolData(symbolSegData, currentLine);
+                    }
+                }
+
+                //Build address to file/line map
+                Addr2FileLine = new Dictionary<uint, Tuple<string, int, int>>();
+
+                foreach (FilenameSection section in FilenameSections)
+                {
+                    foreach (AddressEntry address in section.Addresses)
+                    {
+                        if (!Addr2FileLine.ContainsKey(address.Address))
                         {
-                            case ChunkId.Filename:
-                                {
-                                    //Read filename header
-                                    bytesRead += Serialise(ref stream, out filenameHeader);
-                                    filenameHeader.length = Endian.Swap(filenameHeader.length);
+                            Addr2FileLine[address.Address] = new Tuple<string, int, int>(section.Filename, address.LineFrom, address.LineTo);
+                        }
+                    }
+                }
 
-                                    //Read string
-                                    CheckSize(filenameHeader.length);
-                                    bytesRead += Serialise(ref stream, filenameHeader.length, out readString);
+                return true;
+            }
 
-                                    if (filenameHeader.flags == 0x1)
+            private int ReadSymbolData(string[] data, int currentLine)
+            {
+                int currentIndex = 0;
+
+                while (currentIndex < data.Length)
+                {
+                    string line = data[currentIndex++];
+                    if (line.Contains("Symbols in Segment"))
+                    {
+                        // don't care about these symbols for now
+                        if (line.Contains("NOTHING"))
+                        {
+                            return currentLine;
+                        }
+
+                        continue;
+                    }
+                    else if (line == "" || line == " ")
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        var symbolInfo = line.Split(' ', '\t').Where(l => l != String.Empty).ToArray();
+                        var symbol = new SymbolEntry();
+                        symbol.name = symbolInfo[0];
+                        symbol.address = UInt32.Parse(symbolInfo[2], System.Globalization.NumberStyles.HexNumber);
+                        Symbols.Add(symbol);
+                    }
+                }
+                return currentLine;
+            }
+
+            private int ReadFilenameData(string[] data, int currentLine)
+            {
+                int currentIndex = 0;
+                FilenameSection filenameSection = new FilenameSection();
+                List<AddressEntry> addresses = new List<AddressEntry>();
+
+                while (currentIndex < data.Length)
+                {
+                    string line = data[currentIndex++];
+                    if (line.Contains("Segment"))
+                    {
+                        return currentLine;
+                    }
+                    else if (line == "" || line == " ")
+                    {
+                        continue; // ignore this
+                    }
+                    else if (line.Contains("\\") || line.Contains("/"))
+                    {                        
+
+                        int fileIndex = line.IndexOf(' ') + 1;
+                        string filename = line.Substring(fileIndex);
+                        int sectionIdx = FilenameSections.FindIndex(element => element.Filename == filename);
+                        if (sectionIdx >= 0)
+                        {
+                            filenameSection = FilenameSections[sectionIdx];
+                            currentLine = filenameSection.Addresses[filenameSection.Addresses.Count - 1].LineTo;
+                        }
+                        else
+                        {
+                            // Get File name
+                            filenameSection.Filename = filename.ToUpper();
+
+                            // reset line counter
+                            currentLine = 1;
+                        }
+                        currentIndex++;
+                    }
+                    else
+                    {
+                        var addressPairs = line.Split(' ', '\t').Where(l => l != "");
+                        foreach (var pair in addressPairs)
+                        {
+                            AddressEntry address = new AddressEntry();
+                            string[] split = pair.Split(':');
+                            address.LineTo = Convert.ToInt32(split[0]) - 1;
+                            address.Address = uint.Parse(split[1], System.Globalization.NumberStyles.HexNumber);
+                            address.LineFrom = currentLine - 1;
+                            currentLine = address.LineTo;
+                            addresses.Add(address);
+                        }
+                    }
+                }
+
+                filenameSection.Addresses = addresses;
+
+                FilenameSections.Add(filenameSection);
+
+                return currentLine;
+            }
+
+        }
+
+        public class Asm68kSymbols : ISymbols
+        {
+            public uint GetAddress(string filename, int lineNumber)
+            {
+                //TODO: Slow
+                string path = System.IO.Path.GetFullPath(filename).ToUpper();
+                int sectionIdx = m_Filenames.FindIndex(element => element.filename == path);
+                if (sectionIdx >= 0)
+                {
+                    int addressIdx = m_Filenames[sectionIdx].addresses.FindIndex(element => (lineNumber >= element.lineFrom && lineNumber <= element.lineTo));
+                    if (addressIdx >= 0)
+                    {
+                        return m_Filenames[sectionIdx].addresses[addressIdx].address;
+                    }
+                }
+
+                return 0;
+            }
+
+            public Tuple<string, int, int> GetFileLine(uint address)
+            {
+                if (m_Addr2FileLine.ContainsKey(address))
+                {
+                    return m_Addr2FileLine[address];
+                }
+                else
+                {
+                    return new Tuple<string, int, int>("", -1, -1);
+                }
+            }
+
+            public Dictionary<uint, Tuple<string, int, int>> AddressToFileLine { get { return m_Addr2FileLine; } }
+
+            private struct AddressEntry
+            {
+                public uint address;
+                public byte flags;
+                public int lineFrom;
+                public int lineTo;
+            }
+
+            private struct FilenameSection
+            {
+                public string filename;
+                public List<AddressEntry> addresses;
+            }
+
+            public List<SymbolEntry> m_Symbols { get; private set; }
+            private List<FilenameSection> m_Filenames;
+            private Dictionary<uint, Tuple<string, int, int>> m_Addr2FileLine;
+            private string m_AssembledFile;
+
+            private enum ChunkId : byte
+            {
+                Equate = 0x01,              // EQU name
+                Symbol = 0x2,               // Symbol table entry
+                Address = 0x80,             // An address of next line
+                AddressWithCount = 0x82,    // An address with line count
+                Filename = 0x88,            // A filename with start address and line count
+                EndOfSection = 0x8A,        // End of section
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 1)]
+            private struct FileHeader
+            {
+                public uint unknown1;
+                public uint unknown2;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 1)]
+            private struct FilenameHeader
+            {
+                public byte firstLine;
+                public byte flags;
+                public byte unknown;
+                public short length;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 1)]
+            private struct ChunkHeader
+            {
+                public uint payload;
+                public ChunkId chunkId;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 1)]
+            private struct SymbolChunk
+            {
+                public uint address;
+                public byte flags;
+                public byte stringLen;
+            }
+
+            private int Serialise<T>(ref IntPtr bytes, out T value) where T : struct
+            {
+                value = (T)Marshal.PtrToStructure(bytes, typeof(T));
+                bytes += Marshal.SizeOf<T>();
+                return Marshal.SizeOf<T>();
+            }
+
+            private int Serialise(ref IntPtr bytes, int length, out string value)
+            {
+                var byteArray = new byte[length + 1];
+                System.Runtime.InteropServices.Marshal.Copy(bytes, byteArray, 0, length);
+                value = System.Text.Encoding.Default.GetString(byteArray, 0, length);
+                byteArray[length] = 0;
+                bytes += length;
+                return length;
+            }
+
+            public bool Read(string filename)
+            {
+                //try
+                {
+                    m_Symbols = new List<SymbolEntry>();
+                    m_Filenames = new List<FilenameSection>();
+                    byte[] data = System.IO.File.ReadAllBytes(filename);
+
+                    if (data.Length > 0)
+                    {
+                        GCHandle pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
+                        IntPtr stream = pinnedData.AddrOfPinnedObject();
+
+                        FilenameHeader filenameHeader = new FilenameHeader();
+                        ChunkHeader chunkHeader = new ChunkHeader();
+                        FilenameSection filenameSection = new FilenameSection();
+                        AddressEntry addressEntry = new AddressEntry();
+                        SymbolChunk symbolChunk = new SymbolChunk();
+                        SymbolEntry symbolEntry = new SymbolEntry();
+                        string readString;
+
+                        int bytesRead = 0;
+                        int totalBytes = data.Length;
+
+                        // Symbol lines are 1-based, text editor lines are 0-based
+                        int currentLine = 1;
+
+                        //Read file header
+                        FileHeader fileHeader = new FileHeader();
+                        bytesRead += Serialise(ref stream, out fileHeader);
+
+                        void CheckSize(int chunkLength)
+                        {
+                            if ((bytesRead + chunkLength) > totalBytes)
+                            {
+                                throw new Exception("Bad chunk length or malformed file");
+                            }
+                        }
+
+                        //Iterate over chunks
+                        while (bytesRead < data.Length)
+                        {
+                            //Read chunk header
+                            bytesRead += Serialise(ref stream, out chunkHeader);
+
+                            //What is it?
+                            switch (chunkHeader.chunkId)
+                            {
+                                case ChunkId.Filename:
                                     {
-                                        //This is the filename passed for assembly
-                                        m_AssembledFile = readString;
-                                    }
-                                    else
-                                    {
-                                        //If filename already exists, continue adding data to it
-                                        int sectionIdx = m_Filenames.FindIndex(element => element.filename == readString);
-                                        if (sectionIdx >= 0)
+                                        //Read filename header
+                                        bytesRead += Serialise(ref stream, out filenameHeader);
+                                        filenameHeader.length = Endian.Swap(filenameHeader.length);
+
+                                        //Read string
+                                        CheckSize(filenameHeader.length);
+                                        bytesRead += Serialise(ref stream, filenameHeader.length, out readString);
+
+                                        if (filenameHeader.flags == 0x1)
                                         {
-                                            //Continue
-                                            filenameSection = m_Filenames[sectionIdx];
-
-                                            //Fetch line counter
-                                            currentLine = filenameSection.addresses[filenameSection.addresses.Count - 1].lineTo;
+                                            //This is the filename passed for assembly
+                                            m_AssembledFile = readString;
                                         }
                                         else
                                         {
-                                            //This is the first address in a filename chunk
-                                            filenameSection = new FilenameSection();
-                                            filenameSection.addresses = new List<AddressEntry>();
-
-                                            try
+                                            //If filename already exists, continue adding data to it
+                                            int sectionIdx = m_Filenames.FindIndex(element => element.filename == readString);
+                                            if (sectionIdx >= 0)
                                             {
-                                                string pathSanitised = System.IO.Path.GetFullPath(readString).ToUpper();
-                                                filenameSection.filename = pathSanitised;
+                                                //Continue
+                                                filenameSection = m_Filenames[sectionIdx];
+
+                                                //Fetch line counter
+                                                currentLine = filenameSection.addresses[filenameSection.addresses.Count - 1].lineTo;
                                             }
-                                            catch (Exception e)
+                                            else
                                             {
-                                                Console.WriteLine("Exception caught sanitising symbol path \'" + readString + "\': " + e.Message);
+                                                //This is the first address in a filename chunk
+                                                filenameSection = new FilenameSection();
+                                                filenameSection.addresses = new List<AddressEntry>();
+
+                                                try
+                                                {
+                                                    string pathSanitised = System.IO.Path.GetFullPath(readString).ToUpper();
+                                                    filenameSection.filename = pathSanitised;
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    Console.WriteLine("Exception caught sanitising symbol path \'" + readString + "\': " + e.Message);
+                                                }
+
+                                                //Reset line counter
+                                                currentLine = 1;
                                             }
 
-                                            //Reset line counter
-                                            currentLine = 1;
+                                            //Chunk payload contains address
+                                            addressEntry.address = chunkHeader.payload;
+                                            addressEntry.lineFrom = currentLine - 1;
+                                            addressEntry.lineTo = filenameHeader.firstLine - 1;
+                                            currentLine = filenameHeader.firstLine;
+                                            filenameSection.addresses.Add(addressEntry);
+
+                                            //Next
+                                            currentLine++;
+
+                                            //Add to filename list
+                                            m_Filenames.Add(filenameSection);
                                         }
 
-                                        //Chunk payload contains address
+                                        break;
+                                    }
+
+                                case ChunkId.Address:
+                                    {
+                                        //Chunk payload contains address for a single line
                                         addressEntry.address = chunkHeader.payload;
+
+                                        //Set line range
                                         addressEntry.lineFrom = currentLine - 1;
-                                        addressEntry.lineTo = filenameHeader.firstLine - 1;
-                                        currentLine = filenameHeader.firstLine;
-                                        filenameSection.addresses.Add(addressEntry);
+                                        addressEntry.lineTo = currentLine - 1;
 
                                         //Next
                                         currentLine++;
 
-                                        //Add to filename list
-                                        m_Filenames.Add(filenameSection);
+                                        //Add
+                                        filenameSection.addresses.Add(addressEntry);
+
+                                        break;
                                     }
 
+                                case ChunkId.AddressWithCount:
+                                    {
+                                        //Chunk payload contains address for a rage of lines
+                                        addressEntry.address = chunkHeader.payload;
+
+                                        //Read line count
+                                        byte lineCount = 0;
+                                        bytesRead += Serialise(ref stream, out lineCount);
+
+                                        //Set line range
+                                        addressEntry.lineFrom = currentLine - 1;
+                                        addressEntry.lineTo = currentLine + (lineCount - 1) - 1;
+
+                                        //Next
+                                        currentLine += lineCount;
+
+                                        //Add
+                                        filenameSection.addresses.Add(addressEntry);
+
+                                        break;
+                                    }
+
+                                case ChunkId.Equate:
+                                    {
+                                        //Read equate string length
+                                        byte stringLength = 0;
+                                        bytesRead += Serialise(ref stream, out stringLength);
+
+                                        //Read string
+                                        string str;
+                                        CheckSize(stringLength);
+                                        bytesRead += Serialise(ref stream, stringLength, out str);
+
+                                        Console.WriteLine($"EQU: {str}");
+
+                                        break;
+                                    }
+
+                                case ChunkId.Symbol:
+                                    {
+                                        //Read symbol string length
+                                        byte stringLength = 0;
+                                        bytesRead += Serialise(ref stream, out stringLength);
+
+                                        //Read string
+                                        CheckSize(stringLength);
+                                        bytesRead += Serialise(ref stream, stringLength, out symbolEntry.name);
+
+                                        //Payload contains address
+                                        symbolEntry.address = chunkHeader.payload;
+
+                                        m_Symbols.Add(symbolEntry);
+
+                                        break;
+                                    }
+
+                                case ChunkId.EndOfSection:
+                                    //Payload contains section size
                                     break;
-                                }
 
-                            case ChunkId.Address:
-                                {
-                                    //Chunk payload contains address for a single line
-                                    addressEntry.address = chunkHeader.payload;
-
-                                    //Set line range
-                                    addressEntry.lineFrom = currentLine - 1;
-                                    addressEntry.lineTo = currentLine - 1;
-
-                                    //Next
-                                    currentLine++;
-
-                                    //Add
-                                    filenameSection.addresses.Add(addressEntry);
-
+                                default:
+                                    short mysteryWord = 0;
+                                    bytesRead += Serialise(ref stream, out mysteryWord);
                                     break;
-                                }
-
-                            case ChunkId.AddressWithCount:
-                                {
-                                    //Chunk payload contains address for a rage of lines
-                                    addressEntry.address = chunkHeader.payload;
-
-                                    //Read line count
-                                    byte lineCount = 0;
-                                    bytesRead += Serialise(ref stream, out lineCount);
-
-                                    //Set line range
-                                    addressEntry.lineFrom = currentLine - 1;
-                                    addressEntry.lineTo = currentLine + (lineCount - 1) - 1;
-
-                                    //Next
-                                    currentLine += lineCount;
-
-                                    //Add
-                                    filenameSection.addresses.Add(addressEntry);
-
-                                    break;
-                                }
-
-                            case ChunkId.Equate:
-                                {
-                                    //Read equate string length
-                                    byte stringLength = 0;
-                                    bytesRead += Serialise(ref stream, out stringLength);
-
-                                    //Read string
-                                    string str;
-                                    CheckSize(stringLength);
-                                    bytesRead += Serialise(ref stream, stringLength, out str);
-
-                                    Console.WriteLine($"EQU: {str}");
-
-                                    break;
-                                }
-
-                            case ChunkId.Symbol:
-                                {
-                                    //Read symbol string length
-                                    byte stringLength = 0;
-                                    bytesRead += Serialise(ref stream, out stringLength);
-
-                                    //Read string
-                                    CheckSize(stringLength);
-                                    bytesRead += Serialise(ref stream, stringLength, out symbolEntry.name);
-
-                                    //Payload contains address
-                                    symbolEntry.address = chunkHeader.payload;
-
-                                    m_Symbols.Add(symbolEntry);
-
-                                    break;
-                                }
-
-                            case ChunkId.EndOfSection:
-                                //Payload contains section size
-                                break;
-
-                            default:
-                                short mysteryWord = 0;
-                                bytesRead += Serialise(ref stream, out mysteryWord);
-                                break;
-                        }
-                    }
-
-                    pinnedData.Free();
-
-                    //Build address to file/line map
-                    m_Addr2FileLine = new Dictionary<uint, Tuple<string, int, int>>();
-
-                    foreach (FilenameSection section in m_Filenames)
-                    {
-                        foreach(AddressEntry address in section.addresses)
-                        {
-                            if(!m_Addr2FileLine.ContainsKey(address.address))
-                            {
-                                m_Addr2FileLine[address.address] = new Tuple<string, int, int>(section.filename, address.lineFrom, address.lineTo);
                             }
                         }
+
+                        pinnedData.Free();
+
+                        //Build address to file/line map
+                        m_Addr2FileLine = new Dictionary<uint, Tuple<string, int, int>>();
+
+                        foreach (FilenameSection section in m_Filenames)
+                        {
+                            foreach (AddressEntry address in section.addresses)
+                            {
+                                if (!m_Addr2FileLine.ContainsKey(address.address))
+                                {
+                                    m_Addr2FileLine[address.address] = new Tuple<string, int, int>(section.filename, address.lineFrom, address.lineTo);
+                                }
+                            }
+                        }
+
+                        return true;
                     }
-
-                    return true;
                 }
-            }
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine(e.Message);
-            //}
+                //catch (Exception e)
+                //{
+                //    Console.WriteLine(e.Message);
+                //}
 
-            return false;
+                return false;
+            }
         }
     }
 }

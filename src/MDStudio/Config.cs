@@ -14,10 +14,12 @@ namespace MDStudio
     {
         public string TargetName { get; set; }
 
-        [XmlElement("ASM68KPath")]
-        public string Asm68kPath { get; set; }
-        public string Asm68kArgs { get; set; }
-        public string[] Asm68kIncludePaths { get; set; }
+        [XmlElement("AssemblerPath")]
+        public string AssemblerPath { get; set; }
+        public string P2BinPath { get; set; }
+        public bool UseASM68K { get; set; }
+        public string AssemblerArgs { get; set; }
+        public string[] AssemblerIncludePaths { get; set; }
         public int EmuResolution { get; set; }
         public int EmuRegion { get; set; }
         public bool Pal = false;
@@ -36,6 +38,7 @@ namespace MDStudio
 
         [XmlElement("Others")]
         public string MegaUSBPath { get; set; }
+        public string PostbuildCommands { get; set; }
 
         public Config()
         {
@@ -63,9 +66,10 @@ namespace MDStudio
                         config = (Config)xs.Deserialize(sr);
 
                         TargetName = config.TargetName;
-                        Asm68kPath = config.Asm68kPath;
-                        Asm68kArgs = config.Asm68kArgs;
-                        Asm68kIncludePaths = config.Asm68kIncludePaths;
+                        AssemblerPath = config.AssemblerPath;
+                        UseASM68K = config.UseASM68K;
+                        AssemblerArgs = config.AssemblerArgs;
+                        AssemblerIncludePaths = config.AssemblerIncludePaths;
                         EmuResolution = config.EmuResolution;
                         EmuRegion = config.EmuRegion;
                         Pal = config.Pal;
@@ -82,7 +86,8 @@ namespace MDStudio
                         KeycodeStart = config.KeycodeStart;
 
                         MegaUSBPath = config.MegaUSBPath;
-
+                        PostbuildCommands = config.PostbuildCommands;
+                        P2BinPath = config.P2BinPath;
                         sr.Close();
                     }
                     catch (Exception e)

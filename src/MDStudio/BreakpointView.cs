@@ -7,13 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MDStudio.Debugging;
 
 namespace MDStudio
 {
     public partial class BreakpointView : Form
     {
         private MainForm m_mainForm;
-        private Symbols m_symbols;
+        private ISymbols m_symbols;
 
         class BreakpointEntry
         {
@@ -40,7 +41,7 @@ namespace MDStudio
             Write
         }
 
-        public BreakpointView(MainForm mainForm, Symbols symbols)
+        public BreakpointView(MainForm mainForm, ISymbols symbols)
         {
             InitializeComponent();
             Owner = mainForm;
@@ -48,7 +49,7 @@ namespace MDStudio
             m_symbols = symbols;
         }
 
-        public void UpdateSymbols(Symbols symbols)
+        public void UpdateSymbols(ISymbols symbols)
         {
             m_symbols = symbols;
         }

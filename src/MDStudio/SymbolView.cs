@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MDStudio.Debugging;
 
 namespace MDStudio
 {
@@ -24,9 +25,9 @@ namespace MDStudio
         }
 
         MainForm m_mainForm;
-        Symbols m_symbols;
+        ISymbols m_symbols;
 
-        public SymbolView(MainForm mainForm, Symbols symbols)
+        public SymbolView(MainForm mainForm, ISymbols symbols)
         {
             m_mainForm = mainForm;
             m_symbols = symbols;
@@ -47,7 +48,7 @@ namespace MDStudio
                 listSymbols.Enabled = true;
                 listSymbols.Items.Clear();
 
-                foreach (Symbols.SymbolEntry symbol in m_symbols.m_Symbols)
+                foreach (Debugging.SymbolEntry symbol in m_symbols.m_Symbols)
                 {
                     SymbolEntry entry = new SymbolEntry();
                     entry.Text = symbol.name;

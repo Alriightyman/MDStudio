@@ -21,6 +21,7 @@ using DigitalRune.Windows.TextEditor.Markers;
 using System.Text.RegularExpressions;
 using System.IO;
 using MDStudio.Properties;
+using MDStudio.Debugging;
 
 #if UMDK_SUPPORT
     using UMDK;
@@ -63,7 +64,7 @@ namespace MDStudio
         private string m_BuildArgs;
 
         public Target m_Target;
-        public Symbols m_DebugSymbols;
+        public ISymbols m_DebugSymbols;
         private string m_DisassemblyText;
         private List<Tuple<uint, int, string>> m_Disassembly;
         private static int s_MaxDisassemblyLines = 200;
@@ -708,9 +709,9 @@ namespace MDStudio
                             //If absolute path doesn't exist, try each include directory
                             if (!System.IO.File.Exists(include))
                             {
-                                if (m_Config.Asm68kIncludePaths != null)
+                                if (m_Config.AssemblerIncludePaths != null)
                                 {
-                                    foreach (string includePath in m_Config.Asm68kIncludePaths)
+                                    foreach (string includePath in m_Config.AssemblerIncludePaths)
                                     {
                                         string fullPath = System.IO.Path.Combine(includePath, match.Groups[2].Value);
 
@@ -831,15 +832,16 @@ namespace MDStudio
 
         private int Build()
         {
-            if (m_Config.Asm68kPath == null || m_Config.Asm68kPath.Length == 0)
+            
+            if (m_Config.AssemblerPath == null || m_Config.AssemblerPath.Length == 0)
             {
-                MessageBox.Show("ASM68k Path not set");
+                MessageBox.Show("Assembler Path not set");
                 return 0;
             }
 
-            if (!File.Exists(m_Config.Asm68kPath))
+            if (!File.Exists(m_Config.AssemblerPath))
             {
-                MessageBox.Show("Cannot find '" + m_Config.Asm68kPath + "'");
+                MessageBox.Show("Cannot find '" + m_Config.AssemblerPath + "'");
                 return 0;
             }
             
@@ -851,6 +853,7 @@ namespace MDStudio
 
             StringBuilder processStandardOutput = new StringBuilder();
             StringBuilder processErrorOutput = new StringBuilder();
+            bool use_asm68k = m_Config.UseASM68K;
 
             try
             {
@@ -862,21 +865,15 @@ namespace MDStudio
                     using (Process process = new Process())
                     {
                         string includeArgs = "";
-                        if(m_Config.Asm68kIncludePaths != null && m_Config.Asm68kIncludePaths.Length > 0)
-                        {
-                            foreach (string include in m_Config.Asm68kIncludePaths)
-                            {
-                                includeArgs += "/j " + include + "\\* ";
-                            }
-                        }
 
-                        process.StartInfo.FileName = m_Config.Asm68kPath;
-                        process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
-                        process.StartInfo.Arguments = @"/p /c /zd " + m_Config.Asm68kArgs + " " + includeArgs + " " + m_FileToAssemble + "," + m_ProjectName + ".bin," + m_ProjectName + ".symb," + m_ProjectName + ".list";
-                        process.StartInfo.UseShellExecute = false;
-                        process.StartInfo.RedirectStandardOutput = true;
-                        process.StartInfo.RedirectStandardError = true;
-                        process.StartInfo.CreateNoWindow = true;
+                        if (use_asm68k)
+                        {
+                            BuildAsm68k(process, includeArgs);
+                        }
+                        else if (!use_asm68k)
+                        {
+                            BuildAsAssembler(process, includeArgs);
+                        }                        
 
                         Console.WriteLine("Assembler: {0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
                         m_BuildLog.AddRaw(process.StartInfo.FileName + " " + process.StartInfo.Arguments);
@@ -905,11 +902,15 @@ namespace MDStudio
                                 }
                                 else
                                 {
-                                    processErrorOutput.AppendLine(e.Data);
+                                    // only care about Errors, not warnings..
+                                    if (e.Data.Contains("Error:"))
+                                    {
+                                        processErrorOutput.AppendLine(e.Data);
+                                    }
                                 }
                             };
 
-                            process.Start();
+                            //process.Start();
 
                             process.BeginOutputReadLine();
                             process.BeginErrorReadLine();
@@ -984,23 +985,35 @@ namespace MDStudio
             codeEditor.Refresh();
 
             string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
-            string symbolFile = m_PathToProject + @"\" + m_ProjectName + ".symb";
+            string pFile = m_PathToProject + @"\" + m_ProjectName + ".p";
+            string symbolFile = m_PathToProject + @"\" + m_ProjectName + (use_asm68k ? ".symb" : ".map");
 
             if (errorCount > 0)
             {
                 statusLabel.Text = errorCount + " Error(s)";
             }
-            else if(!File.Exists(binaryFile) || !File.Exists(symbolFile))
+            else if( ((use_asm68k && !File.Exists(binaryFile) || !File.Exists(symbolFile)) || (!use_asm68k && !File.Exists(pFile))))
             {
                 statusLabel.Text = "Build error, no output files generated";
+                statusLabel.Text += use_asm68k ? $"{m_ProjectName}.bin exists: {File.Exists(binaryFile)}, {m_ProjectName}.symb exists: {File.Exists(symbolFile)}" : $"{m_ProjectName}.p exists: {File.Exists(pFile)}, {m_ProjectName}.map exists: {File.Exists(symbolFile)}";
                 errorCount++;
             }
             else
             {
                 statusLabel.Text = "Build ok!";
 
+               
+
                 //Success, read symbols
-                m_DebugSymbols = new Symbols();
+                if (m_Config.UseASM68K)
+                {
+                    m_DebugSymbols = new Asm68kSymbols();
+                }
+                else
+                {
+                    RunP2Bin(m_ProjectName, m_PathToProject);
+                    m_DebugSymbols = new AsSymbols();
+                }
 
                 try
                 {
@@ -1009,11 +1022,138 @@ namespace MDStudio
                 catch(Exception exception)
                 {
                     Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
-                    m_DebugSymbols = new Symbols();
+                    if (m_Config.UseASM68K)
+                    {
+                        m_DebugSymbols = new Asm68kSymbols();
+                    }
+                    else
+                    {
+                        m_DebugSymbols = new AsSymbols();
+                    }
                 }
             }
 
             return errorCount;
+        }
+
+        private void RunP2Bin(string projectName, string pathToProject)
+        {
+            try
+            {
+                int timeout = 60 * 1000 * 1000;
+                using (System.Threading.AutoResetEvent outputWaitHandle = new System.Threading.AutoResetEvent(false))
+                using (System.Threading.AutoResetEvent errorWaitHandle = new System.Threading.AutoResetEvent(false))
+                {
+                    StringBuilder processStandardOutput = new StringBuilder();
+                    StringBuilder processErrorOutput = new StringBuilder();
+
+                    using (Process process = new Process())
+                    {
+                        process.StartInfo.FileName = m_Config.P2BinPath;
+                        process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
+                        process.StartInfo.Arguments = $"{projectName}.p {projectName}.bin {projectName}.h";
+                        process.StartInfo.UseShellExecute = false;
+                        process.StartInfo.RedirectStandardOutput = true;
+                        process.StartInfo.RedirectStandardError = true;
+                        process.StartInfo.CreateNoWindow = true;
+
+                        process.Start();
+
+                        try
+                        {
+                            process.OutputDataReceived += (sender, e) =>
+                            {
+                                if (e.Data == null)
+                                {
+                                    outputWaitHandle.Set();
+                                }
+                                else
+                                {
+                                    processStandardOutput.AppendLine(e.Data);
+                                }
+                            };
+                            process.ErrorDataReceived += (sender, e) =>
+                            {
+                                if (e.Data == null)
+                                {
+                                    errorWaitHandle.Set();
+                                }
+                                else
+                                {
+                                    // only care about Errors, not warnings..
+                                    //if (e.Data.Contains("Error:"))
+                                    {
+                                        processErrorOutput.AppendLine(e.Data);
+                                    }
+                                }
+                            };
+
+                            process.Start();
+
+                            process.BeginOutputReadLine();
+                            process.BeginErrorReadLine();
+
+                            if (!process.WaitForExit(timeout))
+                            {
+                                processErrorOutput.Append("Process timed out");
+                            }
+                        }
+                        finally
+                        {
+                            outputWaitHandle.WaitOne(timeout);
+                            errorWaitHandle.WaitOne(timeout);
+                        }
+                    }
+                }
+            }
+            finally { }
+        }
+
+
+        private void BuildAsAssembler(Process process,string includeArgs)
+        {
+            /*if (m_Config.AssemblerIncludePaths != null && m_Config.AssemblerIncludePaths.Length > 0)
+            {
+                foreach (string include in m_Config.AssemblerIncludePaths)
+                {
+                    includeArgs += "/j " + include + "\\* "; // /j for include files
+                }
+            }*/
+
+            process.StartInfo.FileName = m_Config.AssemblerPath;
+            process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
+            // default ags:
+            // -xx : Level 2 for detailed error messages
+            // -q : suppress messages
+            // -c : variables will be written in a format which permits an easy integration into a C-source file. The extension of the file is H
+            // -D : defines symbols
+            // -A : stores the list of global symbols in another, more compact form
+            // -L : writes assembler listing into a file
+            // -g MAP : This switch instructs AS to create an additional file that contains debug information for the program
+            process.StartInfo.Arguments = @"-q -c -A -L -g MAP " + m_Config.AssemblerArgs + " " + m_FileToAssemble;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+        }
+
+        private void BuildAsm68k(Process process, string includeArgs)
+        {
+            if (m_Config.AssemblerIncludePaths != null && m_Config.AssemblerIncludePaths.Length > 0)
+            {
+                foreach (string include in m_Config.AssemblerIncludePaths)
+                {
+                    includeArgs += "/j " + include + "\\* ";
+                }
+            }
+
+            process.StartInfo.FileName = m_Config.AssemblerPath;
+            process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
+            process.StartInfo.Arguments = @"/p /c /zd " + m_Config.AssemblerArgs + " " + includeArgs + " " + m_FileToAssemble + "," + m_ProjectName + ".bin," + m_ProjectName + ".symb," + m_ProjectName + ".list";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
         }
 
         private void compileMenu_Click(object sender, EventArgs e)
@@ -1055,12 +1195,20 @@ namespace MDStudio
                 {
                     string initialSourceFile = m_PathToProject + @"\" + m_FileToAssemble;
                     string listingFile = m_PathToProject + @"\" + m_ProjectName + ".list";
-                    string symbolFile = m_PathToProject + @"\" + m_ProjectName + ".symb";
+                    string symbolFile = m_PathToProject + @"\" + m_ProjectName + (m_Config.UseASM68K ? ".symb" : ".map");
                     string baseDirectory = m_PathToProject + @"\";
                     string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
 
                     //  Show tools windows first, so emu window gets foreground focus
-                    m_RegisterView.Show();
+                    try
+                    {
+                        m_RegisterView.Show();
+                    }
+                    catch (Exception e)
+                    {
+                        m_RegisterView = new RegisterView();
+                        m_RegisterView.Show();
+                    }
 
                     //Read symbols
                     try
@@ -1070,7 +1218,15 @@ namespace MDStudio
                     catch (Exception exception)
                     {
                         Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
-                        m_DebugSymbols = new Symbols();
+
+                        if (m_Config.UseASM68K)
+                        {
+                            m_DebugSymbols = new Asm68kSymbols();
+                        }
+                        else
+                        {
+                            m_DebugSymbols = new AsSymbols();
+                        }
                     }
 
                     if (m_BreakpointView != null)
@@ -1635,8 +1791,8 @@ namespace MDStudio
             configForm.StartPosition = FormStartPosition.CenterParent;
 
             configForm.targetList.SelectedIndex = configForm.targetList.FindString(m_Config.TargetName);
-            configForm.asmPath.Text = m_Config.Asm68kPath;
-            configForm.asmArgs.Text = m_Config.Asm68kArgs;
+            configForm.asmPath.Text = m_Config.AssemblerPath;
+            configForm.asmArgs.Text = m_Config.AssemblerArgs;
             configForm.emuResolution.SelectedIndex = m_Config.EmuResolution;
             configForm.emuRegion.SelectedIndex = m_Config.EmuRegion;
             configForm.autoOpenLastProject.Checked = m_Config.AutoOpenLastProject;
@@ -1649,24 +1805,26 @@ namespace MDStudio
             configForm.inputB.SelectedIndex = m_Config.KeycodeB;
             configForm.inputC.SelectedIndex = m_Config.KeycodeC;
             configForm.inputStart.SelectedIndex = m_Config.KeycodeStart;
-
+            configForm.P2Bin_textBox.Text = m_Config.P2BinPath;
             configForm.modePAL.Checked = m_Config.Pal;
             configForm.modeNTSC.Checked = !m_Config.Pal;
-
+            configForm.Asm68k_radio_button.Checked = m_Config.UseASM68K;
+            configForm.AS_radio_button.Checked = !m_Config.UseASM68K;
             configForm.megaUSBPath.Text = m_Config.MegaUSBPath;
 
             configForm.listIncludes.Items.Clear();
-            if(m_Config.Asm68kIncludePaths != null)
+            if(m_Config.AssemblerIncludePaths != null)
             {
-                foreach(string include in m_Config.Asm68kIncludePaths)
+                foreach(string include in m_Config.AssemblerIncludePaths)
                     configForm.listIncludes.Items.Add(include);
             }
 
             if (configForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 m_Config.TargetName = configForm.targetList.GetItemText(configForm.targetList.SelectedItem);
-                m_Config.Asm68kPath = configForm.asmPath.Text;
-                m_Config.Asm68kArgs = configForm.asmArgs.Text;
+                m_Config.AssemblerPath = configForm.asmPath.Text;
+                m_Config.P2BinPath = configForm.P2Bin_textBox.Text;
+                m_Config.AssemblerArgs = configForm.asmArgs.Text;
                 m_Config.EmuResolution = configForm.emuResolution.SelectedIndex;
                 m_Config.EmuRegion = configForm.emuRegion.SelectedIndex;
                 m_Config.AutoOpenLastProject = configForm.autoOpenLastProject.Checked;
@@ -1680,13 +1838,13 @@ namespace MDStudio
                 m_Config.KeycodeB = configForm.inputB.SelectedIndex;
                 m_Config.KeycodeC = configForm.inputC.SelectedIndex;
                 m_Config.KeycodeStart = configForm.inputStart.SelectedIndex;
-
+                m_Config.UseASM68K = configForm.Asm68k_radio_button.Checked;
+                
                 m_Config.Pal = configForm.modePAL.Checked;
-
                 m_Config.MegaUSBPath = configForm.megaUSBPath.Text;
 
-                m_Config.Asm68kIncludePaths = new string[configForm.listIncludes.Items.Count];
-                configForm.listIncludes.Items.CopyTo(m_Config.Asm68kIncludePaths, 0);
+                m_Config.AssemblerIncludePaths = new string[configForm.listIncludes.Items.Count];
+                configForm.listIncludes.Items.CopyTo(m_Config.AssemblerIncludePaths, 0);
 
                 m_Config.Save();
 
