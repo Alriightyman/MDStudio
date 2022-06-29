@@ -38,7 +38,6 @@ namespace MDStudio
 
         [XmlElement("Others")]
         public string MegaUSBPath { get; set; }
-        public string PostbuildCommands { get; set; }
 
         public Config()
         {
@@ -86,7 +85,6 @@ namespace MDStudio
                         KeycodeStart = config.KeycodeStart;
 
                         MegaUSBPath = config.MegaUSBPath;
-                        PostbuildCommands = config.PostbuildCommands;
                         P2BinPath = config.P2BinPath;
                         sr.Close();
                     }
