@@ -863,17 +863,16 @@ namespace MDStudio
             {
                 m_ProjectFiles = ScanIncludes(m_PathToProject, m_ProjectFile);
             }
-            else if (m_ProjectFiles == null)
+            else if (m_ProjectFiles == null || m_ProjectFiles.Count == 0)
             {
 
                 var files = m_Project.SourceFiles?.ToList();
+                
+                m_ProjectFiles = new List<string>();
+                m_ProjectFiles.Add($"{m_PathToProject}\\{m_Project.MainSourceFile}");
 
                 if (files != null)
                 {
-                    m_ProjectFiles = new List<string>();
-
-                    m_ProjectFiles.Add($"{m_PathToProject}\\{m_Project.MainSourceFile}");
-
                     foreach (var file in files)
                     {
                         m_ProjectFiles.Add($"{m_PathToProject}\\{file}");
@@ -2277,6 +2276,8 @@ namespace MDStudio
 
             if (pathSelect.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+                ResetDocument();
+
                 OpenProject(pathSelect.FileName);
             }
         }
@@ -2649,6 +2650,11 @@ namespace MDStudio
                 currentCodeEditor.Document.DocumentChanged += documentChanged;
             }
 
+            foreach (TabPage page in DocumentTabs.TabPages)
+            {
+                this.DocumentTabs.TabPages.Remove(page);
+            }
+
             DocumentTabs.TabPages.Clear();
         }
 
@@ -2886,6 +2892,32 @@ namespace MDStudio
 
                 m_Project.SourceFiles = files.ToArray();
                 PopulateFileView();
+            }
+        }
+
+        private void newProjectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Do you want to close your project?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                if (m_Modified)
+                {
+                    if (MessageBox.Show("Save changes?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    {
+                        Save();
+                    }
+                }
+
+                using (NewProjectView newproject = new NewProjectView())
+                {
+                    if (newproject.ShowDialog() == DialogResult.OK)
+                    {
+                        ResetDocument();
+
+                        OpenProject(newproject.ProjectFile);
+                    }
+                }
+                    
+                
             }
         }
     }

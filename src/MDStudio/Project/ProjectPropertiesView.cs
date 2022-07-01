@@ -49,14 +49,16 @@ namespace MDStudio
 
             AuthorTextbox.Text = project.Author;
 
-            foreach(var item in project.FilesToExclude)
+            if (project.FilesToExclude != null)
             {
-                ListViewItem lvItem = new ListViewItem();                
-                lvItem.Text = item;
+                foreach (var item in project.FilesToExclude)
+                {
+                    ListViewItem lvItem = new ListViewItem();
+                    lvItem.Text = item;
 
-                FilesToExcludeListView.Items.Add(lvItem);
+                    FilesToExcludeListView.Items.Add(lvItem);
+                }
             }
-
         }
 
         public string PreBuildCommands { get { return this.Prebuild_Commands.Text; } set { this.Prebuild_Commands.Text = value; } }

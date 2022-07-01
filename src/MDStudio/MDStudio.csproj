@@ -125,6 +125,12 @@
       <DependentUpon>ProfilerView.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="Project\NewProjectView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\NewProjectView.Designer.cs">
+      <DependentUpon>NewProjectView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Project\Project.cs" />
     <Compile Include="Project\ProjectPropertiesView.cs">
       <SubType>Form</SubType>
@@ -207,6 +213,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ProfilerView.resx">
       <DependentUpon>ProfilerView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Project\NewProjectView.resx">
+      <DependentUpon>NewProjectView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Project\ProjectPropertiesView.resx">
       <DependentUpon>ProjectPropertiesView.cs</DependentUpon>
