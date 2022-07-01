@@ -13,3 +13,9 @@ src/TiTAN-dev/Release
 src/TiTAN-dev/TiTAN-dev.vcxproj.user
 src/UMDK/Debug
 src/UMDK/UMDK.vcxproj.user
+
+.vs/
+bin/
+obj/
+Debug/
+Release/

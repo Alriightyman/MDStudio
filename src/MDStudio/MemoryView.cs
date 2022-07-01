@@ -13,23 +13,42 @@ namespace MDStudio
 {
     public partial class MemoryView : Form
     {
-        private ByteViewer m_ByteViewer;
-
+        private int vscrollPosition = 0;
         public MemoryView()
         {
             InitializeComponent();
-
-            m_ByteViewer = new ByteViewer();
-            m_ByteViewer.Dock = DockStyle.Fill;
-            m_ByteViewer.Left = 0;
-            m_ByteViewer.Top = 0;
-
-            Controls.Add(m_ByteViewer);
-            m_ByteViewer.SetFile(@"c:\windows\notepad.exe");
+            m_ByteViewer.SetDisplayMode(DisplayMode.Hexdump);
+            
+            // find the scrollbar and setup the scroll event
+            foreach (var control in m_ByteViewer.Controls)
+            {
+                if (control is VScrollBar vScroll)
+                {
+                    vScroll.Scroll += VScroll_Scroll;
+                }
+            }
         }
 
-        private void MemoryView_Load(object sender, EventArgs e)
+        private void VScroll_Scroll(object sender, ScrollEventArgs e)
         {
+            if (m_ByteViewer.GetBytes() != null)
+            {
+                vscrollPosition = e.NewValue;
+                
+            }
+        }
+
+        public void SetRamMemory(byte[] mem)
+        {
+            m_ByteViewer.SetBytes(mem);
+            m_ByteViewer.SetStartLine(vscrollPosition);
+        }
+
+        private void m_ByteViewer_MouseHover(object sender, EventArgs e)
+        {
+            Point pos = m_ByteViewer.PointToClient(Cursor.Position);
+            var count = m_ByteViewer.ColumnCount;
+            var style = m_ByteViewer.ColumnStyles;           
         }
     }
 }

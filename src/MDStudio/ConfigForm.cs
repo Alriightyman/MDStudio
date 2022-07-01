@@ -121,7 +121,7 @@ namespace MDStudio
 
             if (pathSelect.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                asmPath.Text = pathSelect.FileName;
+                asm68kPath.Text = pathSelect.FileName;
             }
         }
 
@@ -168,11 +168,6 @@ namespace MDStudio
             }
         }
 
-        private void AS_radio_button_CheckedChanged(object sender, EventArgs e)
-        {
-            P2Bin_button.Enabled = AS_radio_button.Checked;
-            P2Bin_textBox.Enabled = AS_radio_button.Checked;
-        }
 
         private void P2Bin_button_Click(object sender, EventArgs e)
         {
@@ -180,7 +175,7 @@ namespace MDStudio
 
             if (pathSelect.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                P2Bin_textBox.Text = pathSelect.FileName;
+                AsPath.Text = pathSelect.FileName;
             }
         }
     }

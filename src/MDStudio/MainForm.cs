@@ -55,13 +55,14 @@ namespace MDStudio
         }
 
         private readonly Timer m_Timer = new Timer();
+        private Project m_Project;
+        private DigitalRune.Windows.TextEditor.TextEditorControl currentCodeEditor;
         private string m_ProjectFile;
         private string m_PathToProject;
         private string m_ProjectName;
         private string m_FileToAssemble;        // File to assemble
         private string m_CurrentlyEditingFile;  // Currently editing source file
         private List<string> m_ProjectFiles;
-        private string m_BuildArgs;
         private bool m_AlreadyBuilt;
         public Target m_Target;
         public ISymbols m_DebugSymbols;
@@ -114,6 +115,8 @@ namespace MDStudio
 
         private List<Breakpoint> m_Breakpoints;
         private List<uint> m_Watchpoints;
+
+        private bool shouldAlwaysRunPostBuildCommand = false;
 
 #if UMDK_SUPPORT
         private static UMDKInterface m_UMDK = null;
@@ -201,7 +204,12 @@ namespace MDStudio
         public MainForm()
         {
             InitializeComponent();
-            
+
+            // custom stuff for the tab control
+            this.DocumentTabs.DrawItem += DocumentTabs_DrawItem;
+            this.DocumentTabs.MouseDown += DocumentTabs_MouseDown;
+            this.DocumentTabs.HandleCreated += DocumentTabs_HandleCreated;
+
             m_ErrorMarkers = new List<Marker>();
             m_SearchMarkers= new List<Marker>();
             m_SearchResults = new List<TextLocation>();
@@ -238,8 +246,7 @@ namespace MDStudio
             else
                 m_VDPStatus.Hide();
 
-            // Set the syntax-highlighting for C#
-            codeEditor.Document.HighlightingStrategy = HighlightingManager.Manager.FindHighlighter("ASM68k");
+            m_MemoryView = new MemoryView();
 
             //Create target
             try
@@ -268,9 +275,57 @@ namespace MDStudio
 
             StopDebugging();
 
+
+
 #if UMDK_SUPPORT
             m_UMDK = new UMDKInterface();
 #endif
+        }
+
+
+        // Following code was adapted from: https://github.com/r-aghaei/TabControlWithCloseButtonAndAddButton
+        // I am not using the "Add" button feature so that code has been removed. 
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
+        private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
+        private void DocumentTabs_HandleCreated(object sender, EventArgs e)
+        {
+            SendMessage(this.DocumentTabs.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
+        }
+
+        private void DocumentTabs_MouseDown(object sender, MouseEventArgs e)
+        {
+            for (var i = 0; i < this.DocumentTabs.TabPages.Count; i++)
+            {
+                var tabRect = this.DocumentTabs.GetTabRect(i);
+                tabRect.Inflate(-2, -2);
+                var closeImage = Properties.Resources.Close;
+                var imageRect = new Rectangle(
+                    (tabRect.Right - closeImage.Width),
+                    tabRect.Top + (tabRect.Height - closeImage.Height) / 2,
+                    closeImage.Width,
+                    closeImage.Height);
+                if (imageRect.Contains(e.Location))
+                {
+                    this.DocumentTabs.TabPages.RemoveAt(i);
+                    break;
+                }
+            }
+
+        }
+
+        private void DocumentTabs_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            var tabPage = this.DocumentTabs.TabPages[e.Index];
+            var tabRect = this.DocumentTabs.GetTabRect(e.Index);
+            tabRect.Inflate(-2, -2);
+            
+            var closeImage = Properties.Resources.Close;
+            e.Graphics.DrawImage(closeImage,
+                (tabRect.Right - closeImage.Width),
+                tabRect.Top + (tabRect.Height - closeImage.Height) / 2);
+            TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font,
+                tabRect, tabPage.ForeColor, TextFormatFlags.Left);            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -284,7 +339,54 @@ namespace MDStudio
                 // Ignore document changed events
                 bool watchingEvents = (m_SourceWatcher == null) || m_SourceWatcher.EnableRaisingEvents;
                 m_SourceWatcher = null;
-                codeEditor.Document.DocumentChanged -= documentChanged;
+                
+                // this serves as the name of the tab AND a key for the tabpages in the tabcontrol
+                // as well as the code editor control within the tabpage.
+                string tabText = Path.GetFileName(filename);
+
+                // determine if the tab is already open
+                bool tabExists = DocumentTabs.TabPages.ContainsKey(filename);
+
+                // if tab doesn't exist, create a new tabpage with name and key
+                if (!tabExists)
+                {
+                    DocumentTabs.TabPages.Add(filename, tabText);                    
+                }
+
+                // get the tab
+                int index = DocumentTabs.TabPages.IndexOfKey(filename);
+                var page = DocumentTabs.TabPages[index];
+
+                // get the code editor control from the tabpage or create a new one
+                DigitalRune.Windows.TextEditor.TextEditorControl codeEditor = null;
+
+                // if this is a new tabpage, create a new code editor and set options
+                if (!tabExists)
+                {
+                    codeEditor = new DigitalRune.Windows.TextEditor.TextEditorControl();
+                    page.Controls.Add(codeEditor);
+                    
+                    codeEditor.Name = tabText;
+                    codeEditor.IsIconBarVisible = true;
+                    codeEditor.AutoScroll = true;
+                    codeEditor.Dock = DockStyle.Fill;
+
+                    // Set the syntax-highlighting for ASM68k
+                    codeEditor.Document.HighlightingStrategy = HighlightingManager.Manager.FindHighlighter("ASM68k");
+                    codeEditor.Document.DocumentChanged -= documentChanged;
+                    codeEditor.LoadFile(filename);
+                }
+                else
+                {
+                    // get the editor that is already inside the tabpage (I wish there was an easier way to get this)
+                    codeEditor = (DigitalRune.Windows.TextEditor.TextEditorControl)page.Controls.Find(tabText, true).First();
+                }
+                
+                // set the current code editor
+                currentCodeEditor = codeEditor;
+
+                // select the new page
+                DocumentTabs.SelectedTab = page;
 
                 // Reset undo state
                 m_Modified = false;
@@ -293,7 +395,6 @@ namespace MDStudio
                 // Load file
                 m_CurrentlyEditingFile = filename;
 
-                codeEditor.LoadFile(filename);
 
                 // Set title bar text
                 this.Text = "MDStudio - " + m_CurrentlyEditingFile;
@@ -329,7 +430,7 @@ namespace MDStudio
             // Ignore document changed events
             bool watchingEvents = (m_SourceWatcher == null) || m_SourceWatcher.EnableRaisingEvents;
             m_SourceWatcher = null;
-            codeEditor.Document.DocumentChanged -= documentChanged;
+            currentCodeEditor.Document.DocumentChanged -= documentChanged;
 
             // Reset undo state
             m_Modified = false;
@@ -337,13 +438,13 @@ namespace MDStudio
 
             // Load file
             m_CurrentlyEditingFile = "Disassembly";
-            codeEditor.Text = text;
+            currentCodeEditor.Text = text;
 
             // Set title bar text
             this.Text = "MDStudio - " + "Disassembly";
 
             // Refresh
-            codeEditor.Refresh();
+            currentCodeEditor.Refresh();
         }
 
         private void StartDebugging()
@@ -651,7 +752,7 @@ namespace MDStudio
                     BringToFront();
 
                     UpdateCRAM();
-                    m_VDPStatus.UpdateView();
+                    m_VDPStatus.UpdateView();                    
 
                     //Determine break mode
                     if (m_BreakMode == BreakMode.kStepOver)
@@ -682,6 +783,10 @@ namespace MDStudio
             else if (m_Target != null && m_State == State.kRunning)
             {
                 UpdateCRAM();
+
+                byte[] memBuffer = new byte[0xFFFF];
+                m_Target.ReadMemory(0xFFFF0000, 0xFFFF, memBuffer);
+                m_MemoryView.SetRamMemory(memBuffer);
             }
         }
 
@@ -747,63 +852,89 @@ namespace MDStudio
 
         private void PopulateFileView()
         {
+            if (m_Project == null)
+                return;
+
             //Scan for includes
             // Disabling for now. Cannot load very large, complicated projects. 
             // I let it sit for about 8 hours and it still couldn't complete loading. 
             // Consider building a project file format to load instead. 
-            // m_ProjectFiles = ScanIncludes(m_PathToProject, m_ProjectFile);
-            m_ProjectFiles = new List<string>();
-            //Add current file and sort
-            m_ProjectFiles.Add(m_CurrentlyEditingFile);
-            m_ProjectFiles.Sort();
-
-            //Populate view
-            TreeNode lastNode = null;
-            string subPathAgg;
-
-            foreach (string path in m_ProjectFiles)
+            if (false)
             {
-                if (path != null)
+                m_ProjectFiles = ScanIncludes(m_PathToProject, m_ProjectFile);
+            }
+            else if (m_ProjectFiles == null)
+            {
+
+                var files = m_Project.SourceFiles?.ToList();
+
+                if (files != null)
                 {
-                    subPathAgg = string.Empty;
+                    m_ProjectFiles = new List<string>();
 
-                    foreach (string subPath in path.Split(treeProjectFiles.PathSeparator[0]))
+                    m_ProjectFiles.Add($"{m_PathToProject}\\{m_Project.MainSourceFile}");
+
+                    foreach (var file in files)
                     {
-                        subPathAgg += subPathAgg.Length > 0 ? treeProjectFiles.PathSeparator[0] + subPath : subPath;
-                        string absPath = System.IO.Path.GetFullPath(subPathAgg);
-
-                        TreeNode[] nodes = treeProjectFiles.Nodes.Find(absPath, true);
-                        if (nodes.Length == 0)
-                        {
-                            if (lastNode == null)
-                                lastNode = treeProjectFiles.Nodes.Add(absPath, subPath);
-                            else
-                                lastNode = lastNode.Nodes.Add(absPath, subPath);
-                        }
-                        else
-                        {
-                            lastNode = nodes[0];
-                        }
+                        m_ProjectFiles.Add($"{m_PathToProject}\\{file}");
                     }
                 }
+            }
 
-                lastNode = null;
+            if (m_ProjectFiles != null)
+            {
+                //Add current file and sort
+                //m_ProjectFiles.Add(m_CurrentlyEditingFile);
+                m_ProjectFiles.Sort();
+
+                //Populate view
+                TreeNode lastNode = null;
+                string subPathAgg;
+
+                foreach (string path in m_ProjectFiles)
+                {
+                    if (path != null)
+                    {
+                        subPathAgg = string.Empty;
+
+                        foreach (string subPath in path.Split(treeProjectFiles.PathSeparator[0]))
+                        {
+                            subPathAgg += subPathAgg.Length > 0 ? treeProjectFiles.PathSeparator[0] + subPath : subPath;
+                            string absPath = System.IO.Path.GetFullPath(subPathAgg);
+
+                            TreeNode[] nodes = treeProjectFiles.Nodes.Find(absPath, true);
+                            if (nodes.Length == 0)
+                            {
+                                if (lastNode == null)
+                                    lastNode = treeProjectFiles.Nodes.Add(absPath, subPath);
+                                else
+                                    lastNode = lastNode.Nodes.Add(absPath, subPath);
+                            }
+                            else
+                            {
+                                lastNode = nodes[0];
+                            }
+                        }
+                    }
+
+                    lastNode = null;
+                }
             }
         }
 
         private void undoMenu_Click(object sender, EventArgs e)
         {
-            codeEditor.Undo();
+            currentCodeEditor.Undo();
         }
 
         private void redoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            codeEditor.Redo();
+            currentCodeEditor.Redo();
         }
 
         private void codeEditor_DocumentChanged(object sender, DocumentEventArgs e)
         {
-            if (codeEditor.Document.UndoStack.CanUndo)
+            if (currentCodeEditor.Document.UndoStack.CanUndo)
             {
                 undoMenu.Enabled = true;
             }
@@ -812,7 +943,7 @@ namespace MDStudio
                 undoMenu.Enabled = false;
             }
 
-            if (codeEditor.Document.UndoStack.CanRedo)
+            if (currentCodeEditor.Document.UndoStack.CanRedo)
             {
                 redoMenu.Enabled = true;
             }
@@ -834,30 +965,178 @@ namespace MDStudio
             }
         }
 
-        private int Build()
+        private int PreBuild()
         {
-            Stopwatch sw = Stopwatch.StartNew();
-            if (m_Config.AssemblerPath == null || m_Config.AssemblerPath.Length == 0)
+            int returnValue = 0;
+            var worker = new System.ComponentModel.BackgroundWorker();
+            worker.DoWork += (sender, e) => e.Result = Build();
+            worker.RunWorkerCompleted += (sender, e) => { returnValue = (int)e.Result; };
+            worker.RunWorkerAsync();
+            return returnValue;
+        }
+
+        /// <summary>
+        /// Runs pre/post commands
+        /// </summary>
+        /// <param name="script"></param>
+        private void RunScript(string script)
+        {
+            string[] commands = script.Split('\n');
+            int timeout = 60 * 1000 * 1000;
+           
+            StringBuilder processStandardOutput = new StringBuilder();
+            StringBuilder processErrorOutput = new StringBuilder();
+
+            using (System.Threading.AutoResetEvent outputWaitHandle = new System.Threading.AutoResetEvent(false))
+            using (System.Threading.AutoResetEvent errorWaitHandle = new System.Threading.AutoResetEvent(false))
             {
-                MessageBox.Show("Assembler Path not set");
+                using (Process process = new Process())
+                {
+                    process.StartInfo.FileName = "cmd.exe";
+                    process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardInput = true;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.StartInfo.CreateNoWindow = true;
+
+                    process.Start();
+
+                    using (StreamWriter sw = process.StandardInput)
+                    {
+                        foreach (var command in commands)
+                        {
+                            if (!command.StartsWith("REM") || !String.IsNullOrWhiteSpace(command))
+                            {
+                                if (sw.BaseStream.CanWrite)
+                                {
+                                    sw.WriteLine(command);
+                                }
+                            }
+                        }
+                    }
+
+                    try
+                    {
+                        process.OutputDataReceived += (sender, e) =>
+                        {
+                            if (e.Data == null)
+                            {
+                                outputWaitHandle.Set();
+                            }
+                            else
+                            {
+                                processStandardOutput.AppendLine(e.Data);
+                            }
+                        };
+                        process.ErrorDataReceived += (sender, e) =>
+                        {
+                            if (e.Data == null)
+                            {
+                                errorWaitHandle.Set();
+                            }
+                            else
+                            {
+                                processErrorOutput.AppendLine(e.Data);
+                            }
+                        };
+
+                        process.BeginOutputReadLine();
+                        process.BeginErrorReadLine();
+
+                        if (!process.WaitForExit(timeout))
+                        {
+                            processErrorOutput.Append("Process timed out");
+                        }
+                    }
+                    finally
+                    {
+                        outputWaitHandle.WaitOne(timeout);
+                        errorWaitHandle.WaitOne(timeout);
+                    }
+                }
+
+                string[] output;
+                if (processErrorOutput.Length > 0)
+                    output = processErrorOutput.ToString().Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+                else
+                    output = processStandardOutput.ToString().Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+
+
+                foreach (string line in output)
+                {
+                    Action build_addraw = () =>
+                    {
+                        m_BuildLog.AddRaw(line);
+                    };
+                    BeginInvoke(build_addraw);
+                }
+            }                            
+        }
+
+
+        private int Build()
+        {          
+            Stopwatch sw = Stopwatch.StartNew();
+            string assemblerPath = m_Project.Assembler == Assembler.AS ? m_Config.AsPath : m_Config.Asm68kPath;
+
+            if (assemblerPath == null || assemblerPath.Length == 0)
+            {
+                Action messageAction = () =>
+                {
+                    MessageBox.Show("Assembler Path not set\nPlease set it in the Config menu.");
+                    configMenu_Click(this, null);
+                };
+                BeginInvoke(messageAction);
+
                 return 0;
             }
 
-            if (!File.Exists(m_Config.AssemblerPath))
+            if (!File.Exists(assemblerPath))
             {
-                MessageBox.Show("Cannot find '" + m_Config.AssemblerPath + "'");
+                MessageBox.Show("Cannot find '" + assemblerPath + "'");
                 return 0;
             }
-            
-            m_BuildLog.Clear();
-            if(!m_BuildLog.Visible)
-                m_BuildLog.Show();
+
+            Action action = () =>
+            {
+                m_BuildLog.Clear();
+                if (!m_BuildLog.Visible)
+                    m_BuildLog.Show();
+            };
+
+            BeginInvoke(action);
+
+            bool use_asm68k = m_Project.Assembler == Assembler.Asm68k ? true : false;
+            string mainFileName = Path.GetFileNameWithoutExtension(m_Project.MainSourceFile);
+
+            // need to delete some 
+            var lstFile = $"{m_PathToProject}\\" + (use_asm68k ? $"{m_Project.Name}.list" :$"{mainFileName}.lst");
+            var hFile = $"{m_PathToProject}\\{mainFileName}.h";
+            var pFile = $"{m_PathToProject}\\{mainFileName}.p";           
+            string binaryFile = $"{m_PathToProject}\\" + (use_asm68k ? $"{m_Project.Name}.bin" : $"{mainFileName}.bin");
+            string symbolFile = $"{m_PathToProject}\\" + (use_asm68k ? $"{m_Project.Name}.symb" : $"{mainFileName}.map");
+
+            File.Delete(symbolFile);
+            File.Delete(binaryFile);
+            File.Delete(lstFile);
+
+            // these are specific to AS
+            if (!use_asm68k)
+            {
+                File.Delete(hFile);
+                File.Delete(pFile);
+            }
 
             Console.WriteLine("compile");
             statusLabel.Text = "Building...";
             StringBuilder processStandardOutput = new StringBuilder();
             StringBuilder processErrorOutput = new StringBuilder();
-            bool use_asm68k = m_Config.UseASM68K;
+
+            int errorCount = 0;
+
+            if (m_Project.PreBuildScript != String.Empty)
+                RunScript(m_Project.PreBuildScript);
 
             try
             {
@@ -877,11 +1156,19 @@ namespace MDStudio
                         else if (!use_asm68k)
                         {
                             BuildAsAssembler(process, includeArgs);
-                        }                        
+                        }
 
                         Console.WriteLine("Assembler: {0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
-                        m_BuildLog.AddRaw(process.StartInfo.FileName + " " + process.StartInfo.Arguments);
-                        m_BuildLog.Refresh();
+
+
+
+                        Action buildLogRefreshAction = () =>
+                        {
+                            m_BuildLog.AddRaw(process.StartInfo.FileName + " " + process.StartInfo.Arguments);
+                            m_BuildLog.Refresh();
+                        };
+
+                        BeginInvoke(buildLogRefreshAction);
 
                         process.Start();
 
@@ -909,7 +1196,7 @@ namespace MDStudio
                                     processErrorOutput.AppendLine(e.Data);
                                 }
                             };
-                            
+
                             // I don't think this is needed here.
                             //process.Start();
 
@@ -936,17 +1223,15 @@ namespace MDStudio
 
             //()\((\d+)\)\s: Error : (.+)
             string[] output;
-            
-            if(processErrorOutput.Length > 0 )
+
+            if (processErrorOutput.Length > 0)
                 output = processErrorOutput.ToString().Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             else
                 output = processStandardOutput.ToString().Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
-            int errorCount = 0;
-
             foreach (Marker marker in m_ErrorMarkers)
             {
-                codeEditor.Document.MarkerStrategy.RemoveMarker(marker);
+                currentCodeEditor.Document.MarkerStrategy.RemoveMarker(marker);
             }
 
             m_ErrorMarkers.Clear();
@@ -954,8 +1239,19 @@ namespace MDStudio
             foreach (string line in output)
             {
                 Console.WriteLine(line);
-                m_BuildLog.AddRaw(line);
+
+                Action build_addraw = () => {
+                    m_BuildLog.AddRaw(line);
+                };
+                BeginInvoke(build_addraw);
+
                 string patternError = @"([\w:\\.]*)\((\d+)\) : Error : (.+)";
+
+                if (!use_asm68k)
+                {
+                    patternError = @"> > >([\w:\\.]*)\((\d+)\): error (.+)";
+                }
+              
                 Match matchError = Regex.Match(line, patternError);
 
                 if (matchError.Success)
@@ -965,130 +1261,106 @@ namespace MDStudio
                     int.TryParse(matchError.Groups[2].Value, out lineNumber);
 
                     string filename = matchError.Groups[1].Value;
+                    Action buildLogError = () =>
+                    {
+                        m_BuildLog.AddError(filename, lineNumber, matchError.Groups[3].Value);
+                    };
 
-                    m_BuildLog.AddError(filename, lineNumber, matchError.Groups[3].Value);
+                    BeginInvoke(buildLogError);
+
                     Console.WriteLine("Error in '" + matchError.Groups[1].Value + "' (" + matchError.Groups[2].Value + "): " + matchError.Groups[3].Value);
                     errorCount++;
 
                     //  Mark the line
-                    if(matchError.Groups[1].Value == m_FileToAssemble)
+                    if (matchError.Groups[1].Value == m_FileToAssemble)
                     {
-                        int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumber - 1));
-                        Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumber - 1].Length, MarkerType.SolidBlock, Color.DarkRed, Color.Black);
-                        codeEditor.Document.MarkerStrategy.AddMarker(marker);
-
-                        m_ErrorMarkers.Add(marker);
+                        int offset = currentCodeEditor.Document.PositionToOffset(new TextLocation(0, lineNumber - 1));
+                        Marker marker = new Marker(offset, currentCodeEditor.Document.LineSegmentCollection[lineNumber - 1].Length, MarkerType.SolidBlock, Color.DarkRed, Color.Black);
+                        Action codedEditorMark = () =>
+                        {
+                            currentCodeEditor.Document.MarkerStrategy.AddMarker(marker);
+                            m_ErrorMarkers.Add(marker);
+                        };
                     }
                 }
             }
             Console.WriteLine(errorCount + " Error(s)");
 
-            codeEditor.Refresh();            
+            Action codeEditorRefreshAction = () =>
+            {
+                currentCodeEditor.Refresh();                
+            };
 
-            string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
-            string pFile = m_PathToProject + @"\" + m_ProjectName + ".p";
-            string symbolFile = m_PathToProject + @"\" + m_ProjectName + (use_asm68k ? ".symb" : ".map");
+            BeginInvoke(codeEditorRefreshAction);            
+
             sw.Stop();
             string buildTime = $"Build Time: {sw.Elapsed.Minutes}:{sw.Elapsed.Seconds}:{sw.Elapsed.Milliseconds}";
 
             if (errorCount > 0)
-            {                
+            {
                 statusLabel.Text = errorCount + " Error(s) " + buildTime;
             }
-            else if( ((use_asm68k && !File.Exists(binaryFile) || !File.Exists(symbolFile)) || (!use_asm68k && !File.Exists(pFile))))
+            else if (((use_asm68k && !File.Exists(binaryFile) || !File.Exists(symbolFile)) || (!use_asm68k && !File.Exists(pFile))))
             {
                 statusLabel.Text = "Build error, no output files generated ";
-                statusLabel.Text += use_asm68k ? $"{m_ProjectName}.bin exists: {File.Exists(binaryFile)}, {m_ProjectName}.symb exists: {File.Exists(symbolFile)}" : $"{m_ProjectName}.p exists: {File.Exists(pFile)}, {m_ProjectName}.map exists: {File.Exists(symbolFile)}";
+                statusLabel.Text += use_asm68k ? $"{mainFileName}.bin exists: {File.Exists(binaryFile)}, {mainFileName}.symb exists: {File.Exists(symbolFile)}" : $"{mainFileName}.p exists: {File.Exists(pFile)}, {mainFileName}.map exists: {File.Exists(symbolFile)}";
                 statusLabel.Text += " " + buildTime;
                 errorCount++;
             }
             else
-            {               
-                if (!m_Config.UseASM68K)
+            {
+                //Read symbols
+                try
                 {
-                    RunP2Bin(m_ProjectName, m_PathToProject);
+                    // Need to initialize the symbol data before read
+                    if (m_DebugSymbols == null)
+                    {
+                        if (m_Project.Assembler == Assembler.Asm68k)
+                        {
+                            m_DebugSymbols = new Asm68kSymbols();
+                        }
+                        else
+                        {
+                            m_DebugSymbols = new AsSymbols();
+                        }
+                    }
+
+                    // make sure files are all uppercase and have '/' instead of '\' for comparisons sake
+                    var filesToExclude = m_Project.FilesToExclude?.Select(e => $"{m_PathToProject}\\{e}".ToUpper().Replace("/", "\\"));
+
+                    m_DebugSymbols.Read(symbolFile, filesToExclude?.ToArray());
                 }
+                catch (Exception exception)
+                {
+                    Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
+
+                    if (m_Project.Assembler == Assembler.Asm68k)
+                    {
+                        m_DebugSymbols = new Asm68kSymbols();
+                    }
+                    else
+                    {
+                        m_DebugSymbols = new AsSymbols();
+                    }
+                }                
 
                 statusLabel.Text = "Build ok! " + buildTime;
                 m_AlreadyBuilt = true;
             }
 
+            if(shouldAlwaysRunPostBuildCommand)
+            {
+                if (m_Project.PostBuildScript != String.Empty)
+                    RunScript(m_Project.PostBuildScript);
+            }
+            else
+            {
+                if (m_Project.PostBuildScript != String.Empty && errorCount == 0)
+                    RunScript(m_Project.PostBuildScript);
+            }
+
             return errorCount;
         }
-
-        private void RunP2Bin(string projectName, string pathToProject)
-        {
-            try
-            {
-                int timeout = 60 * 1000 * 1000;
-                using (System.Threading.AutoResetEvent outputWaitHandle = new System.Threading.AutoResetEvent(false))
-                using (System.Threading.AutoResetEvent errorWaitHandle = new System.Threading.AutoResetEvent(false))
-                {
-                    StringBuilder processStandardOutput = new StringBuilder();
-                    StringBuilder processErrorOutput = new StringBuilder();
-
-                    using (Process process = new Process())
-                    {
-                        process.StartInfo.FileName = m_Config.P2BinPath;
-                        process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
-                        process.StartInfo.Arguments = $"{projectName}.p {projectName}.bin {projectName}.h";
-                        process.StartInfo.UseShellExecute = false;
-                        process.StartInfo.RedirectStandardOutput = true;
-                        process.StartInfo.RedirectStandardError = true;
-                        process.StartInfo.CreateNoWindow = true;
-
-                        process.Start();
-
-                        try
-                        {
-                            process.OutputDataReceived += (sender, e) =>
-                            {
-                                if (e.Data == null)
-                                {
-                                    outputWaitHandle.Set();
-                                }
-                                else
-                                {
-                                    processStandardOutput.AppendLine(e.Data);
-                                }
-                            };
-                            process.ErrorDataReceived += (sender, e) =>
-                            {
-                                if (e.Data == null)
-                                {
-                                    errorWaitHandle.Set();
-                                }
-                                else
-                                {
-                                    // only care about Errors, not warnings..
-                                    //if (e.Data.Contains("Error:"))
-                                    {
-                                        processErrorOutput.AppendLine(e.Data);
-                                    }
-                                }
-                            };
-
-                            process.Start();
-
-                            process.BeginOutputReadLine();
-                            process.BeginErrorReadLine();
-
-                            if (!process.WaitForExit(timeout))
-                            {
-                                processErrorOutput.Append("Process timed out");
-                            }
-                        }
-                        finally
-                        {
-                            outputWaitHandle.WaitOne(timeout);
-                            errorWaitHandle.WaitOne(timeout);
-                        }
-                    }
-                }
-            }
-            finally { }
-        }
-
 
         private void BuildAsAssembler(Process process,string includeArgs)
         {
@@ -1100,7 +1372,7 @@ namespace MDStudio
                 }
             }*/
 
-            process.StartInfo.FileName = m_Config.AssemblerPath;
+            process.StartInfo.FileName = m_Config.AsPath;
             process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
             // default ags:
             // -xx : Level 2 for detailed error messages
@@ -1110,7 +1382,7 @@ namespace MDStudio
             // -A : stores the list of global symbols in another, more compact form
             // -L : writes assembler listing into a file
             // -g MAP : This switch instructs AS to create an additional file that contains debug information for the program
-            process.StartInfo.Arguments = @" -x -xx -n -q -c -A -L -g MAP " + m_Config.AssemblerArgs + " \"" + m_FileToAssemble + "\"";
+            process.StartInfo.Arguments = @"-xx -n -q -c -A -L -g MAP " + m_Project.AdditionalArguments + " \"" + m_FileToAssemble + "\"";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -1127,9 +1399,10 @@ namespace MDStudio
                 }
             }
 
-            process.StartInfo.FileName = m_Config.AssemblerPath;
+            var filenameWoExt = Path.GetFileNameWithoutExtension(m_FileToAssemble);
+            process.StartInfo.FileName = m_Config.Asm68kPath;
             process.StartInfo.WorkingDirectory = m_PathToProject + @"\";
-            process.StartInfo.Arguments = @"/p /c /zd " + m_Config.AssemblerArgs + " " + includeArgs + " " + m_FileToAssemble + "," + m_ProjectName + ".bin," + m_ProjectName + ".symb," + m_ProjectName + ".list";
+            process.StartInfo.Arguments = $"/p /c /zd {m_Project.AdditionalArguments} {includeArgs} \"{m_FileToAssemble}\", \"{m_ProjectName}.bin\", \"{m_ProjectName}.symb\", \"{m_ProjectName}.list\"";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -1139,7 +1412,7 @@ namespace MDStudio
         private void compileMenu_Click(object sender, EventArgs e)
         {
             Save();
-            Build();
+            PreBuild();
         }
 
         private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -1149,84 +1422,76 @@ namespace MDStudio
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Run();
+            var worker = new System.ComponentModel.BackgroundWorker();
+            worker.DoWork += (s, ev) => Run();
+            //worker.RunWorkerCompleted += (s, ev) => { };
+            worker.RunWorkerAsync();           
         }
 
         private void Run()
         {
             if (m_State == State.kDebugging)
             {
-                codeEditor.Document.MarkerStrategy.Clear();
-                codeEditor.ActiveTextAreaControl.Invalidate();
-                codeEditor.Refresh();
+                Action action = () =>
+                {
+                    currentCodeEditor.Document.MarkerStrategy.Clear();
+                    currentCodeEditor.ActiveTextAreaControl.Invalidate();
+                    currentCodeEditor.Refresh();
+                };
+
+                BeginInvoke(action);
 
                 m_Target.Resume();
 
                 statusLabel.Text = "Running...";
-                //TODO: Bring emu window to front
+
+                if (m_Target is EmulatorTarget emulator)
+                {
+                    emulator.BringToFront();
+                }
 
                 m_State = State.kRunning;
             }
             else if(m_State == State.kStopped)
             {
-                Save();
+                Action action = () =>
+                {
+                    Save();
+                };
+                
+                Invoke(action);
 
                 // if we have already compiled, no reason to do it again.
                 // this should speed up for simple Runs
                 if (m_AlreadyBuilt || Build() == 0)
                 {
-                    string initialSourceFile = m_PathToProject + @"\" + m_FileToAssemble;
-                    string listingFile = m_PathToProject + @"\" + m_ProjectName + ".list";
-                    string symbolFile = m_PathToProject + @"\" + m_ProjectName + (m_Config.UseASM68K ? ".symb" : ".map");
-                    string baseDirectory = m_PathToProject + @"\";
-                    string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
-
                     //  Show tools windows first, so emu window gets foreground focus
-                    try
-                    {
-                        m_RegisterView.Show();
-                    }
-                    catch (Exception e)
-                    {
-                        m_RegisterView = new RegisterView();
-                        m_RegisterView.Show();
-                    }
 
-                    //Read symbols
-                    try
+                    action = () =>
                     {
-                        // Need to initialize the symbol data before read
-                        if (m_DebugSymbols == null)
+                        try
                         {
-                            if (m_Config.UseASM68K)
-                            {
-                                m_DebugSymbols = new Asm68kSymbols();
-                            }
-                            else
-                            {
-                                m_DebugSymbols = new AsSymbols();
-                            }
+                            m_RegisterView.Show();
+                        }
+                        catch (Exception e)
+                        {
+                            m_RegisterView = new RegisterView();
+                            m_RegisterView.Show();
                         }
 
-                        m_DebugSymbols.Read(symbolFile);
-                    }
-                    catch (Exception exception)
-                    {
-                        Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
+                        memoryViewerToolStripMenuItem.Enabled = true;
+                    };
 
-                        if (m_Config.UseASM68K)
-                        {
-                            m_DebugSymbols = new Asm68kSymbols();
-                        }
-                        else
-                        {
-                            m_DebugSymbols = new AsSymbols();
-                        }
-                    }
+                    BeginInvoke(action);                    
 
                     if (m_BreakpointView != null)
                     {
-                        m_BreakpointView.UpdateSymbols(m_DebugSymbols);
+                        action = () =>
+                        {
+                            m_BreakpointView.UpdateSymbols(m_DebugSymbols);
+                        };
+
+                        BeginInvoke(action);
                     }
 
                     //Clear last disassembly
@@ -1246,88 +1511,102 @@ namespace MDStudio
                         //Init emu
                         Tuple<int, int> resolution = kValidResolutions[m_Config.EmuResolution];
 
-                        if(m_Target is EmulatorTarget)
+                        action = () =>
                         {
-                            (m_Target as EmulatorTarget).Initialise(resolution.Item1, resolution.Item2, this.Handle, m_Config.Pal, kRegions[m_Config.EmuRegion].Item1);
-                        }
-
-                        //Set input mappings
-                        if(m_Target is EmulatorTarget)
-                        {
-                            EmulatorTarget emulator = m_Target as EmulatorTarget;
-
-                            emulator.SetInputMapping(SDLInputs.eInputUp, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeUp));
-                            emulator.SetInputMapping(SDLInputs.eInputDown, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeDown));
-                            emulator.SetInputMapping(SDLInputs.eInputLeft, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeLeft));
-                            emulator.SetInputMapping(SDLInputs.eInputRight, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeRight));
-                            emulator.SetInputMapping(SDLInputs.eInputA, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeA));
-                            emulator.SetInputMapping(SDLInputs.eInputB, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeB));
-                            emulator.SetInputMapping(SDLInputs.eInputC, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeC));
-                            emulator.SetInputMapping(SDLInputs.eInputStart, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeStart));
-                        }
-
-
-                        //  Load Rom
-                        m_Target.LoadBinary(binaryFile);
-
-                        //  Lookup and set initial breakpoints
-                        for (int i = 0; i < m_Breakpoints.Count; i++)
-                        {
-                            m_Breakpoints[i].address = m_DebugSymbols.GetAddress(m_Breakpoints[i].filename, m_Breakpoints[i].line);
-                            SetTargetBreakpoint(m_Breakpoints[i].address);
-
-                            // Move any breakpoints on lines without addresses
-                            Tuple<string, int, int> fileLine = m_DebugSymbols.GetFileLine(m_Breakpoints[i].address);
-                            if (m_Breakpoints[i].line != fileLine.Item3)
+                            if (m_Target is EmulatorTarget)
                             {
-                                //Line differs, backup and set real line
-                                m_Breakpoints[i].originalLine = m_Breakpoints[i].line;
-                                m_Breakpoints[i].line = fileLine.Item3;
+                                (m_Target as EmulatorTarget).Initialise(resolution.Item1, resolution.Item2, this.Handle, m_Config.Pal, kRegions[m_Config.EmuRegion].Item1);
+                            }
 
-                                if(m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase))
+                            //Set input mappings
+                            if (m_Target is EmulatorTarget)
+                            {
+                                EmulatorTarget emulator = m_Target as EmulatorTarget;
+
+                                emulator.SetInputMapping(SDLInputs.eInputUp, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeUp));
+                                emulator.SetInputMapping(SDLInputs.eInputDown, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeDown));
+                                emulator.SetInputMapping(SDLInputs.eInputLeft, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeLeft));
+                                emulator.SetInputMapping(SDLInputs.eInputRight, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeRight));
+                                emulator.SetInputMapping(SDLInputs.eInputA, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeA));
+                                emulator.SetInputMapping(SDLInputs.eInputB, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeB));
+                                emulator.SetInputMapping(SDLInputs.eInputC, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeC));
+                                emulator.SetInputMapping(SDLInputs.eInputStart, (int)Enum.GetValues(typeof(SDL_Keycode.Keycode)).GetValue(m_Config.KeycodeStart));
+                            }
+
+                            string binaryFile = $"{m_PathToProject}\\" + (m_Project.Assembler == Assembler.Asm68k ? $"{m_Project.Name}.bin" : $"{Path.GetFileNameWithoutExtension(m_Project.MainSourceFile)}.bin");
+
+                            //  Load Rom
+                            m_Target.LoadBinary(binaryFile);
+
+
+
+                            //  Lookup and set initial breakpoints
+                            for (int i = 0; i < m_Breakpoints.Count; i++)
+                            {
+                                m_Breakpoints[i].address = m_DebugSymbols.GetAddress(m_Breakpoints[i].filename, m_Breakpoints[i].line);
+                                SetTargetBreakpoint(m_Breakpoints[i].address);
+
+                                // Move any breakpoints on lines without addresses
+                                Tuple<string, int, int> fileLine = m_DebugSymbols.GetFileLine(m_Breakpoints[i].address);
+                                if (m_Breakpoints[i].line != fileLine.Item3)
                                 {
-                                    //Remove all breakpoint carets up to the real line
-                                    for (int line = fileLine.Item2; line < fileLine.Item3; line++)
-                                    {
-                                        if (codeEditor.Document.BookmarkManager.IsMarked(line))
-                                            codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
-                                    }
+                                    //Line differs, backup and set real line
+                                    m_Breakpoints[i].originalLine = m_Breakpoints[i].line;
+                                    m_Breakpoints[i].line = fileLine.Item3;
 
-                                    //Set real breakpoint
-                                    if (!codeEditor.Document.BookmarkManager.IsMarked(fileLine.Item3))
-                                        codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, fileLine.Item3));
+                                    if (m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        //Remove all breakpoint carets up to the real line
+                                        for (int line = fileLine.Item2; line < fileLine.Item3; line++)
+                                        {
+                                            if (currentCodeEditor.Document.BookmarkManager.IsMarked(line))
+                                                currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, line));
+                                        }
+
+                                        //Set real breakpoint
+                                        if (!currentCodeEditor.Document.BookmarkManager.IsMarked(fileLine.Item3))
+                                            currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, fileLine.Item3));
+                                    }
                                 }
                             }
-                        }
 
-                        codeEditor.Refresh();
+                            currentCodeEditor.Refresh();
 
-                        // Set watchpoints
-                        foreach (uint address in m_Watchpoints)
-                        {
-                            m_Target.AddWatchpoint(address, address + 4);
-                        }
+                            // Set watchpoints
+                            foreach (uint address in m_Watchpoints)
+                            {
+                                m_Target.AddWatchpoint(address, address + 4);
+                            }
 
-                        //  Start
-                        m_Target.Run();
+                            //  Start
+                            m_Target.Run();
 
-                        //  profiling?
-                        m_Profile = profilerEnabledMenuOptions.Checked;
+                            //  profiling?
+                            m_Profile = profilerEnabledMenuOptions.Checked;
+                        };
+
+                        BeginInvoke(action);
                     }
 
                     m_State = State.kRunning;
 
                     statusLabel.Text = "Running...";
 
-                    codeEditor.Document.ReadOnly = true;
+                    action = () =>
+                    {
+                        currentCodeEditor.Document.ReadOnly = true;
 
-                    // Reset the vdp status
-                    m_VDPStatus.Reset();
+                        // Reset the vdp status
+                        m_VDPStatus.Reset();
 
-                    //  Hide the build window
-                    m_BuildLog.Hide();
+                        //  Hide the build window
+                        m_BuildLog.Hide();
+                        
+                        StartDebugging();
+                    };
 
-                    StartDebugging();
+                    BeginInvoke(action);
+
                 }
             }
         }
@@ -1373,24 +1652,24 @@ namespace MDStudio
 
         private void toggleBreakpoint_Click(object sender, EventArgs e)
         {
-            int lineNo = codeEditor.ActiveTextAreaControl.Caret.Line;
+            int lineNo = currentCodeEditor.ActiveTextAreaControl.Caret.Line;
 
             if (m_Breakpoints.Find(breakpoint => breakpoint.filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase) && breakpoint.line == lineNo) == null)
             {
                 lineNo = SetBreakpoint(m_CurrentlyEditingFile, lineNo);
 
-                if (!codeEditor.Document.BookmarkManager.IsMarked(lineNo))
-                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineNo));
+                if (!currentCodeEditor.Document.BookmarkManager.IsMarked(lineNo))
+                    currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineNo));
             }
             else
             {
                 lineNo = RemoveBreakpoint(m_CurrentlyEditingFile, lineNo);
 
-                if (codeEditor.Document.BookmarkManager.IsMarked(lineNo))
-                    codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineNo));
+                if (currentCodeEditor.Document.BookmarkManager.IsMarked(lineNo))
+                    currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, lineNo));
             }
 
-            codeEditor.Refresh();
+            currentCodeEditor.Refresh();
         }
 
         private void debugToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1430,7 +1709,7 @@ namespace MDStudio
 
                 //Determine if current instruction should be stepped into
                 //TODO: Add instruction peek to DGen, determine by opcode
-                string currentLineText = codeEditor.Document.GetText(codeEditor.Document.GetLineSegment(currentLine.Item3));
+                string currentLineText = currentCodeEditor.Document.GetText(currentCodeEditor.Document.GetLineSegment(currentLine.Item3));
                 Match match = Regex.Match(currentLineText, "\\s*?([a-zA-Z.]+)");
                 if (match.Success)
                 {
@@ -1455,7 +1734,7 @@ namespace MDStudio
 
                 //Get total num lines
                 //TODO: Verify current filename in editor matches emulator?
-                int fileSizeLines = codeEditor.Document.TotalNumberOfLines;
+                int fileSizeLines = currentCodeEditor.Document.TotalNumberOfLines;
 
                 //Ignore lines with same address as current
                 while (currentPC == nextPC)
@@ -1549,13 +1828,14 @@ namespace MDStudio
                 }
 
                 m_RegisterView.Hide();
-
-                codeEditor.Document.MarkerStrategy.Clear();
+                m_MemoryView.Hide();
+                memoryViewerToolStripMenuItem.Enabled = false;
+                currentCodeEditor.Document.MarkerStrategy.Clear();
 
                 statusLabel.Text = "Stopped";
 
                 m_State = State.kStopped;
-                codeEditor.Document.ReadOnly = false;
+                currentCodeEditor.Document.ReadOnly = false;
 
                 StopDebugging();
 
@@ -1566,10 +1846,10 @@ namespace MDStudio
                     {
                         if (m_Breakpoints[i].filename.Equals(m_CurrentlyEditingFile, StringComparison.OrdinalIgnoreCase))
                         {
-                            if (codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].line))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].line));
-                            if (!codeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].originalLine))
-                                codeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].originalLine));
+                            if (currentCodeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].line))
+                                currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].line));
+                            if (!currentCodeEditor.Document.BookmarkManager.IsMarked(m_Breakpoints[i].originalLine))
+                                currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, m_Breakpoints[i].originalLine));
                         }
 
                         m_Breakpoints[i].line = m_Breakpoints[i].originalLine;
@@ -1577,7 +1857,7 @@ namespace MDStudio
                     }
                 }
 
-                codeEditor.Refresh();
+                currentCodeEditor.Refresh();
             }
         }
 
@@ -1657,8 +1937,8 @@ namespace MDStudio
                 }
                 m_SourceWatcher.EnableRaisingEvents = false;
 
-                codeEditor.Encoding = Encoding.ASCII;
-                codeEditor.SaveFile(m_CurrentlyEditingFile);
+                currentCodeEditor.Encoding = Encoding.ASCII;
+                currentCodeEditor.SaveFile(m_CurrentlyEditingFile);
 
                 m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentlyEditingFile);
                 m_SourceWatcher.Filter = Path.GetFileName(m_CurrentlyEditingFile);
@@ -1675,8 +1955,8 @@ namespace MDStudio
             {
                 OpenFile(filename);
             }
-            
-            codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
+
+            currentCodeEditor.ActiveTextAreaControl.Caret.Line = lineNumber;
 
             this.Activate();
         }
@@ -1723,25 +2003,25 @@ namespace MDStudio
                 m_SourceMode = SourceMode.Disassembly;
             }
 
-            int offset = codeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
+            int offset = currentCodeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
 
-            codeEditor.Document.MarkerStrategy.Clear();
+            currentCodeEditor.Document.MarkerStrategy.Clear();
 
-            if (lineNumberEditor < codeEditor.Document.LineSegmentCollection.Count)
+            if (lineNumberEditor < currentCodeEditor.Document.LineSegmentCollection.Count)
             {
-                Marker marker = new Marker(offset, codeEditor.Document.LineSegmentCollection[lineNumberEditor].Length, MarkerType.SolidBlock, Color.Yellow, Color.Black);//selection.Offset, selection.Length, MarkerType.SolidBlock, Color.DarkRed, Color.White);
-                codeEditor.Document.MarkerStrategy.AddMarker(marker);
-                codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
-                codeEditor.ActiveTextAreaControl.CenterViewOn(lineNumberEditor, -1);
+                Marker marker = new Marker(offset, currentCodeEditor.Document.LineSegmentCollection[lineNumberEditor].Length, MarkerType.SolidBlock, Color.Yellow, Color.Black);//selection.Offset, selection.Length, MarkerType.SolidBlock, Color.DarkRed, Color.White);
+                currentCodeEditor.Document.MarkerStrategy.AddMarker(marker);
+                currentCodeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
+                currentCodeEditor.ActiveTextAreaControl.CenterViewOn(lineNumberEditor, -1);
             }
             else
             {
-                codeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
-                codeEditor.ActiveTextAreaControl.CenterViewOn(0, -1);
+                currentCodeEditor.ActiveTextAreaControl.Caret.Line = lineNumberEditor;
+                currentCodeEditor.ActiveTextAreaControl.CenterViewOn(0, -1);
             }
 
-            codeEditor.ActiveTextAreaControl.Caret.Column = 0;
-            codeEditor.ActiveTextAreaControl.Invalidate();
+            currentCodeEditor.ActiveTextAreaControl.Caret.Column = 0;
+            currentCodeEditor.ActiveTextAreaControl.Invalidate();
         }
 
         public void UpdateViewBuildLog(bool flag)
@@ -1786,8 +2066,8 @@ namespace MDStudio
             configForm.StartPosition = FormStartPosition.CenterParent;
 
             configForm.targetList.SelectedIndex = configForm.targetList.FindString(m_Config.TargetName);
-            configForm.asmPath.Text = m_Config.AssemblerPath;
-            configForm.asmArgs.Text = m_Config.AssemblerArgs;
+            configForm.asm68kPath.Text = m_Config.Asm68kPath;
+            configForm.AsPath.Text = m_Config.AsPath;
             configForm.emuResolution.SelectedIndex = m_Config.EmuResolution;
             configForm.emuRegion.SelectedIndex = m_Config.EmuRegion;
             configForm.autoOpenLastProject.Checked = m_Config.AutoOpenLastProject;
@@ -1800,11 +2080,8 @@ namespace MDStudio
             configForm.inputB.SelectedIndex = m_Config.KeycodeB;
             configForm.inputC.SelectedIndex = m_Config.KeycodeC;
             configForm.inputStart.SelectedIndex = m_Config.KeycodeStart;
-            configForm.P2Bin_textBox.Text = m_Config.P2BinPath;
             configForm.modePAL.Checked = m_Config.Pal;
             configForm.modeNTSC.Checked = !m_Config.Pal;
-            configForm.Asm68k_radio_button.Checked = m_Config.UseASM68K;
-            configForm.AS_radio_button.Checked = !m_Config.UseASM68K;
             configForm.megaUSBPath.Text = m_Config.MegaUSBPath;
 
             configForm.listIncludes.Items.Clear();
@@ -1817,9 +2094,9 @@ namespace MDStudio
             if (configForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 m_Config.TargetName = configForm.targetList.GetItemText(configForm.targetList.SelectedItem);
-                m_Config.AssemblerPath = configForm.asmPath.Text;
-                m_Config.P2BinPath = configForm.P2Bin_textBox.Text;
-                m_Config.AssemblerArgs = configForm.asmArgs.Text;
+                m_Config.Asm68kPath = configForm.asm68kPath.Text;
+                m_Config.AsPath = configForm.AsPath.Text;
+
                 m_Config.EmuResolution = configForm.emuResolution.SelectedIndex;
                 m_Config.EmuRegion = configForm.emuRegion.SelectedIndex;
                 m_Config.AutoOpenLastProject = configForm.autoOpenLastProject.Checked;
@@ -1833,7 +2110,7 @@ namespace MDStudio
                 m_Config.KeycodeB = configForm.inputB.SelectedIndex;
                 m_Config.KeycodeC = configForm.inputC.SelectedIndex;
                 m_Config.KeycodeStart = configForm.inputStart.SelectedIndex;
-                m_Config.UseASM68K = configForm.Asm68k_radio_button.Checked;
+
                 
                 m_Config.Pal = configForm.modePAL.Checked;
                 m_Config.MegaUSBPath = configForm.megaUSBPath.Text;
@@ -1843,8 +2120,8 @@ namespace MDStudio
 
                 m_Config.Save();
 
-                Console.WriteLine(configForm.asmPath.Text);
-                Console.WriteLine(configForm.asmArgs.Text);
+                Console.WriteLine(configForm.asm68kPath.Text);
+                Console.WriteLine(configForm.AsPath.Text);
 
                 //Recreate target
                 m_Target = TargetFactory.Create(m_Config.TargetName);
@@ -1872,18 +2149,53 @@ namespace MDStudio
         {
             if(System.IO.File.Exists(filename))
             {
-                // Set project paths
-                m_ProjectFile = filename;
+                m_Project = new Project();
+                m_Project.Read(filename);
                 m_PathToProject = Path.GetDirectoryName(filename);
-                m_ProjectName = Path.GetFileNameWithoutExtension(filename);
-                m_FileToAssemble = filename;
+                // Set project paths
+                string path = $"{m_PathToProject}\\{m_Project.MainSourceFile}";
+                m_ProjectFile = filename;
+                //m_PathToProject = m_PathToProject; //Path.GetDirectoryName(filename);
+                m_ProjectName = m_Project.Name; //Path.GetFileNameWithoutExtension(filename);
+                m_FileToAssemble = path;
              
                 // Open first file
-                OpenFile(filename);
+                OpenFile(path);
 
                 // Populate tree view
                 PopulateFileView();
                 treeProjectFiles.ExpandAll();
+
+                // debugging
+                // check if map/bin files exist already
+                bool use_asm68k = m_Project.Assembler == Assembler.Asm68k ? true : false;
+                string mainFileName = Path.GetFileNameWithoutExtension(m_Project.MainSourceFile);
+
+                // need to delete some 
+                var lstFile = $"{m_PathToProject}\\" + (use_asm68k ? $"{m_Project.Name}.list" : $"{mainFileName}.lst");
+                string binaryFile = $"{m_PathToProject}\\" + (use_asm68k ? $"{m_Project.Name}.bin" : $"{mainFileName}.bin");
+                string symbolFile = $"{m_PathToProject}\\" + (use_asm68k ? $"{m_Project.Name}.symb" : $"{mainFileName}.map");
+
+                if (File.Exists(binaryFile) && File.Exists(symbolFile) && File.Exists(lstFile))
+                {
+                    // Need to initialize the symbol data before read
+                    if (m_DebugSymbols == null)
+                    {
+                        if (m_Project.Assembler == Assembler.Asm68k)
+                        {
+                            m_DebugSymbols = new Asm68kSymbols();
+                        }
+                        else
+                        {
+                            m_DebugSymbols = new AsSymbols();
+                        }
+                    }
+                    var filesToExclude = m_Project.FilesToExclude?.Select(e => $"{m_PathToProject}\\{e}".ToUpper().Replace("/", "\\"));
+                    m_DebugSymbols.Read(symbolFile, filesToExclude?.ToArray());
+
+                    m_AlreadyBuilt = true;
+                }
+
             }
         }
 
@@ -1927,7 +2239,7 @@ namespace MDStudio
                             diskContents = System.IO.File.ReadAllText(m_CurrentlyEditingFile);
                         });
 
-                        if (diskContents != codeEditor.Document.TextContent)
+                        if (diskContents != currentCodeEditor.Document.TextContent)
                         {
                         // Ask user
                         DialogResult dialogResult = MessageBox.Show(this, m_CurrentlyEditingFile + Environment.NewLine + Environment.NewLine + "This file has been modified by an another program." + Environment.NewLine + Environment.NewLine + "Do you want to reload it?", "Reload", MessageBoxButtons.YesNo);
@@ -1950,6 +2262,18 @@ namespace MDStudio
             OpenFileDialog pathSelect = new OpenFileDialog();
 
             pathSelect.Filter = "ASM|*.s;*.asm;*.68k;*.i";
+
+            if (pathSelect.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenProject(pathSelect.FileName);
+            }
+        }
+
+        private void openProjectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog pathSelect = new OpenFileDialog();
+
+            pathSelect.Filter = "Mega Drive Project|*.mdproj";
 
             if (pathSelect.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -2003,6 +2327,7 @@ namespace MDStudio
 
         private void searchSymbolsToolStripMenuItem_Click(object sender, EventArgs e)
         {
+
             SymbolView dialog = new SymbolView(this, m_DebugSymbols);
             dialog.ShowDialog(this);
         }
@@ -2035,7 +2360,8 @@ namespace MDStudio
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            m_Config.LastProject = m_ProjectFile;
+            m_Config.LastProject = m_ProjectFile;            
+
             m_Config.Save();
         }
 
@@ -2047,16 +2373,18 @@ namespace MDStudio
             {
                 try
                 {
-                    System.Diagnostics.Process proc = new System.Diagnostics.Process();
-                    proc.StartInfo.FileName = m_Config.MegaUSBPath;
-                    proc.StartInfo.WorkingDirectory = m_PathToProject + @"\";
-                    proc.StartInfo.Arguments = binaryFile;
-                    proc.StartInfo.UseShellExecute = false;
-                    proc.StartInfo.RedirectStandardOutput = true;
-                    proc.StartInfo.RedirectStandardError = true;
-                    proc.StartInfo.CreateNoWindow = true;
-                    proc.Start();
-                    proc.WaitForExit();
+                    using (System.Diagnostics.Process proc = new System.Diagnostics.Process())
+                    {
+                        proc.StartInfo.FileName = m_Config.MegaUSBPath;
+                        proc.StartInfo.WorkingDirectory = m_PathToProject + @"\";
+                        proc.StartInfo.Arguments = binaryFile;
+                        proc.StartInfo.UseShellExecute = false;
+                        proc.StartInfo.RedirectStandardOutput = true;
+                        proc.StartInfo.RedirectStandardError = true;
+                        proc.StartInfo.CreateNoWindow = true;
+                        proc.Start();
+                        proc.WaitForExit();
+                    }
                 }
                 catch
                 {
@@ -2129,7 +2457,7 @@ namespace MDStudio
 
             foreach (Marker marker in m_SearchMarkers)
             {
-                codeEditor.Document.MarkerStrategy.RemoveMarker(marker);
+                currentCodeEditor.Document.MarkerStrategy.RemoveMarker(marker);
             }
 
             m_SearchMarkers.Clear();
@@ -2138,7 +2466,7 @@ namespace MDStudio
 
             if(requestUpdate)
             {
-                codeEditor.Refresh();
+                currentCodeEditor.Refresh();
             }
         }
 
@@ -2155,12 +2483,12 @@ namespace MDStudio
                 if (search.searchString.Text.Length > 0)
                 {
                     Regex rx = new Regex(search.checkMatchCase.Checked ? search.searchString.Text : "(?i)" + search.searchString.Text);
-                    foreach (Match match in rx.Matches(codeEditor.Document.TextContent))
+                    foreach (Match match in rx.Matches(currentCodeEditor.Document.TextContent))
                     {
-                        TextLocation matchLocation = codeEditor.Document.OffsetToPosition(match.Index);
+                        TextLocation matchLocation = currentCodeEditor.Document.OffsetToPosition(match.Index);
 
                         Marker marker = new Marker(match.Index, match.Length, MarkerType.SolidBlock, Color.Orange, Color.Black);
-                        codeEditor.Document.MarkerStrategy.AddMarker(marker);
+                        currentCodeEditor.Document.MarkerStrategy.AddMarker(marker);
 
                         m_SearchMarkers.Add(marker);
                         m_SearchResults.Add(matchLocation);
@@ -2168,10 +2496,10 @@ namespace MDStudio
                         if (firstFind)
                         {
                             m_SearchIndex++;
-                            if (matchLocation.Line >= codeEditor.ActiveTextAreaControl.Caret.Line)
+                            if (matchLocation.Line >= currentCodeEditor.ActiveTextAreaControl.Caret.Line)
                             {
-                                codeEditor.ActiveTextAreaControl.Caret.Position = matchLocation;
-                                codeEditor.ActiveTextAreaControl.CenterViewOn(matchLocation.Line, -1);
+                                currentCodeEditor.ActiveTextAreaControl.Caret.Position = matchLocation;
+                                currentCodeEditor.ActiveTextAreaControl.CenterViewOn(matchLocation.Line, -1);
                                 firstFind = false;
                             }
                         }
@@ -2187,8 +2515,8 @@ namespace MDStudio
             {
                 m_SearchIndex++;
 
-                codeEditor.ActiveTextAreaControl.Caret.Position = m_SearchResults[m_SearchIndex];
-                codeEditor.ActiveTextAreaControl.CenterViewOn(m_SearchResults[m_SearchIndex].Line, -1);
+                currentCodeEditor.ActiveTextAreaControl.Caret.Position = m_SearchResults[m_SearchIndex];
+                currentCodeEditor.ActiveTextAreaControl.CenterViewOn(m_SearchResults[m_SearchIndex].Line, -1);
             }
         }
 
@@ -2198,8 +2526,8 @@ namespace MDStudio
             {
                 m_SearchIndex--;
 
-                codeEditor.ActiveTextAreaControl.Caret.Position = m_SearchResults[m_SearchIndex];
-                codeEditor.ActiveTextAreaControl.CenterViewOn(m_SearchResults[m_SearchIndex].Line, -1);
+                currentCodeEditor.ActiveTextAreaControl.Caret.Position = m_SearchResults[m_SearchIndex];
+                currentCodeEditor.ActiveTextAreaControl.CenterViewOn(m_SearchResults[m_SearchIndex].Line, -1);
             }
         }
 
@@ -2235,7 +2563,7 @@ namespace MDStudio
                     Regex rx = new Regex(search.checkMatchCase.Checked ? search.searchString.Text : "(?i)" + search.searchString.Text);
 
                     //  should do one by one ideally
-                    codeEditor.Document.TextContent = rx.Replace(codeEditor.Document.TextContent, m_ReplaceString);
+                    currentCodeEditor.Document.TextContent = rx.Replace(currentCodeEditor.Document.TextContent, m_ReplaceString);
                 }
             }
         }
@@ -2280,7 +2608,7 @@ namespace MDStudio
                 if(int.TryParse(gotoForm.textLineNumber.Text, out lineNumber))
                 {
                     //Text editor is 0-based
-                    codeEditor.ActiveTextAreaControl.Caret.Line = lineNumber - 1;
+                    currentCodeEditor.ActiveTextAreaControl.Caret.Line = lineNumber - 1;
                 }
             }
         }
@@ -2302,21 +2630,26 @@ namespace MDStudio
 
         private void ResetDocument()
         {
-            codeEditor.Document.DocumentChanged -= documentChanged;
+            if (currentCodeEditor != null)
+            {
+                currentCodeEditor.Document.DocumentChanged -= documentChanged;
 
-            m_FileToAssemble = null;
-            m_CurrentlyEditingFile = null;
-            m_Modified = false;
-            codeEditor.Document.TextContent = null;
-            m_SourceWatcher = null;
-            codeEditor.Refresh();
-            codeEditor.Document.UndoStack.ClearAll();
-            codeEditor.Document.BookmarkManager.Clear();
-            UpdateTitle();
-            treeProjectFiles.Nodes.Clear();
-            m_ProjectFiles.Clear();
+                m_FileToAssemble = null;
+                m_CurrentlyEditingFile = null;
+                m_Modified = false;
+                currentCodeEditor.Document.TextContent = null;
+                m_SourceWatcher = null;
+                currentCodeEditor.Refresh();
+                currentCodeEditor.Document.UndoStack.ClearAll();
+                currentCodeEditor.Document.BookmarkManager.Clear();
+                UpdateTitle();
+                treeProjectFiles.Nodes.Clear();
+                m_ProjectFiles?.Clear();
 
-            codeEditor.Document.DocumentChanged += documentChanged;
+                currentCodeEditor.Document.DocumentChanged += documentChanged;
+            }
+
+            DocumentTabs.TabPages.Clear();
         }
 
         private void closeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -2442,6 +2775,118 @@ namespace MDStudio
             }
 
             m_BreakpointView.Show();
+        }
+
+        private void propertiesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ProjectPropertiesView view = new ProjectPropertiesView(m_Project, m_PathToProject);
+            view.PreBuildCommands = m_Project.PreBuildScript;
+            view.PostBuildCommands = m_Project.PostBuildScript;
+            view.PostBuildRunAlways = shouldAlwaysRunPostBuildCommand;
+
+
+            if (view.ShowDialog() == DialogResult.OK)
+            {
+                m_Project.PreBuildScript = view.PreBuildCommands;
+                m_Project.PostBuildScript = view.PostBuildCommands;
+                shouldAlwaysRunPostBuildCommand = view.PostBuildRunAlways;
+            }
+            
+        }
+
+        private void saveProjectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_Project.Write(m_PathToProject);
+        }
+
+        private void memoryViewerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (m_State == State.kRunning)
+            {
+                byte[] buffer = new byte[0xFFFF];
+                m_Target.ReadMemory(0xFFFF0000, 0xFFFF, buffer);
+                m_MemoryView.SetRamMemory(buffer);
+                m_MemoryView.Show();
+            }
+        }
+
+        private void DocumentTabs_Selected(object sender, TabControlEventArgs e)
+        {
+
+            // Ignore document changed events
+            bool watchingEvents = (m_SourceWatcher == null) || m_SourceWatcher.EnableRaisingEvents;
+            m_SourceWatcher = null;
+
+            if (e.TabPage != null)
+            {
+
+                TabPage page = e.TabPage;
+                currentCodeEditor = (DigitalRune.Windows.TextEditor.TextEditorControl)page.Controls.Find(page.Text, true).First();
+                // Reset undo state
+                m_Modified = false;
+                undoMenu.Enabled = false;
+
+                // Load file
+                // since tabpages use thi
+                string file = page.Name;                               
+                m_CurrentlyEditingFile = file;
+
+                // Set title bar text
+                this.Text = "MDStudio - " + m_CurrentlyEditingFile;
+
+                // Populate known breakpoint markers
+                foreach (Breakpoint breakpoint in m_Breakpoints)
+                {
+                    if (breakpoint.line != 0 && breakpoint.filename.ToLower() == m_CurrentlyEditingFile.ToLower())
+                    {
+                        if (!currentCodeEditor.Document.BookmarkManager.IsMarked(breakpoint.line))
+                            currentCodeEditor.Document.BookmarkManager.ToggleMarkAt(new TextLocation(0, breakpoint.line));
+                    }
+                }
+
+                // Resubscribe to document changed events
+                currentCodeEditor.Document.DocumentChanged += documentChanged;
+                m_SourceWatcher = new FileSystemWatcher();
+                m_SourceWatcher.Path = Path.GetDirectoryName(m_CurrentlyEditingFile);
+                m_SourceWatcher.Filter = Path.GetFileName(m_CurrentlyEditingFile);
+                m_SourceWatcher.EnableRaisingEvents = watchingEvents;
+                m_SourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                m_SourceWatcher.Changed += m_OnFileChanged;
+
+                // Refresh
+                currentCodeEditor.Refresh();
+
+                m_SourceMode = SourceMode.Source;
+            }
+        }
+
+        private void addFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+
+            ofd.Filter = "Source (*.asm;*.s;*.i)|*.ASM;*.S;*.I|All files (*.*)|*.*";
+            ofd.Multiselect = true;
+
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {                
+                var files = m_Project.SourceFiles.ToList();
+                // get project path length
+                // need to add an extra \\ since source files shouldn't have them. 
+                int count = $"{m_PathToProject}\\".Length;
+                foreach (var file in ofd.FileNames)
+                {
+                    var filename = file.Remove(0, count);
+
+                    if (!files.Contains(filename))
+                    {
+                        files.Add(filename);
+                        m_ProjectFiles.Add(file);
+                    }
+                }
+
+                m_Project.SourceFiles = files.ToArray();
+                PopulateFileView();
+            }
         }
     }
 }

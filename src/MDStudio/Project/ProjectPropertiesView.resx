@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="label63.Text" xml:space="preserve">
+    <value>Files to Exclude - These are files you may want to exclude from debugging symbols.  Sometimes, the assembler considers macros and other fancy assembler features as address even if they are really not. </value>
+  </data>
+  <data name="label55.Text" xml:space="preserve">
+    <value>display messages about errors resp. warnings not in the AS standard format, but instead in a format similar to the GNU C compiler. This simplifies the integration of AS into environments tuned for this format, however also suppresses the display of precise error positions in macro bodies!</value>
+  </data>
+  <data name="label53.Text" xml:space="preserve">
+    <value> this switch allows to set the target processor AS shall generate code for, in case the source file does not contain a CPU instruction and is not 68008 code. If the selected target supports CPU arguments (see section 3.2.3), they may be used on the command line as well.</value>
+  </data>
+  <data name="label52.Text" xml:space="preserve">
+    <value>This switch instructs AS to to suppress all messages about out-of-branch conditions, once the necessity for another pass is given. See section 2.11 for the (rare) situations that might make use of this switch necessary.</value>
+  </data>
+  <data name="label49.Text" xml:space="preserve">
+    <value>issue warnings if situations occur that force a further pass. This information can be used to reduce the number of passes. You may optionally specify the number of the first pass where issuing of such messages shall start. Without this argument, warnings will come starting with the first pass. Be prepared for a bunch of messages!!</value>
+  </data>
+  <data name="label48.Text" xml:space="preserve">
+    <value> this switch defines whether AS should produce code or not. If switched off, the processing will be stopped after the macro processor. This switch is activated by default (logically, otherwise you would not get a code file). This switch can be used in conjunction with the P switch, if only the macro processor of AS shall be used.</value>
+  </data>
+  <data name="label47.Text" xml:space="preserve">
+    <value>If this switch is given, AS generates a file, that contains definitions of macros defined in the source file that did not use the NOEXPORT option. This new file has the same name as the source file, only the extension is modified into MAC.</value>
+  </data>
+  <data name="label46.Text" xml:space="preserve">
+    <value>Instructs AS to write the source text processed by macro processor and conditional assembly into a file. Additional blank and pure comment lines are missing in this file. The extension of this file is I.</value>
+  </data>
+  <data name="label45.Text" xml:space="preserve">
+    <value>This option switches AS to the case-sensitive mode, i.e. upper and lower case in the names of symbols, sections, macros, character sets, and user-defined functions will be distinguished. This is not the case by default.</value>
+  </data>
+  <data name="label44.Text" xml:space="preserve">
+    <value>If this option is set, the error messages will be issued additionally with their error number (see appendix A). This is primarily intended for use with shells or IDE's to make the identification of errors easier by those numbers.</value>
+  </data>
+  <data name="label43.Text" xml:space="preserve">
+    <value>Sets the level of detail for error messages. The level is increased resp. decreased by one each time this option is given. While on level 0 (default) only the error message itself is printed, an extended message is added beginning at level 1 that should simplify the identification of the error's cause. Appendix A lists which error messages carry which extended messages. At level 2 (maximum), the source line containing the error is additionally printed.</value>
+  </data>
+  <data name="label42.Text" xml:space="preserve">
+    <value>stores the list of global symbols in another, more compact form. Use this option if the assembler crashes with a stack overflow because of too long symbol tables. Sometimes this option can increase the processing speed of the assembler, but this depends on the sources.</value>
+  </data>
+  <data name="label41.Text" xml:space="preserve">
+    <value> defines symbols. The symbols which are specified behind this option and separated by commas are written to the global symbol table before starting the assembly. As default these symbols are written as integer numbers with the value TRUE, by means of an appended equal sign, however, you can select other values. The expression following the equals sign may include operators or internal functions, but not any further symbols, even if these should have been defined before in the list! Together with the commands for conditional assembly (see there) you may produce different program versions out of one source file by command line inputs. CAUTION! If the case-sensitive mode is used, this has to be specified in the command line before any symbol definitions, otherwise symbol names will be converted to upper case at this place!</value>
+  </data>
+  <data name="label40.Text" xml:space="preserve">
+    <value>by means of this switch it is possible to separate single components of the standard issued assembler-listing. The assignment of bits to parts can be found in the next section, where the exact format of the assembly listing is explained.</value>
+  </data>
+  <data name="label38.Text" xml:space="preserve">
+    <value>generates a list of cross references. It lists which (global) symbols are used in files and lines. This list will also be generated only in case a listing is produced. This option occupies, too, additional memory capacity during assembly.</value>
+  </data>
+  <data name="label37.Text" xml:space="preserve">
+    <value>calculate a list of areas which are occupied in the segments. This option is effective only in case a listing is produced. This option requires considerable additional memory and computing performance. In normal operation it should be switched off.</value>
+  </data>
+  <data name="label36.Text" xml:space="preserve">
+    <value>issues a list of directories where the assembler shall automatically search for include files, in case it didn't find a file in the current directory. The different directories have to be separated by semicolons.</value>
+  </data>
+  <data name="label20.Text" xml:space="preserve">
+    <value>This switch suppresses all messages of AS, the exceptions are error messages and outputs which are are forced from the source file. The time needed for assembly is slightly reduced hereby and if you call AS from a shell there is no redirection required. The disadvantage is that you may ''stay in the dark'' for several minutes ... It is valid to write quiet instead of q.</value>
+  </data>
+  <data name="label21.Text" xml:space="preserve">
+    <value>error messages and warnings produced by AS will be redirected to a file. Instead of a file, the 5 standard handles (STDIN..STDPRN) can also be specified as !0 to !4 . Default is !2, meaning STDERR. If the file option is left out, the name of the error file is the same as of the source file, but with the extension LOG.</value>
+  </data>
+  <data name="label23.Text" xml:space="preserve">
+    <value>This switch instructs AS to create an additional file that contains debug information for the program. Allowed formats are the AS-specific MAP format ( format=MAP), a NoICE-compatible command file ( format=NOICE), and the Atmel format used by the AVR tools  ( format=ATMEL). The information stored in the MAP format is comprised of a symbol table and a table describing the assignment of source lines to machine addresses. A more detailed description of the MAP format can be found in section 5.2 The file's extension is MAP, NOI, resp. OBJ, depending on the chosen format. If no explicit format specification is done, the MAP format is chosen.</value>
+  </data>
+  <data name="label28.Text" xml:space="preserve">
+    <value>Sets the new name of the code file generated by AS. If this option is used multiple times, the names will be assigned, one after the other, to the source files which have to be assembled. A negation (see below) of this option in connection with a name erases this name from the list. A negation without a name erases the whole list.</value>
+  </data>
+  <data name="label29.Text" xml:space="preserve">
+    <value>Display numbers in the listing in byte groups, separated by the given character. A period is used as separator if no explicit character is given. This option is usually used in conjunction with the LISTRADIX option. For instance, list radix 8 with a period as character results in the so-called 'split octal' notation.</value>
+  </data>
+  <data name="label30.Text" xml:space="preserve">
+    <value>By default, all numeric output in the listing (addresses, generated code, symbol values) is written in hexadecimal notation. This switch requests usage of a different number system in the range of 2 to 36. For instance, '-listradix 8' requests octal output.</value>
+  </data>
+</root>

@@ -9,7 +9,6 @@
   </Properties>
 
   <Digits name = "Digits" bold = "false" italic = "false" color = "DarkRed"/>
-
   <RuleSets>
     <RuleSet ignorecase = "true">
       <Delimiters>~!%^*()-+=|\/{}[]:;"'&lt;&gt; , .?</Delimiters>
@@ -33,33 +32,76 @@
       </KeyWords>
 
        <KeyWords name = "Instructions" bold="false" italic="false" color="Blue">
-         <Key word = "dc" />
-         <Key word = "tst" />
-         <Key word = "move" />
-         <Key word = "bsr" />
          <Key word = "add" />
-         <Key word = "jmp" />
-         <Key word = "dbf" />
-         <Key word = "stop" />
-         <Key word = "bne" />
+		 <Key word = "addi" />
+		 <Key word = "adda" />
          <Key word = "addq" />
-         <Key word = "rte" />
-         <Key word = "rts" />
-         <Key word = "cmpi" />
-         <Key word = "beq" />
-         <Key word = "lea" />
+         <Key word = "and" />
          <Key word = "andi" />
+		 <Key word = "asl" />
+		 <Key word = "asr" />
+         <Key word = "beq" />
+         <Key word = "bne" />
+		 <Key word = "bge" />
+		 <Key word = "bgt" />
+		 <Key word = "ble" />
+		 <Key word = "blo" />
+		 <Key word = "bls" />
+		 <Key word = "blt" />
+		 <Key word = "bcs" />
+		 <Key word = "bcc" />
+		 <Key word = "bhi" />
+		 <Key word = "bhs" />
+		 <Key word = "bmi" />
+		 <Key word = "bpl" />
+		 <Key word = "bra" />
+         <Key word = "bsr" />
+		 <Key word = "bclr" />
+         <Key word = "bset" />
+         <Key word = "btst" />
+         <Key word = "clr" />
+         <Key word = "cmp" />
+         <Key word = "cmpa" />
+         <Key word = "cmpi" />
+         <Key word = "dbf" />
+         <Key word = "dbne" />
+         <Key word = "dc" />
+         <Key word = "div" />
+		 <Key word = "eor" />
+		 <Key word = "eori" />
+		 <Key word = "exg" />
+		 <Key word = "ext" />
+		 <Key word = "jmp" />
+		 <Key word = "jsr" />
+         <Key word = "lea" />
          <Key word = "lsl" />
          <Key word = "lsr" />
+         <Key word = "move" />
+		 <Key word = "movea" />
          <Key word = "movem" />
-         <Key word = "and" />
          <Key word = "moveq" />
          <Key word = "mulu" />
-         <Key word = "cmp" />
-         <Key word = "btst" />
+         <Key word = "muls" />
+		 <Key word = "neg" />
+		 <Key word = "nop" />
+		 <Key word = "not" />
+		 <Key word = "or" />
+		 <Key word = "ori" />
+		 <Key word = "sgt" />
+		 <Key word = "sle" />
+		 <Key word = "smi" />
+		 <Key word = "st" />
+		 <Key word = "swap" />
+		 <Key word = "rol" />
+		 <Key word = "ror" />
+		 <Key word = "rs" />
+         <Key word = "rte" />
+         <Key word = "rts" />
+         <Key word = "stop" />
          <Key word = "sub" />
-         <Key word = "rs" />
-         <Key word = "clr" />
+		 <Key word = "subi" />
+		 <Key word = "subq" />
+         <Key word = "tst" />
       </KeyWords>
 
       <KeyWords name = "Registers" bold="false" italic="false" color="Red">

@@ -23,7 +23,7 @@ namespace MDStudio
             List<SymbolEntry> Symbols { get; }
             uint GetAddress(string filename, int lineNumber);
             Tuple<string, int, int> GetFileLine(uint address);
-            bool Read(string filename);
+            bool Read(string filename, string[] filesToExclude);
         }
 
         public class AsSymbols : ISymbols
@@ -83,7 +83,7 @@ namespace MDStudio
                 }
             }
 
-            public bool Read(string filename)
+            public bool Read(string filename,string[] filesToExclude = null)
             {
                 // clear symbol information first
                 Clear();
@@ -131,7 +131,7 @@ namespace MDStudio
                     foreach (var data in filenameSection)
                     {
                         string[] segmentdata = data.Split('\n', '\r');
-                        currentLine = ReadFilenameData(segmentdata, currentLine);
+                        currentLine = ReadFilenameData(segmentdata, currentLine, filesToExclude);
                     }
 
                     // parse through the symbol data
@@ -198,7 +198,7 @@ namespace MDStudio
                 return currentLine;
             }
 
-            private int ReadFilenameData(string[] data, int currentLine)
+            private int ReadFilenameData(string[] data, int currentLine, string[] filesToExclude)
             {
                 int currentIndex = 0;
                 FilenameSection filenameSection = new FilenameSection();
@@ -219,7 +219,13 @@ namespace MDStudio
                     {                        
 
                         int fileIndex = line.IndexOf(' ') + 1;
-                        string filename = line.Substring(fileIndex).ToUpper();
+                        string filename = line.Substring(fileIndex).ToUpper().Replace("/","\\");
+
+                        if (filesToExclude != null && filesToExclude.Contains(filename))
+                        {
+                            return currentLine;
+                        }
+
                         int sectionIdx = FilenameSections.FindIndex(element => element.Filename == filename);
                         if (sectionIdx >= 0)
                         {
@@ -389,7 +395,7 @@ namespace MDStudio
                 return length;
             }
 
-            public bool Read(string filename)
+            public bool Read(string filename, string[] filesToExclude = null)
             {
                 //try
                 {

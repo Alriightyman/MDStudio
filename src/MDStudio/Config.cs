@@ -15,10 +15,8 @@ namespace MDStudio
         public string TargetName { get; set; }
 
         [XmlElement("AssemblerPath")]
-        public string AssemblerPath { get; set; }
-        public string P2BinPath { get; set; }
-        public bool UseASM68K { get; set; }
-        public string AssemblerArgs { get; set; }
+        public string AsPath { get; set; }
+        public string Asm68kPath { get; set; }
         public string[] AssemblerIncludePaths { get; set; }
         public int EmuResolution { get; set; }
         public int EmuRegion { get; set; }
@@ -65,16 +63,14 @@ namespace MDStudio
                         config = (Config)xs.Deserialize(sr);
 
                         TargetName = config.TargetName;
-                        AssemblerPath = config.AssemblerPath;
-                        UseASM68K = config.UseASM68K;
-                        AssemblerArgs = config.AssemblerArgs;
+                        Asm68kPath = config.Asm68kPath;
+                        AsPath = config.AsPath;
                         AssemblerIncludePaths = config.AssemblerIncludePaths;
                         EmuResolution = config.EmuResolution;
                         EmuRegion = config.EmuRegion;
                         Pal = config.Pal;
                         AutoOpenLastProject = config.AutoOpenLastProject;
                         LastProject = config.LastProject;
-
                         KeycodeUp = config.KeycodeUp;
                         KeycodeDown = config.KeycodeDown;
                         KeycodeLeft = config.KeycodeLeft;
@@ -85,7 +81,6 @@ namespace MDStudio
                         KeycodeStart = config.KeycodeStart;
 
                         MegaUSBPath = config.MegaUSBPath;
-                        P2BinPath = config.P2BinPath;
                         sr.Close();
                     }
                     catch (Exception e)

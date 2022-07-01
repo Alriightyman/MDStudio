@@ -28,20 +28,38 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.m_ByteViewer = new System.ComponentModel.Design.ByteViewer();
             this.SuspendLayout();
+            // 
+            // m_ByteViewer
+            // 
+            this.m_ByteViewer.CellBorderStyle = System.Windows.Forms.TableLayoutPanelCellBorderStyle.Inset;
+            this.m_ByteViewer.ColumnCount = 1;
+            this.m_ByteViewer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.m_ByteViewer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.m_ByteViewer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.m_ByteViewer.Location = new System.Drawing.Point(0, 0);
+            this.m_ByteViewer.Name = "m_ByteViewer";
+            this.m_ByteViewer.RowCount = 1;
+            this.m_ByteViewer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.m_ByteViewer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.m_ByteViewer.Size = new System.Drawing.Size(591, 419);
+            this.m_ByteViewer.TabIndex = 1;
+            this.m_ByteViewer.MouseHover += new System.EventHandler(this.m_ByteViewer_MouseHover);
             // 
             // MemoryView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(591, 419);
+            this.Controls.Add(this.m_ByteViewer);
             this.Name = "MemoryView";
             this.Text = "MemoryView";
-            this.Load += new System.EventHandler(this.MemoryView_Load);
             this.ResumeLayout(false);
 
         }
-
+        
         #endregion
+        private System.ComponentModel.Design.ByteViewer m_ByteViewer;
     }
 }
