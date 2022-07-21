@@ -52,6 +52,9 @@
   <PropertyGroup>
     <ApplicationIcon>mdstudio_mjd_icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -97,6 +100,12 @@
     </Compile>
     <Compile Include="CRamViewer.Designer.cs">
       <DependentUpon>CRamViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Debug\VdpPatternView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Debug\VdpPatternView.Designer.cs">
+      <DependentUpon>VdpPatternView.cs</DependentUpon>
     </Compile>
     <Compile Include="DGenThread.cs" />
     <Compile Include="Endian.cs" />
@@ -169,6 +178,16 @@
     <Compile Include="TargetDGen.cs" />
     <Compile Include="TargetFactory.cs" />
     <Compile Include="TargetTitan.cs" />
+    <Compile Include="Themes\Theme.cs" />
+    <Compile Include="Tools\SoundOptions.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\SoundOptions.Designer.cs">
+      <DependentUpon>SoundOptions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MDTabControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="VDPRegs.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -201,6 +220,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="CRamViewer.resx">
       <DependentUpon>CRamViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Debug\VdpPatternView.resx">
+      <DependentUpon>VdpPatternView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GoToForm.resx">
       <DependentUpon>GoToForm.cs</DependentUpon>
@@ -242,6 +264,9 @@
     <EmbeddedResource Include="SymbolView.resx">
       <DependentUpon>SymbolView.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Tools\SoundOptions.resx">
+      <DependentUpon>SoundOptions.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="VDPRegs.resx">
       <DependentUpon>VDPRegs.cs</DependentUpon>
     </EmbeddedResource>
@@ -251,6 +276,7 @@
     <EmbeddedResource Include="WatchView.resx">
       <DependentUpon>WatchView.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -295,6 +321,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

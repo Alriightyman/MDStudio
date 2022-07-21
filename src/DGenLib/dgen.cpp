@@ -45,6 +45,7 @@ static struct sndinfo	sndi;
 static struct bmap		mdscr;
 
 sdl::Gamepad* g_sdlGamepad = NULL;
+bool useGamepad = false;
 
 /// Circular buffer and related functions.
 typedef struct
@@ -160,9 +161,10 @@ void DGenAudioCallback(void *userdata, Uint8 * stream, int len)
 	}
 }
 
-int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region)
+int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region, int use_gamepad)
 {
  	s_DGenInstance = new md(pal, region);
+	useGamepad = use_gamepad;
 
 	//	Init SDL
  	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
@@ -195,7 +197,7 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 
 	// Init audio
 	g_AudioSpec.channels = 2;
-	g_AudioSpec.samples = dgen_soundsamples;
+	g_AudioSpec.samples = 512; // dgen_soundsamples;
 	g_AudioSpec.size = 0;
 	g_AudioSpec.freq = dgen_soundrate;
 	g_AudioSpec.callback = DGenAudioCallback;
@@ -206,7 +208,7 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 #else
 	g_AudioSpec.format = AUDIO_S16LSB;
 #endif
-
+	
 	if(int audioResult = SDL_OpenAudio(&g_AudioSpec, &g_AudioSpec) < 0)
 	{
 		printf("SDL_OpenAudio() failed with 0x%08x", audioResult);
@@ -395,11 +397,18 @@ unsigned long pd_usecs(void)
  */
 void	ProcessInputs()
 {
-	if (g_sdlGamepad)
+	// TODO: Handle both controller and keyboard inputs to be used at the same time. 
+
+	SDL_Event event;
+	// process gamepad first and then handle
+	// keyboard input - this way, we can use both
+	// at the same time. 
+	if (g_sdlGamepad && useGamepad)
 	{
-		SDL_Event event;
+		// process events
 		while (SDL_PollEvent(&event)) {}
 
+		// handle gampad input
 		g_sdlGamepad->Poll();
 
 		int buttonOffMask = ~0;
@@ -416,9 +425,8 @@ void	ProcessInputs()
 	}
 	else
 	{
-		SDL_Event event;
-
-		const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+		// do keyboard processing here
+		const Uint8* keystate = SDL_GetKeyboardState(NULL);
 
 		while (SDL_PollEvent(&event))
 		{
@@ -619,7 +627,11 @@ int Break()
 
 int IsDebugging()
 {
-	return s_DGenInstance->debug_trap;
+	if (s_DGenInstance)
+	{
+		return s_DGenInstance->debug_trap;
+	}
+	return false;
 }
 
 unsigned int* GetProfilerResults(int* instructionCount)
@@ -712,11 +724,22 @@ int GetPaletteEntry(int i)
 }
 
 unsigned char GetVDPRegisterValue(int index)
-{
+{	
 	return s_DGenInstance->vdp.reg[index];
 }
 
 unsigned int Disassemble(unsigned int address, char* text)
 {
 	return s_DGenInstance->debug_m68k_disassemble(address, text);
+}
+
+unsigned char* GetVRAM()
+{
+	unsigned char* vram = s_DGenInstance->vdp.vram;
+	return vram;
+}
+
+void SetVolume(int vol)
+{
+	dgen_volume = vol;
 }

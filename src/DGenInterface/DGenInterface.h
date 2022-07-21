@@ -50,7 +50,7 @@ namespace DGenInterface {
 		DGen();
 		~DGen();
 
-		int		Init(int windowWidth, int windowHeight, IntPtr hwnd, bool pal, char region);
+		int		Init(int windowWidth, int windowHeight, IntPtr hwnd, bool pal, char region, bool useGamepad);
 		void	SetWindowPosition(int x, int y);
 		int		GetWindowXPosition();
 		int		GetWindowYPosition();
@@ -100,5 +100,10 @@ namespace DGenInterface {
 		unsigned char	GetVDPRegisterValue(int index);
 
 		unsigned int Disassemble(unsigned int address, char* text);
+
+		void SetVolume(int vol);
+
+		unsigned char* GetVRAM();
+
 	};
 }

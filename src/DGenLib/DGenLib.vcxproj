@@ -20,13 +20,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -47,7 +47,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>VDP_H56_MODE=1;VRAM_128KB=1;WITH_MUSA;WITH_CZ80;WITH_DEBUGGER;WITH_PROFILER;_CRT_SECURE_NO_WARNINGS;NO_COMPLETION;_DZ80_EXCLUDE_SCRIPT;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VDP_H56_MODE=0;VRAM_128KB=1;WITH_MUSA;WITH_CZ80;WITH_DEBUGGER;WITH_PROFILER;_CRT_SECURE_NO_WARNINGS;NO_COMPLETION;_DZ80_EXCLUDE_SCRIPT;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\3rdParty\SDL2-2.0.12\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
