@@ -660,7 +660,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if (saveFileCommand == null)
                 {
-                    saveFileCommand = new RelayCommand((p) => OnSave(), (p) => true);
+                    saveFileCommand = new RelayCommand((p) => OnSave(), (p) => ActiveDocument != null);
                 }
 
                 return saveFileCommand;
@@ -673,7 +673,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if (saveAllCommand == null)
                 {
-                    saveAllCommand = new RelayCommand((p) => OnSaveAll(), (p) => true);
+                    saveAllCommand = new RelayCommand((p) => OnSaveAll(), (p) => files.Count > 0);
                 }
 
                 return saveAllCommand;
@@ -699,7 +699,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if(openProjectPropertiesWindowCommand == null)
                 {
-                    openProjectPropertiesWindowCommand = new RelayCommand((p) => OnOpenProjectProperties());
+                    openProjectPropertiesWindowCommand = new RelayCommand((p) => OnOpenProjectProperties(), (p) => IsSolutionLoaded);
                 }
                 return openProjectPropertiesWindowCommand;
             }
@@ -1130,6 +1130,12 @@ namespace MDStudioPlus.ViewModels
 
         internal void OnSolutionClose()
         {
+            var allFiles = files.ToList();
+            foreach(var file in allFiles)
+            {
+                Close(file);
+            }
+            files.Clear();
             solution = null;
             IsSolutionLoaded = false;
             SolutionName = "No Project Loaded";            
@@ -1650,10 +1656,12 @@ namespace MDStudioPlus.ViewModels
 
         private void OnOpenProjectProperties()
         {
-            
-            ProjectPropertiesView view = new ProjectPropertiesView() { DataContext = new ProjectPropertiesViewModel(solution.CurrentlySelectedProject) };
-            view.ShowDialog();
-            solution.CurrentlySelectedProject.Save();
+            if (isSolutionLoaded)
+            {
+                ProjectPropertiesView view = new ProjectPropertiesView() { DataContext = new ProjectPropertiesViewModel(solution.CurrentlySelectedProject) };
+                view.ShowDialog();
+                solution.CurrentlySelectedProject.Save();
+            }
         }
 
         #region Build Command Methods

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace MDStudioPlus.Controls
@@ -20,7 +21,7 @@ namespace MDStudioPlus.Controls
         {
             base.OnTextChanged(e);
             CaretIndex = Text.Length;
-            ScrollToEnd();
+            Application.Current.Dispatcher.BeginInvoke(new Action(() => ScrollToEnd()));
         }
     }
 }

@@ -44,7 +44,6 @@
         <KeyBinding Key="Pause" Modifiers="Ctrl+Shift" Command="{Binding BreakAllCommand}"/>
         <KeyBinding Key="F10" Command="{Binding StepOverCommand}"/>
         <KeyBinding Key="F11" Command="{Binding StepIntoCommand}"/>
-        
     </Window.InputBindings>
 
     <Grid>
@@ -696,32 +695,46 @@
                             <Border>
                                 <TreeView ItemsSource="{Binding DirectoryItems}">
                                     <TreeView.Resources>
+                                        <ContextMenu x:Key="ProjectContextMenu">
+                                            <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
+                                            <MenuItem Header="Open Existing File..." Command="{Binding AddExistingFileCommand}"/>
+                                            <MenuItem Header="Add Folder"/>
+                                        </ContextMenu>
+                                        <ContextMenu x:Key="FileContextMenu">
+                                            <MenuItem Header="Open" IsEnabled="False"/>
+                                            <MenuItem Header="Exclude From Debugger" IsEnabled="False"/>
+                                        </ContextMenu>
+                                        <ContextMenu x:Key="DirectoryContextMenu">
+                                            <MenuItem Header="Add New File..."/>
+                                            <MenuItem Header="Open Existing File..."/>
+                                            <MenuItem Header="Add Folder"/>
+                                        </ContextMenu>
                                         <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItem}"
                                                                   ItemsSource="{Binding Items}">
-                                            <StackPanel Orientation="Horizontal">
+                                            <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
                                                 <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
                                                 <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
-                                            </StackPanel>
+                                            </DockPanel>
                                         </HierarchicalDataTemplate>
                                         <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItem}"
-                                                                    ItemsSource="{Binding Items}">
-                                            <StackPanel Orientation="Horizontal">
+                                                                  ItemsSource="{Binding Items}">
+                                            <DockPanel>
                                                 <Image Source="pack://application:,,,/Resources/SolutionIcon.png" Width="16" Height="16"/>
                                                 <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
-                                            </StackPanel>
+                                            </DockPanel>
                                         </HierarchicalDataTemplate>
                                         <HierarchicalDataTemplate DataType="{x:Type fileexplorer:ProjectItem}"
                                                                     ItemsSource="{Binding Items}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Source="pack://application:,,,/Resources/ProjectIcon.png" Width="16" Height="16"/>
-                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
-                                            </StackPanel>
+                                            <DockPanel ContextMenu="{StaticResource ProjectContextMenu}">
+                                                <Image Source="pack://application:,,,/Resources/ProjectIcon.png" Width="16" Height="16" DockPanel.Dock="Left"/>
+                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" DockPanel.Dock="Left"/>
+                                            </DockPanel>
                                         </HierarchicalDataTemplate>
                                         <DataTemplate DataType="{x:Type fileexplorer:FileItem}">
-                                            <StackPanel Orientation="Horizontal">
+                                            <DockPanel ContextMenu="{StaticResource FileContextMenu}" >
                                                 <Image Source="pack://application:,,,/Resources/FileIcon.png" Width="16" Height="16"/>
                                                 <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" />
-                                            </StackPanel>
+                                            </DockPanel>
                                         </DataTemplate>
                                     </TreeView.Resources>
                                     <TreeView.ItemContainerStyle>

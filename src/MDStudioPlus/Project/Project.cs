@@ -121,7 +121,7 @@ namespace MDStudioPlus
                 files.Add($"{ProjectPath}\\{MainSourceFile}");
                 foreach (var file in SourceFiles)
                 {
-                    files.Add($"{ProjectPath}\\{file}");
+                    files.Add($"{ProjectPath}\\{file}".ToLower());
                 }
             }
             else

@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace MDStudioPlus.ViewModels
 {
-    internal class ExplorerViewModel : ToolViewModel
+    public class ExplorerViewModel : ToolViewModel
     {
         #region Event Handlers
         public event SelectedItemEventHandler OnSelectedItemChanged;
@@ -133,15 +133,15 @@ namespace MDStudioPlus.ViewModels
             var currentDir = solution.SolutionPath;
             int projectCount = solution.Projects.Count;
             // set up name for solution
-            var solutionItem = new SolutionItem() { Name = $"Solution '{solution.Name}' ({projectCount} projects)", Path = solution.FullPath };
-            solutionItem.Items = new List<Item>();
+            var solutionItem = new SolutionItem() { Name = $"Solution '{solution.Name}' ({projectCount} projects)", Path = solution.FullPath, Explorer=this };
+            solutionItem.Items = new ObservableCollection<Item>();
             solutionItem.OnSelectedItemChanged -= OnSelectedItem;
             solutionItem.OnSelectedItemChanged += OnSelectedItem;
             // go through each project
             foreach (var project in solution.Projects)
             {
                 // create a new project tree item
-                var projectItem = new ProjectItem() { Name = project.Name, Path = project.FullPath, Parent=solutionItem };
+                var projectItem = new ProjectItem(project) { Name = project.Name, Path = project.FullPath, Parent=solutionItem, Explorer = this };
                 projectItem.OnSelectedItemChanged -= OnSelectedItem;
                 projectItem.OnSelectedItemChanged += OnSelectedItem;
                 // get all of the files in this project and sort
@@ -155,56 +155,89 @@ namespace MDStudioPlus.ViewModels
                     var directory = Path.GetDirectoryName(file);
                     // get the filename of the file
                     var filename = Path.GetFileName(file);
-                    
-                    // determine if the directory exists
-                    var directoryItem = projectItem.Items.Where(i => i is DirectoryItem && i.Name == directory).FirstOrDefault() as DirectoryItem;
-                    // also, no point if there is no directory
-                    if (directoryItem == null && directory != string.Empty)
+
+                    // only bother if the file doesn't exist
+                    var existingFileItem = projectItem.Items.Where(i => i is FileItem && i.Name.ToLower() == filename.ToLower()).FirstOrDefault();
+                    if (existingFileItem == null)
                     {
-                        var dir = directory != string.Empty ? $"{directory}\\" : "";
-                        var fullDirpath = $"{currentDir}\\{dir}";
-                        directoryItem = new DirectoryItem() { Name = directory, Path = fullDirpath, Parent=projectItem };
-                        directoryItem.OnSelectedItemChanged -= OnSelectedItem;
-                        directoryItem.OnSelectedItemChanged += OnSelectedItem;
-                        projectItem.Items.Add(directoryItem);
+                        foreach (var item in projectItem.Items)
+                        {
+                            if (item is DirectoryItem directoryItem)
+                            {
+                                existingFileItem = directoryItem.Items.Where(i => i is FileItem && i.Name.ToLower() == filename.ToLower()).FirstOrDefault() as FileItem;
+                                if (existingFileItem != null)
+                                    break;
+                            }
+                        }
                     }
 
-                    // create the file and add it to the directory (if it exists)
-                    // otherwise, add it to the project
-                    var fileItem = new FileItem() { Name = filename, Path = $"{project.ProjectPath}\\{file}" };
-                    fileItem.OnSelectedItemChanged -= OnSelectedItem;
-                    fileItem.OnSelectedItemChanged += OnSelectedItem;
-                    if (directory != string.Empty)
+                    if (existingFileItem == null)
                     {
-                        fileItem.Parent = directoryItem;
-                        directoryItem.Items.Add(fileItem);
-                    }
-                    else
-                    {
-                        fileItem.Parent = projectItem;
-                        projectItem.Items.Add(fileItem);
+
+                        DirectoryItem directoryItem = null;
+                        // TODO: Check multiple Directories..
+                        string[] directories = directory.Split('\\');
+                        DirectoryItem possibleParent = null;
+
+                        foreach (var dir in directories)
+                        {
+                            // determine if the directory exists
+                            directoryItem = projectItem.Items.Where(i => i is DirectoryItem && i.Name.ToLower() == dir.ToLower()).FirstOrDefault() as DirectoryItem;
+
+                            // 
+                            if (directoryItem == null)
+                            {
+                                foreach(var item in projectItem.Items)
+                                {
+                                    if (item is DirectoryItem dirItem)
+                                    {
+                                        directoryItem = FindDirectory(dirItem, dir);
+                                    }
+                                }
+                            }
+
+                            // also, no point if there is no directory
+                            if (directoryItem == null && directory != string.Empty)
+                            {
+                                var dirAdjustment = dir != string.Empty ? $"{dir}\\" : "";
+                                var fullDirpath = $"{currentDir}\\{dirAdjustment}";
+                                directoryItem = new DirectoryItem() { Name = dir.ToLower(), Path = fullDirpath.ToLower(), Parent = (possibleParent ?? projectItem), Explorer = this };
+                                directoryItem.OnSelectedItemChanged -= OnSelectedItem;
+                                directoryItem.OnSelectedItemChanged += OnSelectedItem;
+                                if (possibleParent != null)
+                                {
+                                    possibleParent.Items.Add(directoryItem);
+                                }
+                                else
+                                {
+                                    projectItem.Items.Add(directoryItem);
+                                }                                
+                            }
+
+                            possibleParent = directoryItem as DirectoryItem;
+                        }
+
+                        // create the file and add it to the directory (if it exists)
+                        // otherwise, add it to the project
+                        var fileItem = new FileItem() { Name = filename, Path = $"{project.ProjectPath}\\{file}" };
+                        fileItem.OnSelectedItemChanged -= OnSelectedItem;
+                        fileItem.OnSelectedItemChanged += OnSelectedItem;
+                        if (directory != string.Empty)
+                        {
+                            fileItem.Parent = directoryItem;
+                            directoryItem.Items.Add(fileItem);
+                        }
+                        else
+                        {
+                            fileItem.Parent = projectItem;
+                            projectItem.Items.Add(fileItem);
+                        }                        
                     }
                 }
 
                 // add the project to the solution
-                ((List<Item>)projectItem.Items).Sort(
-                    delegate (Item p1, Item p2)
-                    {
-                        bool p1Dir = p1 is DirectoryItem;
-                        bool p2Dir = p2 is DirectoryItem;
-                        if (p1Dir && !p2Dir)
-                        {
-                            return -1;
-                        }
-                        else if (!p1Dir && p2Dir)
-                        {
-                            return 1;
-                        }
-                        else
-                        {
-                            return 0;
-                        }
-                    });
+                List<Item> projectList = Sort(projectItem.Items.ToList());
+                projectItem.Items = new ObservableCollection<Item>(projectList);
                 solutionItem.Items.Add(projectItem);
             }
 
@@ -214,8 +247,48 @@ namespace MDStudioPlus.ViewModels
            
         }
 
+        // sort the directory items in the hierarchy
+        private List<Item> Sort(List<Item> listItems)
+        {
+            var sortedList = listItems.OrderByDescending(x => x.GetType() == typeof(DirectoryItem)).ThenBy(z => z.Name).ToList();
+
+            foreach(var item in sortedList)
+            {
+                if(item is DirectoryItem directoryItem)
+                {
+                    directoryItem.Items = new ObservableCollection<Item>(Sort(directoryItem.Items.ToList()));
+                }
+            }
+
+            return sortedList;
+        }
+
+        private DirectoryItem FindDirectory(DirectoryItem directoryItem, string name)
+        {
+            if (directoryItem == null)
+                return null;
+
+            if(directoryItem.Name == name)
+                return directoryItem;
+
+            DirectoryItem foundDirectoryItem = null;
+
+            foreach (Item item in directoryItem.Items)
+            {
+                if (item is DirectoryItem dirItem)
+                {
+                    foundDirectoryItem = FindDirectory(dirItem, name);
+
+                    if(foundDirectoryItem != null)
+                        return foundDirectoryItem;
+                }
+            }
+
+            return null;
+        }
+
         #region Events
-        private void OnSelectedItem(object sender, SelectedItemEventArgs e)
+        public void OnSelectedItem(object sender, SelectedItemEventArgs e)
         {
             SelectedItem = e.SelectedItem;
 

@@ -35,7 +35,11 @@ namespace MDStudioPlus
         public List<Project> Projects { get; private set; } = new List<Project>();
 
         [XmlIgnore]
-        public Project CurrentlySelectedProject { get; set; }
+        public Project CurrentlySelectedProject 
+        { 
+            get; 
+            set; 
+        }
 
         [XmlIgnore]
         public string BinaryPath { get; private set; }

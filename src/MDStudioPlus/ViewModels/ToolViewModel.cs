@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MDStudioPlus.ViewModels
 {
-    internal class ToolViewModel : PaneViewModel
+    public class ToolViewModel : PaneViewModel
     {
         #region fields
         private bool isVisible = true;

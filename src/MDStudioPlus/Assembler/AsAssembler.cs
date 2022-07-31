@@ -11,7 +11,7 @@ namespace MDStudioPlus
                             : base(project, assemblerPath)
         {
         }
-        // "D:\\Dev\\s2disasm\\win32\\as\\asw.exe"
+
         protected override void Build(Process process)
         {
             process.StartInfo.FileName = AssemblerPath;
