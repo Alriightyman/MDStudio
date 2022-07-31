@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -17,6 +15,9 @@ using MDStudioPlus.Editor.BookMarks;
 
 namespace MDStudioPlus.Editor
 {
+    public delegate void BreakPointAddedEventHandler(object sender, BookmarkEventArgs e);
+    public delegate void BreakPointRemovedEventHandler(object sender, BookmarkEventArgs e);
+
     /// <summary>
     /// Icon bar: contains breakpoints and other icons.
     /// </summary>
@@ -25,21 +26,33 @@ namespace MDStudioPlus.Editor
         readonly IBookmarkMargin manager;
         readonly MouseHoverLogic hoverLogic;
 
+        public event BreakPointAddedEventHandler onBreakPointAdded;
+        public event BreakPointRemovedEventHandler onBreakPointRemoved;
+        public event BreakPointAddedEventHandler onBreakPointBeforeAdded;
+        public event BreakPointRemovedEventHandler onBreakPointBeforeRemoved;
+        public event BreakPointRemovedEventHandler onBreakPointAfterAdded;
+
         static IconBarMargin()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(IconBarMargin),
                                                      new FrameworkPropertyMetadata(typeof(IconBarMargin)));
         }
 
-
         public IconBarMargin(IBookmarkMargin manager)
         {            
             if (manager == null)
                 throw new ArgumentNullException("manager");
+
             BookmarkManager.Instance.BookmarkRemoved -= Instance_BookmarkRemoved;
             BookmarkManager.Instance.BookmarkAdded -= Instance_BookmarkAdded;
+            BookmarkManager.Instance.BookmarkBeforeRemoved -= Instance_BookmarkRemoved;
+            BookmarkManager.Instance.BookmarkBeforeAdded -= Instance_BookmarkAdded;
             BookmarkManager.Instance.BookmarkRemoved += Instance_BookmarkRemoved;
             BookmarkManager.Instance.BookmarkAdded += Instance_BookmarkAdded;
+            BookmarkManager.Instance.BookmarkBeforeRemoved += Instance_BookmarkBeforeRemoved;
+            BookmarkManager.Instance.BookmarkBeforeAdded += Instance_BookmarkBeforeAdded;
+            BookmarkManager.Instance.BookmarkAfterAdded -= Instance_BookmarkAfterAdded;
+            BookmarkManager.Instance.BookmarkAfterAdded += Instance_BookmarkAfterAdded;
 
             this.manager = manager;
             this.hoverLogic = new MouseHoverLogic(this);
@@ -48,14 +61,31 @@ namespace MDStudioPlus.Editor
             this.Unloaded += OnUnloaded;
         }
 
+        private void Instance_BookmarkAfterAdded(object sender, BookmarkEventArgs e)
+        {
+            onBreakPointAfterAdded?.Invoke(sender, e);
+        }
+
+        private void Instance_BookmarkBeforeAdded(object sender, BookmarkEventArgs e)
+        {
+            onBreakPointBeforeAdded?.Invoke(sender, e);
+        }
+
+        private void Instance_BookmarkBeforeRemoved(object sender, BookmarkEventArgs e)
+        {
+            onBreakPointBeforeRemoved?.Invoke(sender, e);
+        }
+
         private void Instance_BookmarkAdded(object sender, BookmarkEventArgs e)
         {
             manager.Bookmarks.Add(e.Bookmark);
+            onBreakPointAdded?.Invoke(sender, e);
         }
 
         private void Instance_BookmarkRemoved(object sender, BookmarkEventArgs e)
         {
             manager.Bookmarks.Remove(e.Bookmark);
+            onBreakPointRemoved?.Invoke(sender, e);
         }
 
         #region OnTextViewChanged

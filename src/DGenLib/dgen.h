@@ -73,5 +73,5 @@ extern unsigned char GetVDPRegisterValue(int index);
 extern unsigned int Disassemble(unsigned int address, char* text);
 
 extern void SetVolume(int vol);
-
+extern void PauseAudio(int pause);
 extern unsigned char* GetVRAM();

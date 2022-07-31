@@ -5,34 +5,106 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MDStudioPlus.Views"
         mc:Ignorable="d"
-        Title="VDPRegs" Height="386" Width="332" Loaded="Window_Loaded" WindowStyle="ToolWindow" ResizeMode="NoResize">
-    <Grid Margin="10,10,10,10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="35"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-        </Grid.RowDefinitions>
-        <ComboBox x:Name="comboReg" VerticalAlignment="Center" HorizontalAlignment="Center" Width="295" SelectionChanged="comboReg_SelectionChanged"/>
-        <CheckBox x:Name="checkBox7" Content="Unused" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox6" Content="Unused" Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox5" Content="Unused" Grid.Row="3" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox4" Content="Unused" Grid.Row="4" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox3" Content="Unused" Grid.Row="5" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox2" Content="Unused" Grid.Row="6" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox1" Content="Unused" Grid.Row="7" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <CheckBox x:Name="checkBox0" Content="Unused" Grid.Row="8" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <DockPanel Grid.Row="9">
-            <TextBlock x:Name="valueLabel" Text="Value: $FF" DockPanel.Dock="Left" VerticalAlignment="Center" FontWeight="Bold" ></TextBlock>
-            <Button Margin="150,0,20,0" DockPanel.Dock="Right" Click="Button_Click"></Button>
-        </DockPanel>
-        <TextBlock Text="dummy" x:Name="labelDesc" Grid.Row="10" />
-    </Grid>
+        Title="VDPRegs" Height="291" Width="563" WindowStyle="ToolWindow" ResizeMode="NoResize">
+    <Border>
+        <TabControl Margin="5">
+            <TabItem Header="68000">
+                <Grid x:Name="RegGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="50*"/>
+                        <ColumnDefinition Width="50*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="90*"/>
+                        <RowDefinition Height="20*"/>
+                    </Grid.RowDefinitions>
+                    <!--Data Registers-->
+                    <DataGrid ItemsSource="{Binding Registers}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Name}" Header="Data Register" IsReadOnly="True"/>
+                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <!--Address Registers-->
+                    <GroupBox Header="Address" Grid.Row="0" Grid.Column="1">
+                        <Grid >
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20*"/>
+                                <ColumnDefinition Width="80*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                                <RowDefinition Height="20*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="A0" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="0" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="0" Grid.Column="1"/>
+                            <TextBlock Text="A1" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="1" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="1" Grid.Column="1"/>
+                            <TextBlock Text="A2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="2" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="2" Grid.Column="1"/>
+                            <TextBlock Text="A3" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="3" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="3" Grid.Column="1"/>
+                            <TextBlock Text="A4" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="4" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="4" Grid.Column="1"/>
+                            <TextBlock Text="A5" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="5" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="5" Grid.Column="1"/>
+                            <TextBlock Text="A6" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="6" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="6" Grid.Column="1"/>
+                            <TextBlock Text="SP" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="7" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="7" Grid.Column="1"/>
+                            <TextBlock Text="USP" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="8" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="8" Grid.Column="1"/>
+                        </Grid>
+                    </GroupBox>
+                    <!-- State -->
+                    <GroupBox Header="State" Grid.Row="1" Grid.Column="0">
+                        <Grid Grid.Row="1" Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20*"/>
+                                <ColumnDefinition Width="80*"/>
+                                <ColumnDefinition Width="20*"/>
+                                <ColumnDefinition Width="80*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="SR" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="0" Grid.Column="0"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="0" Grid.Column="1"/>
+                            <TextBlock Text="PC" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2"
+                                           Grid.Row="0" Grid.Column="2"/>
+                            <TextBox IsReadOnly="True" VerticalAlignment="Center" Margin="2,0,2,0"
+                                         Grid.Row="0" Grid.Column="3"/>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Z80">
+                
+            </TabItem>
+        </TabControl>
+    </Border>
 </Window>

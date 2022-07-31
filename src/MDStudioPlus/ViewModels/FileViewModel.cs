@@ -3,19 +3,37 @@ using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Utils;
+using MDStudioPlus.Editor;
+using MDStudioPlus.Editor.BookMarks;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Resources;
 using System.Xml;
 
 namespace MDStudioPlus.ViewModels
 {
-    class FileViewModel : PaneViewModel
+    public class FileViewModelSelectedEventArgs : EventArgs
     {
+        public FileViewModel SelectedFile { get; set;}
+        public FileViewModelSelectedEventArgs(FileViewModel model)
+        {
+            SelectedFile = model;
+        }
+    }
+
+    public delegate void FileViewModelSelectedEventHandler(object sender, FileViewModelSelectedEventArgs e);
+
+    public class FileViewModel : PaneViewModel
+    {
+        public event FileViewModelSelectedEventHandler OnFileSelected;
+
         #region fields
         private string filePath = null;
         private TextDocument document;
@@ -31,11 +49,14 @@ namespace MDStudioPlus.ViewModels
         /// Class constructor from file path.
         /// </summary>
         /// <param name="filePath"></param>
-        public FileViewModel(string filePath)
-        {
+        public FileViewModel(string filePath, Project project)
+        {            
             FilePath = filePath;
             Title = FileName;
+            Document = new TextDocument();
+            Project = project;
             OpenFile();
+            IsDirty = false;
         }
 
         /// <summary>
@@ -45,14 +66,44 @@ namespace MDStudioPlus.ViewModels
         {
             IsDirty = true;
             Title = FileName;
-            document = new TextDocument();
-            document.TextChanged -= Document_TextChanged;
-            document.TextChanged += Document_TextChanged;            
+            Document = new TextDocument();
+            Project = null;
         }
 
         #endregion constructors
 
+        private void Document_TextChanged(object sender, System.EventArgs e)
+        {
+            IsDirty = true;
+        }
+
+        private void OpenFile()
+        {
+            if (File.Exists(filePath))
+            {
+                //document = new TextDocument();//Editor.Document;
+                using (FileStream fs = new FileStream(this.filePath,
+                            FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    using (StreamReader reader = FileReader.OpenStream(fs, Encoding.UTF8))
+                    {
+                        //document = new TextDocument(reader.ReadToEnd());
+                        document.Text = reader.ReadToEnd();
+                       /* document.TextChanged -= Document_TextChanged;
+                        document.TextChanged += Document_TextChanged;*/
+                    }
+                }
+
+                document.FileName = filePath;
+                ContentId = filePath;
+            }
+        }
+
         #region Properties
+
+        public Project Project { get; set; }
+
+        public CodeEditor Editor  => Document?.ServiceProvider?.GetService(typeof(CodeEditor)) as CodeEditor;
 
         public IHighlightingDefinition SyntaxHighlightName
         {
@@ -79,10 +130,6 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        private void Document_TextChanged(object sender, System.EventArgs e)
-        {
-            IsDirty = true;
-        }
 
         public string FileName
         {
@@ -95,26 +142,20 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        private void OpenFile()
+        public override bool IsSelected
         {
-            if (File.Exists(filePath))
+            get => isSelected;
+            set
             {
-                document = new TextDocument();//Editor.Document;
-                using (FileStream fs = new FileStream(this.filePath,
-                            FileMode.Open, FileAccess.Read, FileShare.Read))
+                if (isSelected != value)
                 {
-                    using (StreamReader reader = FileReader.OpenStream(fs, Encoding.UTF8))
-                    {
-                        document = new TextDocument(reader.ReadToEnd());
-                        document.TextChanged -= Document_TextChanged;
-                        document.TextChanged += Document_TextChanged;
-                    }
+                    isSelected = value;
+                    RaisePropertyChanged(nameof(IsSelected));
+                    OnFileSelected?.Invoke(this, new FileViewModelSelectedEventArgs(this));
                 }
-
-                document.FileName = filePath;
-                ContentId = filePath;
             }
         }
+
         public TextDocument Document
         {
             get { return document; }
@@ -123,8 +164,10 @@ namespace MDStudioPlus.ViewModels
                 if (document != value)
                 {
                     document = value;
+                    document.TextChanged -= Document_TextChanged;
+                    document.TextChanged += Document_TextChanged;
                     RaisePropertyChanged(nameof(Document));
-                    IsDirty = true;
+                    //IsDirty = true;
                 }
             }
         }
@@ -183,9 +226,75 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        #endregion  Properties
+        #endregion Properties
 
-        #region methods
+        #region Public Methods
+
+        public bool IsBreakpointSet(int lineNumber)
+        {
+            CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));
+            return codeEditor.IsBreakpointSet(lineNumber);
+        }
+
+        public void ToggleBreakpoint(int line)
+        {
+            CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));
+            codeEditor?.ToggleBreakpoint(line);
+        }
+
+        public void AddMarker(int lineNumber, TextMarkerTypes markerType, Color markerColor)
+        {
+            CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));
+            codeEditor?.AddMarker(lineNumber, markerType, markerColor);
+        }
+
+        public void RemoveAllMarkers()
+        {
+            CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));
+            codeEditor?.RemoveAllMarkers();
+        }
+
+        public void Refresh()
+        {
+            CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));
+            codeEditor?.Refresh();
+        }
+
+        // TODO: This may be used for showing variable/ram information on hover
+        public void SetWordAtMousePosition(MouseEventArgs e)
+        {
+            
+            var mousePosition = Editor.GetPositionFromPoint(e.GetPosition(Editor));
+            
+            if (mousePosition == null)
+                return;
+            
+            var line = mousePosition.Value.Line;
+            var column = mousePosition.Value.Column;
+            var offset = Document.GetOffset(line,column);
+
+            if (offset >= Document.TextLength)
+                offset--;
+
+            int offsetStart = TextUtilities.GetNextCaretPosition(Document, offset, LogicalDirection.Backward, CaretPositioningMode.WordBorder);
+            int offsetEnd = TextUtilities.GetNextCaretPosition(Document, offset, LogicalDirection.Forward, CaretPositioningMode.WordBorder);
+
+            if (offsetEnd == -1 || offsetStart == -1)
+                return;
+
+            var currentChar = Document.GetText(offset, 1);
+
+            if (string.IsNullOrWhiteSpace(currentChar))
+                return;
+
+            var word = Document.GetText(offsetStart, offsetEnd - offsetStart);
+            Debug.WriteLine(word);
+        }
+
+
+        #endregion
+
+        #region Private Methods
         private bool CanClose()
         {
             return true;

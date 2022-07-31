@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MDStudioPlus.Debugging;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml.Serialization;
 
 namespace MDStudioPlus
@@ -24,26 +26,20 @@ namespace MDStudioPlus
 
         // non serializable items
         [XmlIgnore]
-        public List<Project> Projects = new List<Project>();
-
-        [XmlIgnore]
-        public string FullPath;
-
-        [XmlIgnore]
         public static string Extension => ".mdsln";
 
         [XmlIgnore]
-        public Project CurrentlySelectedProject { get; private set; }
+        public string FullPath { get; private set; }
 
         [XmlIgnore]
-        private string lastProjectName;
+        public List<Project> Projects { get; private set; } = new List<Project>();
 
         [XmlIgnore]
-        public string BinaryPath
-        {
-            get => lastProjectName;
-            set => lastProjectName = value;
-        }
+        public Project CurrentlySelectedProject { get; set; }
+
+        [XmlIgnore]
+        public string BinaryPath { get; private set; }
+
         
         protected Solution() { }
 
@@ -78,44 +74,58 @@ namespace MDStudioPlus
 
         public bool Load()
         {
-            XmlSerializer xs = new XmlSerializer(typeof(Solution));
-            if (File.Exists(FullPath))
+            StringBuilder sb = new StringBuilder();
+            try
             {
-                using (StreamReader sr = new StreamReader(FullPath))
+                sb.AppendLine($"Loading Solution from {FullPath}");
+                XmlSerializer xs = new XmlSerializer(typeof(Solution));
+                if (File.Exists(FullPath))
                 {
-                    try
+                    using (StreamReader sr = new StreamReader(FullPath))
                     {
-                        Solution solution;
-                        solution = (Solution)xs.Deserialize(sr);
-
-                        Name = solution.Name;
-                        ProjectFiles = solution.ProjectFiles?.Select(e => e.Replace("/", "\\")).ToList();
-                        var projList = new List<Project>();
-                        // projects are relative paths
-                        foreach (var project in ProjectFiles)
+                        try
                         {
-                            var newProj = LoadProject($"{SolutionPath}\\{project}");
-                            if(newProj != null)
+                            Solution solution;
+                            solution = (Solution)xs.Deserialize(sr);
+                            sb.AppendLine($"Solution {solution.Name} Loaded");
+                            Name = solution.Name;
+                            ProjectFiles = solution.ProjectFiles?.Select(e => e.Replace("/", "\\")).ToList();
+                            sb.AppendLine($"Project List Count: {ProjectFiles.Count}");
+                            var projList = new List<Project>();
+                            // projects are relative paths
+                            foreach (var project in ProjectFiles)
                             {
-                                Projects.Add(newProj);
+                                sb.AppendLine($"Loading Project {project}");
+                                var newProj = LoadProject($"{SolutionPath}\\{project}");
+                                if (newProj != null)
+                                {
+                                    sb.AppendLine($"Project {project} Loaded.");
+                                    Projects.Add(newProj);
+                                }
+                                else
+                                {
+                                    sb.AppendLine($"Project {project} failed to load");
+                                }
                             }
+
                         }
-                        
+                        catch (Exception e)
+                        {
+                            MessageBox.Show(e.Message);
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
+
+                    CurrentlySelectedProject = Projects.First();
+
+                    return true;
                 }
-
-                CurrentlySelectedProject = Projects.First();
-
-                return true;
             }
-            else
+            catch(Exception e)
             {
-                return false;
+               File.WriteAllText($"{SolutionPath}\\mdstuido.log", sb.ToString());
             }
+
+            return false;
         }
 
         public int Build()
@@ -128,13 +138,13 @@ namespace MDStudioPlus
                 var proj = Projects.FirstOrDefault(p => p.BuildId == i);
 
                 output.AddRange(proj?.Build());
-                BinaryPath = $"{SolutionPath}\\{proj.Name}.bin";
+                BinaryPath = $"{SolutionPath}\\{proj.OutputFileName}.bin";
             }
 
             int errorCount = 0;
             foreach (string line in output)
             {
-                string patternError = @"> > > (\w*\.\w*)\(\d+\):\d+: error (...)+";//@"> > >([\w:\\.]*)\((\d+)\): error (.+)";
+                string patternError = Projects.FirstOrDefault()?.ErrorPattern;
                 Match matchError = Regex.Match(line, patternError);
                 if (matchError.Success)
                 {
@@ -145,6 +155,34 @@ namespace MDStudioPlus
             return errorCount;
         }
         
+        public string GetFullPath(string partialPath)
+        {
+            string fullPath = partialPath;
+            foreach( var project in Projects)
+            {
+                var file = project.AllFiles().Where(f => f == partialPath).FirstOrDefault();
+                if (file != null)
+                {
+                    fullPath = $"{project.ProjectPath}\\{partialPath}";
+                    break;
+                }
+            }
+
+            return fullPath;
+        }
+
+        public ISymbols GetDebugSymbols()
+        {
+            ISymbols symbols = null;
+            foreach ( var project in Projects)
+            {
+                symbols = project.LoadSymbols(symbols);
+            }
+
+            return symbols;
+        }
+
+
         private Project LoadProject(string filepath)
         {            
             Project project = new Project(filepath);

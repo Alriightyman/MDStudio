@@ -46,7 +46,7 @@ namespace MDStudioPlus
             set;
         }
 
-        public DataTemplate GitChangesViewTemplate
+        public DataTemplate RegistersViewTemplate
         {
             get;
             set;
@@ -77,10 +77,10 @@ namespace MDStudioPlus
             if (item is OutputViewModel)
                 return OutputViewTemplate;
 
-            /*if (item is GitChangesViewModel)
-                return GitChangesViewTemplate;
+            if (item is RegistersViewModel)
+                return RegistersViewTemplate;
 
-            if (item is ToolboxViewModel)
+            /*if (item is ToolboxViewModel)
                 return ToolboxViewTemplate;*/
 
             return base.SelectTemplate(item, container);

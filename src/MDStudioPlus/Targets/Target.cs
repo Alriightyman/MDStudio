@@ -81,6 +81,7 @@ namespace MDStudioPlus.Targets
 
         // Sound
         public abstract void SetVolume(int vol);
+        public abstract void PauseAudio(bool pause);
     }
 
     abstract class EmulatorTarget : Target

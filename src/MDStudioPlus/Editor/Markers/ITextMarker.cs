@@ -103,7 +103,10 @@ namespace MDStudioPlus.Editor.BookMarks
         /// Dotted underline.
         /// </summary>
         DottedUnderline = 0x004,
-
+        /// <summary>
+        /// 
+        /// </summary>
+        RectangleHighlight = 0x008,
         /// <summary>
         /// Horizontal line in the scroll bar.
         /// </summary>

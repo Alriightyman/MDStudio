@@ -5,18 +5,16 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace MDStudioPlus
 {
     public abstract class AssemblerBase : IAssembler
     {
-        public virtual Assembler Assembler => Assembler.None;
+        public virtual AssemblerVersion Assembler => AssemblerVersion.None;
 
         public string AdditionalFlags { get; set; }
-
-/*        public virtual StringBuilder ProcessStandardOutput { get; protected set; }
-
-        public virtual StringBuilder ProcessErrorOutput { get; protected set; }*/
+        public string AssemblerPath { get => assemblerPath; set => assemblerPath = value; }
 
         protected string assemblerPath;
         protected string projectWorkingDirectory;
@@ -24,7 +22,7 @@ namespace MDStudioPlus
 
         public AssemblerBase(Project project, string assemblerPath)
         {
-            this.assemblerPath = assemblerPath;
+            AssemblerPath = assemblerPath;
             AdditionalFlags = project.AdditionalArguments;
             projectWorkingDirectory = project.ProjectPath;
             fileToAssemble = project.MainSourceFile;
@@ -47,7 +45,11 @@ namespace MDStudioPlus
 
                         Debug.WriteLine("Assembler: {0} {1}", process.StartInfo.FileName, process.StartInfo.Arguments);
                         standardOutput.AppendLine($"Assembling: {process.StartInfo.FileName} {process.StartInfo.Arguments}\n");
-                        Workspace.Instance.Output.BuildOutput = standardOutput.ToString();
+
+                        Application.Current.Dispatcher.Invoke(new Action(() =>
+                        {
+                            Workspace.Instance.Output.BuildOutput = standardOutput.ToString();
+                        }));
 
                         process.Start();
 
@@ -62,7 +64,10 @@ namespace MDStudioPlus
                                 else
                                 {
                                     standardOutput.AppendLine(e.Data);
-                                    Workspace.Instance.Output.BuildOutput = standardOutput.ToString();
+                                    Application.Current.Dispatcher.Invoke(new Action(() =>
+                                    {
+                                        Workspace.Instance.Output.BuildOutput = standardOutput.ToString();
+                                    }));
                                 }
                             };
                             process.ErrorDataReceived += (sender, e) =>
@@ -74,6 +79,7 @@ namespace MDStudioPlus
                                 else
                                 {
                                     errorOutput.AppendLine(e.Data);
+                                    Workspace.Instance.Errors.Update(e.Data);
                                 }
                             };
 
@@ -91,7 +97,10 @@ namespace MDStudioPlus
                             errorWaitHandle.WaitOne(timeout);
 
                             standardOutput.AppendLine("\n");
-                            Workspace.Instance.Output.BuildOutput = standardOutput.ToString();
+                            Application.Current.Dispatcher.Invoke(new Action(() =>
+                            {
+                                Workspace.Instance.Output.BuildOutput = standardOutput.ToString();
+                            }));
                         }
                     }
                 }

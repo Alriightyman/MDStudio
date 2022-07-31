@@ -1,4 +1,5 @@
-﻿using AvalonDock.Layout;
+﻿using AvalonDock.Controls;
+using AvalonDock.Layout;
 using MDStudioPlus.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -34,51 +35,24 @@ namespace MDStudioPlus
                 }
             }
 
-            /*if (anchorableToShow.Content is PropertiesViewModel)
+            if (anchorableToShow.Content is OutputViewModel || anchorableToShow.Content is ErrorViewModel | anchorableToShow.Content is RegistersViewModel )
             {
-                var propertiesPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "PropertiesPane");
-
-                if (propertiesPane != null)
+                var OutputPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "OutputPane");
+                if (OutputPane != null)
                 {
-                    propertiesPane.Children.Add(anchorableToShow);
+                    if (anchorableToShow.Content is OutputViewModel outputViewModel)
+                    {
+                        // we want this first
+                        outputViewModel.IsSelected = true;
+                        OutputPane.Children.Insert(0,anchorableToShow);
+                    }
+                    else
+                    {
+                        ((PaneViewModel)anchorableToShow.Content).IsSelected = false;
+                        OutputPane.Children.Add(anchorableToShow);
+                    }
                     return true;
                 }
-            }*/
-
-            if (anchorableToShow.Content is OutputViewModel)
-            {
-                var outputPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "OutputPane");
-                var outputviewmodel = anchorableToShow.Content as OutputViewModel;
-                outputviewmodel.AnchorablePane = anchorableToShow;
-                if (outputPane != null)
-                {
-                    outputPane.Children.Add(anchorableToShow);
-                    return true;
-                }
-            }
-
-            /*if (anchorableToShow.Content is ToolboxViewModel)
-            {
-                var leftGroup = new LayoutAnchorGroup();
-                leftGroup.Children.Add(anchorableToShow);
-                layout.LeftSide.Children.Add(leftGroup);
-                return true;
-            }
-
-            if (anchorableToShow.Content is GitChangesViewModel)
-            {
-                var rightGroup = new LayoutAnchorGroup();
-                rightGroup.Children.Add(anchorableToShow);
-                layout.RightSide.Children.Add(rightGroup);
-                return true;
-            }*/
-
-            if (anchorableToShow.Content is ErrorViewModel)
-            {
-                var bottomGroup = new LayoutAnchorGroup();
-                bottomGroup.Children.Add(anchorableToShow);
-                layout.BottomSide.Children.Add(bottomGroup);
-                return true;
             }
 
             return false;
@@ -86,6 +60,7 @@ namespace MDStudioPlus
 
         public void AfterInsertAnchorable(LayoutRoot layout, LayoutAnchorable anchorableShown)
         {
+
         }
 
         public bool BeforeInsertDocument(LayoutRoot layout, LayoutDocument anchorableToShow, ILayoutContainer destinationContainer)

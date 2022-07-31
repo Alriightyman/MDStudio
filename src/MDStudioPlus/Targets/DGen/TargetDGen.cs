@@ -205,6 +205,11 @@ namespace MDStudioPlus.Targets
             DGenThread.GetDGen().SetVolume(vol);
         }
 
+        public override void PauseAudio(bool pause)
+        {
+            DGenThread.GetDGen().PauseAudio(pause);
+        }
+
         public override uint Disassemble(uint address, ref string text)
         {
             uint size = 0;

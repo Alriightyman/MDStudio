@@ -47,7 +47,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>VDP_H56_MODE=0;VRAM_128KB=1;WITH_MUSA;WITH_CZ80;WITH_DEBUGGER;WITH_PROFILER;_CRT_SECURE_NO_WARNINGS;NO_COMPLETION;_DZ80_EXCLUDE_SCRIPT;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VDP_H56_MODE=0;VRAM_128KB=1;WITH_MUSA;WITH_CZ80;WITH_DEBUGGER;WITH_PROFILER;WITH_DEBUG_VDP;_CRT_SECURE_NO_WARNINGS;NO_COMPLETION;_DZ80_EXCLUDE_SCRIPT;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\3rdParty\SDL2-2.0.12\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

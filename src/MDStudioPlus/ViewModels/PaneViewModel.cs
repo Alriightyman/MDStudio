@@ -2,12 +2,12 @@
 
 namespace MDStudioPlus.ViewModels
 {
-    class PaneViewModel : ViewModelBase
+    public class PaneViewModel : ViewModelBase
     {
         #region fields
         private string title = null;
         private string contentId = null;
-        private bool isSelected = false;
+        protected bool isSelected = false;
         private bool isActive = false;
         #endregion fields
 
@@ -44,7 +44,7 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        public bool IsSelected
+        public virtual bool IsSelected
         {
             get => isSelected;
             set

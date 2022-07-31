@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
+
 namespace MDStudioPlus.ViewModels
 {
     public class SelectThemeEventArgs : EventArgs
@@ -36,7 +37,7 @@ namespace MDStudioPlus.ViewModels
         private string asm68kPath;
         private string asPath;
         private ICommand openAsm68kCommand;
-        private ICommand openAsCommand;
+        private ICommand openAsCommand;      
         public Config Config
         {
             get => config;
@@ -175,8 +176,6 @@ namespace MDStudioPlus.ViewModels
         }
         #endregion
 
-        public bool IsAccepted { get; set; }
-
         #region Commands
         public ICommand OpenAsm68kCommand
         {
@@ -226,8 +225,100 @@ namespace MDStudioPlus.ViewModels
 
         public ICommand AcceptCommand
         {
-            get => new RelayCommand((p) => IsAccepted = true,(p) => true);
+            get => new RelayCommand((p) => CloseWindow(p), (p) => true);
         }
+
+        private void CloseWindow(object parameter)
+        {
+            Window window = (Window)parameter;
+            window.DialogResult = true;
+            window.Close();
+        }
+
+        #endregion
+
+        #region Emulator Controls
+        public IEnumerable<SDL_Keycode.Keycode> Keycodes => Enum.GetValues(typeof(SDL_Keycode.Keycode)).Cast<SDL_Keycode.Keycode>();
+        public SDL_Keycode.Keycode UpKey 
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeUp;
+            set
+            {
+                Config.KeycodeUp = (int)value;
+                RaisePropertyChanged(nameof(UpKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode DownKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeDown;
+            set
+            {
+                Config.KeycodeDown = (int)value;
+                RaisePropertyChanged(nameof(DownKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode LeftKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeLeft;
+            set
+            {
+                Config.KeycodeLeft = (int)value;
+                RaisePropertyChanged(nameof(LeftKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode RightKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeRight;
+            set
+            {
+                Config.KeycodeRight = (int)value;
+                RaisePropertyChanged(nameof(RightKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode AKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeA;
+            set
+            {
+                Config.KeycodeA = (int)value;
+                RaisePropertyChanged(nameof(AKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode BKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeB;
+            set
+            {
+                Config.KeycodeB = (int)value;
+                RaisePropertyChanged(nameof(BKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode CKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeC;
+            set
+            {
+                Config.KeycodeC = (int)value;
+                RaisePropertyChanged(nameof(CKey));
+            }
+        }
+
+        public SDL_Keycode.Keycode StartKey
+        {
+            get => (SDL_Keycode.Keycode)Config.KeycodeStart;
+            set
+            {
+                Config.KeycodeStart= (int)value;
+                RaisePropertyChanged(nameof(StartKey));
+            }
+        }
+
         #endregion
 
         public ConfigViewModel()

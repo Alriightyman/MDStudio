@@ -9,12 +9,12 @@
         Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}"
         ResizeMode="NoResize">
     <StackPanel Orientation="Vertical" Margin="10,10,10,10">
-        <Image Source="/Views/MDStudio.png" Height="170" Width="170"/>
+        <Image Source="pack://application:,,,/Resources/MDStudio.png" Height="170" Width="170"/>
         <TextBlock Text="Author: Nicolas Hamel/Gouky"/>
         <TextBlock Text="Addition Code: Matt Phillips"/>
         <TextBlock Text="Rewrite: Alriightyman"/>
         <TextBlock Text="   Support: matt@bigevilcorporation.co.uk"/>
-        <TextBlock Text=" https://github.com/Alriightyman/MDStudio"/>
+        <TextBlock Text=" https://github.com/Alriightyman/MDStudioPlus"/>
         <TextBlock Text="In loving memory of Nicolas 'Gouky' Hamel"/>
         <StackPanel Orientation="Horizontal">
             <TextBlock Text="Version: " Margin="0,20,0,0"/>

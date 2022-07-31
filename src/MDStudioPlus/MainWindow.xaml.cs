@@ -21,7 +21,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-//using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace MDStudioPlus
@@ -42,7 +41,7 @@ namespace MDStudioPlus
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var cmdlineArgs = Environment.GetCommandLineArgs();
-            Workspace.Instance.WindowLoaded(cmdlineArgs); 
+            Workspace.Instance.WindowLoaded(cmdlineArgs);
         }
 
         private void MinimizeClick(object sender, RoutedEventArgs e)
@@ -86,6 +85,14 @@ namespace MDStudioPlus
                     chrome.CaptionHeight = header.ActualHeight - BorderThickness.Top;
                     break;
             }
+        }
+
+        // as much as I don't want to do this, I need to update the active document
+        // so that the error markers show up on the document since the order of 
+        // events isn't what I'd like it to be. 
+        private void codeEditor_Loaded(object sender, RoutedEventArgs e)
+        {
+            Workspace.Instance.UpdateDocument();
         }
     }
 }

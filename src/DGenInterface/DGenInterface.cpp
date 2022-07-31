@@ -233,3 +233,8 @@ void DGenInterface::DGen::SetVolume(int vol)
 {
 	::SetVolume(vol);
 }
+
+void DGenInterface::DGen::PauseAudio(bool pause)
+{
+	::PauseAudio(pause);
+}

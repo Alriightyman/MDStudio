@@ -1,7 +1,7 @@
 ﻿
 namespace MDStudioPlus
 {
-    public enum Assembler
+    public enum AssemblerVersion
     {
         None = -1,
         ASM68K = 0,

@@ -102,7 +102,7 @@ namespace DGenInterface {
 		unsigned int Disassemble(unsigned int address, char* text);
 
 		void SetVolume(int vol);
-
+		void PauseAudio(bool pause);
 		unsigned char* GetVRAM();
 
 	};

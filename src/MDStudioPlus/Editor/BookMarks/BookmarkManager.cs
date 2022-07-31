@@ -53,10 +53,19 @@ namespace MDStudioPlus.Editor.BookMarks
         public void AddMark(Bookmark bookmark)
         {
             if (bookmark == null) return;
-            if (bookmarks.Contains(bookmark)) return;
-            if (bookmarks.Exists(b => IsEqualBookmark(b, bookmark))) return;
-            bookmarks.Add(bookmark);
-            OnAdded(new BookmarkEventArgs(bookmark));
+            var UpdatedBookMarkArgs = new BookmarkEventArgs(bookmark);
+            OnBeforeAdded(UpdatedBookMarkArgs);
+
+            if(UpdatedBookMarkArgs.Bookmark.LineNumber < 0)
+            {
+                return;
+            }
+
+            if (bookmarks.Contains(UpdatedBookMarkArgs.Bookmark)) return;
+            if (bookmarks.Exists(b => IsEqualBookmark(b, UpdatedBookMarkArgs.Bookmark))) return;
+            bookmarks.Add(UpdatedBookMarkArgs.Bookmark);
+            OnAdded(UpdatedBookMarkArgs);
+            OnAddedAfter(UpdatedBookMarkArgs);
         }
 
         public void AddMark(Bookmark bookmark, IDocument document, int line)
@@ -86,6 +95,7 @@ namespace MDStudioPlus.Editor.BookMarks
 
         public void RemoveMark(Bookmark bookmark)
         {
+            OnBeforeRemoved(new BookmarkEventArgs(bookmark));
             bookmarks.Remove(bookmark);
             OnRemoved(new BookmarkEventArgs(bookmark));
         }
@@ -95,8 +105,25 @@ namespace MDStudioPlus.Editor.BookMarks
             while (bookmarks.Count > 0)
             {
                 Bookmark b = bookmarks[bookmarks.Count - 1];
+                OnBeforeRemoved(new BookmarkEventArgs(b));
                 bookmarks.RemoveAt(bookmarks.Count - 1);
                 OnRemoved(new BookmarkEventArgs(b));
+            }
+        }
+
+        void OnBeforeRemoved(BookmarkEventArgs e)
+        {
+            if (BookmarkBeforeRemoved != null)
+            {
+                BookmarkBeforeRemoved(null, e);
+            }
+        }
+
+        void OnBeforeAdded(BookmarkEventArgs e)
+        {
+            if (BookmarkBeforeAdded != null)
+            {
+                BookmarkBeforeAdded(null, e);
             }
         }
 
@@ -115,20 +142,10 @@ namespace MDStudioPlus.Editor.BookMarks
                 BookmarkAdded(null, e);
             }
         }
-
-        /*public IEnumerable<Bookmark> GetProjectBookmarks(ICSharpCode.SharpDevelop.Project.IProject project)
+        void OnAddedAfter(BookmarkEventArgs e)
         {
-            List<Bookmark> projectBookmarks = new List<Bookmark>();
-            foreach (Bookmark mark in bookmarks)
-            {
-                // Only return those bookmarks which belong to the specified project.
-                if (mark.IsSaved && mark.FileName != null && project.IsFileInProject(mark.FileName))
-                {
-                    projectBookmarks.Add(mark);
-                }
-            }
-            return projectBookmarks;
-        }*/
+            BookmarkAfterAdded?.Invoke(null, e);
+        }
 
         public bool RemoveBookmarkAt(string fileName, int line, Predicate<Bookmark> predicate = null)
         {            
@@ -156,6 +173,7 @@ namespace MDStudioPlus.Editor.BookMarks
                 Bookmark bookmark = bookmarks[index];
                 if (match(bookmark))
                 {
+                    OnBeforeRemoved(new BookmarkEventArgs(bookmark));
                     bookmarks.RemoveAt(index);
                     OnRemoved(new BookmarkEventArgs(bookmark));
                 }
@@ -164,5 +182,9 @@ namespace MDStudioPlus.Editor.BookMarks
 
         public event EventHandler<BookmarkEventArgs> BookmarkRemoved;
         public event EventHandler<BookmarkEventArgs> BookmarkAdded;
+        public event EventHandler<BookmarkEventArgs> BookmarkBeforeRemoved;
+        public event EventHandler<BookmarkEventArgs> BookmarkBeforeAdded;
+        public event EventHandler<BookmarkEventArgs> BookmarkAfterRemoved;
+        public event EventHandler<BookmarkEventArgs> BookmarkAfterAdded;
     }
 }

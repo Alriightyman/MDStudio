@@ -42,47 +42,141 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Emulator">
-                <Grid >
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="40*"/>
-                        <ColumnDefinition Width="80*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="30" />
-                        <RowDefinition Height="30" />
-                        <RowDefinition Height="30" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="Emulator Target" 
+                <StackPanel Orientation="Vertical">
+                    <Grid >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40*"/>
+                            <ColumnDefinition Width="80*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30" />
+                            <RowDefinition Height="30" />
+                            <RowDefinition Height="30" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Emulator Target" 
                                Grid.Column="0" Grid.Row="0" 
                                HorizontalAlignment="Right" VerticalAlignment="Center"
                                Margin="0,0,10,0"/>
-                    <ComboBox Grid.Column="1" Grid.Row="0"
+                        <ComboBox Grid.Column="1" Grid.Row="0"
                             Margin="10,3,50,3"
                             WindowChrome.IsHitTestVisibleInChrome="True"
                             ItemsSource="{Binding Targets}"
                             SelectedItem="{Binding SelectedTarget}"/>
-                    <TextBlock Text="Region" 
+                        <TextBlock Text="Region" 
                                Grid.Column="0" Grid.Row="1" 
                                HorizontalAlignment="Right" VerticalAlignment="Center"
                                Margin="0,0,10,0"/>
-                    <ComboBox Grid.Column="1" Grid.Row="1"
+                        <ComboBox Grid.Column="1" Grid.Row="1"
                             Margin="10,3,50,3"
                             WindowChrome.IsHitTestVisibleInChrome="True"
                             DisplayMemberPath="Item2"
                             ItemsSource="{Binding Regions}"
                             SelectedItem="{Binding SelectedRegion}"/>
-                    <TextBlock Text="Resolution" 
+                        <TextBlock Text="Resolution" 
                                Grid.Column="0" Grid.Row="2" 
                                HorizontalAlignment="Right" VerticalAlignment="Center"
                                Margin="0,0,10,0"/>
-                    <ComboBox Grid.Column="1" Grid.Row="2"
+                        <ComboBox Grid.Column="1" Grid.Row="2"
                             Margin="10,3,50,3"
                             WindowChrome.IsHitTestVisibleInChrome="True"
                             DisplayMemberPath="Item1"
                             ItemsSource="{Binding ValidResolutions}"
                             SelectedItem="{Binding SelectedResolution}" />
-                </Grid>
+                    </Grid>
+                    <GroupBox Header="Emulator Control Bindings" Margin="10,0,10,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40*"/>
+                                <ColumnDefinition Width="80*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Up Key" 
+                                   Grid.Column="0" Grid.Row="0" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="0"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding UpKey}"/>
+                            <TextBlock Text="Down Key" 
+                                   Grid.Column="0" Grid.Row="1" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="1"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding DownKey}"/>
+                            <TextBlock Text="Left Key" 
+                                   Grid.Column="0" Grid.Row="2" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="2"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding LeftKey}"/>
 
+                            <TextBlock Text="Right Key" 
+                                   Grid.Column="0" Grid.Row="3" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="3"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding RightKey}"/>
+
+                            <TextBlock Text="A Key" 
+                                   Grid.Column="0" Grid.Row="4" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="4"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding AKey}"/>
+                            <TextBlock Text="B Key" 
+                                   Grid.Column="0" Grid.Row="5" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="5"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding BKey}"/>
+
+                            <TextBlock Text="C Key" 
+                                   Grid.Column="0" Grid.Row="6" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="6"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding CKey}"/>
+                            <TextBlock Text="Start Key" 
+                                   Grid.Column="0" Grid.Row="7" 
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1" Grid.Row="7"
+                                Margin="10,3,50,3"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                ItemsSource="{Binding Keycodes}"
+                                SelectedItem="{Binding StartKey}"/>
+                        </Grid>
+                    </GroupBox>
+                </StackPanel>
             </TabItem>
             <TabItem Header="Assembler">
                 <StackPanel Orientation="Vertical">
@@ -134,7 +228,7 @@
             <Button Content="Cancel" IsCancel="True" Grid.Column="1" Margin="5,0,5,0" VerticalAlignment="Center"/>
             <Button Content="Ok" 
                     IsDefault="True"                    
-                    Command="{Binding AcceptCommand}" 
+                    Command="{Binding AcceptCommand}" CommandParameter="{Binding ElementName=ConfigWindow}"
                     Grid.Column="2" Margin="5,0,5,0" VerticalAlignment="Center"/>
         </Grid>
     </Grid>

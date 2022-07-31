@@ -1,12 +1,7 @@
-﻿using AvalonDock.Themes;
-using MDStudioPlus.Targets;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
+using MDStudioPlus.Targets;
 
 namespace MDStudioPlus
 {
@@ -14,16 +9,16 @@ namespace MDStudioPlus
     public class Config
     {
         public string TargetName { get; set; }
-        public bool AutoOpenLastProject = true;
+        public bool AutoOpenLastProject { get; set; } = true;
         public string LastProject { get; set; }
 
         public string AsPath { get; set; }
         public string Asm68kPath { get; set; }
         public string[] AssemblerIncludePaths { get; set; }
-        
-        public string EmuResolution { get; set; }
-        public int EmuRegion { get; set; }
-        public bool Pal = false;
+
+        public string EmuResolution { get; set; } = "320x240";
+        public int EmuRegion { get; set; } = 0;
+        public bool Pal { get; set; } = false;
 
         // Index into SDL_Keycode.Keycode enum
         public int KeycodeUp { get; set; } = (int)SDL_Keycode.Keycode.SDLK_UP;
@@ -34,8 +29,9 @@ namespace MDStudioPlus
         public int KeycodeB { get; set; } = (int)SDL_Keycode.Keycode.SDLK_s;
         public int KeycodeC { get; set; } = (int)SDL_Keycode.Keycode.SDLK_d;
         public int KeycodeStart { get; set; } = (int)SDL_Keycode.Keycode.SDLK_SPACE;
-        public string MegaUSBPath { get; set; }        
-        public string Theme { get; set; }
+        public string MegaUSBPath { get; set; }
+        public string Theme { get; set; } = "Light Theme";
+
         public Config()
         {
             TargetName = typeof(TargetDGen).FullName;
@@ -44,7 +40,7 @@ namespace MDStudioPlus
         public void Read()
         {
             XmlSerializer xs = new XmlSerializer(typeof(Config));
-            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\mdstudio";
+            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\MDStudio";
 
             if (!Directory.Exists(path))
             {
@@ -96,7 +92,7 @@ namespace MDStudioPlus
         public void Save()
         {
             XmlSerializer xs = new XmlSerializer(typeof(Config));
-            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\mdstudio";
+            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\MDStudio";
 
             try
             {

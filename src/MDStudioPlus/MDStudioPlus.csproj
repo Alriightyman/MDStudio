@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -7,6 +7,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resources\mdstudio_mjd_icon.ico</ApplicationIcon>
     <Platforms>AnyCPU</Platforms>
+    <StartupObject>MDStudioPlus.App</StartupObject>
   </PropertyGroup>	
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -49,8 +50,12 @@
     <None Remove="Resources\Toolbar\NewProject.png" />
     <None Remove="Resources\Toolbar\Open.png" />
     <None Remove="Resources\Toolbar\Play.png" />
+    <None Remove="Resources\Toolbar\Restart.png" />
     <None Remove="Resources\Toolbar\Save.png" />
     <None Remove="Resources\Toolbar\SaveAll.png" />
+    <None Remove="Resources\Toolbar\StepInto.png" />
+    <None Remove="Resources\Toolbar\StepOut.png" />
+    <None Remove="Resources\Toolbar\StepOver.png" />
     <None Remove="Resources\Toolbar\Stop.png" />
     <None Remove="Resources\UnhealthyBreakpoint.png" />
     <None Remove="Views\MDStudio.png" />
@@ -60,6 +65,7 @@
     <PackageReference Include="AvalonEdit" Version="6.1.3.50" />
     <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.70.2" />
     <PackageReference Include="Dirkster.MLib" Version="1.3.1.2" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
   </ItemGroup>
 
   <ItemGroup>
@@ -81,8 +87,12 @@
     <Resource Include="Resources\Toolbar\NewProject.png" />
     <Resource Include="Resources\Toolbar\Open.png" />
     <Resource Include="Resources\Toolbar\Play.png" />
+    <Resource Include="Resources\Toolbar\Restart.png" />
     <Resource Include="Resources\Toolbar\Save.png" />
     <Resource Include="Resources\Toolbar\SaveAll.png" />
+    <Resource Include="Resources\Toolbar\StepInto.png" />
+    <Resource Include="Resources\Toolbar\StepOut.png" />
+    <Resource Include="Resources\Toolbar\StepOver.png" />
     <Resource Include="Resources\Toolbar\Stop.png" />
     <Resource Include="Resources\UnhealthyBreakpoint.png" />
     <Resource Include="Views\MDStudio.png" />
@@ -102,11 +112,6 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Icons\" />
-    <Folder Include="Models\" />
-  </ItemGroup>
 	<ItemGroup>
 		<BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
 			<Visible>False</Visible>
@@ -124,6 +129,9 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\DGenInterface\DGenInterface.vcxproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="WindowsFormsIntegration" />
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 	  <Exec Command="copy /Y &quot;$(SolutionDir)\..\3rdparty\SDL2-2.0.12\lib\x86\SDL2.dll&quot; &quot;$(TargetDir)\SDL2.dll&quot;" />

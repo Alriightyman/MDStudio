@@ -160,6 +160,7 @@ void DGenAudioCallback(void *userdata, Uint8 * stream, int len)
 		memset(&stream[wrote], 0, ((size_t)len - wrote));
 	}
 }
+SDL_AudioDeviceID g_audio_device = 0;
 
 int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region, int use_gamepad)
 {
@@ -167,19 +168,21 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 	useGamepad = use_gamepad;
 
 	//	Init SDL
- 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
+	{
+		auto error = SDL_GetError();
+	}
 
-	g_SDLWindow		= SDL_CreateWindow("DGen",				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+	g_SDLWindow		= SDL_CreateWindow("DGen",				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
 	g_SDLRenderer	= SDL_CreateRenderer(g_SDLWindow, -1,	SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_TARGETTEXTURE);
 	g_BackBuffer	= SDL_CreateTexture(g_SDLRenderer,		SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, windowWidth, windowHeight);
-
 	sdlWindowWidth = windowWidth;
 	sdlWindowHeight = windowHeight;
 
 	// Init gamepad
 	g_sdlGamepad = sdl::Gamepad::FindAvailableController(0);
 
-	//<	Init  screen
+	//	Init  screen
 	mdscr.bpp	= 32;
 	mdscr.w		= windowWidth;
 	mdscr.h		= windowHeight;
@@ -190,14 +193,15 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 
 	//	Set parent window
 	SDL_SysWMinfo wmInfo;
-	
+	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(g_SDLWindow, &wmInfo);
 
-	SetParent(wmInfo.info.win.window, parent);
+	//SetParent(wmInfo.info.win.window, parent);
 
 	// Init audio
+	//SDL_zero(g_AudioSpec);
 	g_AudioSpec.channels = 2;
-	g_AudioSpec.samples = 512; // dgen_soundsamples;
+	g_AudioSpec.samples = dgen_soundsamples;
 	g_AudioSpec.size = 0;
 	g_AudioSpec.freq = dgen_soundrate;
 	g_AudioSpec.callback = DGenAudioCallback;
@@ -207,12 +211,18 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 	g_AudioSpec.format = AUDIO_S16MSB;
 #else
 	g_AudioSpec.format = AUDIO_S16LSB;
-#endif
-	
-	if(int audioResult = SDL_OpenAudio(&g_AudioSpec, &g_AudioSpec) < 0)
+#endif	
+
+	g_audio_device = SDL_OpenAudioDevice(NULL, 0, &g_AudioSpec, NULL, 0);
+
+	if(g_audio_device <= 0)
 	{
-		printf("SDL_OpenAudio() failed with 0x%08x", audioResult);
+		auto error = SDL_GetError();
+		//printf("SDL_OpenAudio() failed with 0x%08x", audio_device);
+		printf(error);
 	}
+
+	auto currentDriver = SDL_GetCurrentAudioDriver();
 
 	// Alloc audio buffer
 	sndi.len = (dgen_soundrate / dgen_hz);
@@ -281,8 +291,7 @@ int		LoadRom(const char* path)
 	s_DGenInstance->debug_init();
 	
 	ShowSDLWindow();
-	SDL_PauseAudio(0);
-
+	SDL_PauseAudioDevice(g_audio_device, 0);
 	return 1;
 }
 
@@ -400,9 +409,7 @@ void	ProcessInputs()
 	// TODO: Handle both controller and keyboard inputs to be used at the same time. 
 
 	SDL_Event event;
-	// process gamepad first and then handle
-	// keyboard input - this way, we can use both
-	// at the same time. 
+
 	if (g_sdlGamepad && useGamepad)
 	{
 		// process events
@@ -523,10 +530,9 @@ int UpdateDGen()
 	SDL_UnlockTexture(g_BackBuffer);
 
 	//Write sound buffer to ringbuffer
-	SDL_LockAudio();
+	SDL_LockAudioDevice(g_audio_device);
 	cbuf_write(&cbuf, (uint8_t*)sndi.lr, (sndi.len * 4));
-	SDL_UnlockAudio();
-
+	SDL_UnlockAudioDevice(g_audio_device);
 	EndFrame();
 	return 1;
 }
@@ -742,4 +748,9 @@ unsigned char* GetVRAM()
 void SetVolume(int vol)
 {
 	dgen_volume = vol;
+}
+
+void PauseAudio(int pause)
+{
+	SDL_PauseAudio(pause);
 }

@@ -1,46 +1,48 @@
-﻿using ICSharpCode.AvalonEdit.Document;
-using ICSharpCode.AvalonEdit.Rendering;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.AvalonEdit.Rendering;
 
 namespace MDStudioPlus.Editor.BookMarks
 {
-    public class TextMarkerFactory
-    {
-        public static TextMarkerFactory Instance;
-        private TextSegmentCollection<TextMarker> markers;
-        private TextDocument document;
-		readonly List<TextView> textViews = new List<TextView>();
+	// <summary>
+	/// Handles the text markers for a code editor.
+	/// </summary>
+	public sealed class TextMarkerService : DocumentColorizingTransformer, IBackgroundRenderer, ITextMarkerService, ITextViewConnect
+	{
+		TextSegmentCollection<TextMarker> markers;
+		TextDocument document;
 
-		public TextMarkerFactory(TextDocument document)
-        {
-            Instance = this;
-            this.document = document;
-            this.markers = new TextSegmentCollection<TextMarker>(document);
-        }
+		public TextMarkerService(TextDocument document)
+		{
+			if (document == null)
+				throw new ArgumentNullException("document");
+			this.document = document;
+			this.markers = new TextSegmentCollection<TextMarker>(document);
+		}
 
-        public ITextMarker Create(int startOffset, int length)
-        {
-            if (markers == null)
-                throw new InvalidOperationException("Cannot create a marker when not attached to a document");
+		#region ITextMarkerService
+		public ITextMarker Create(int startOffset, int length)
+		{
+			if (markers == null)
+				throw new InvalidOperationException("Cannot create a marker when not attached to a document");
 
-            int textLength = document.TextLength;
-            if (startOffset < 0 || startOffset > textLength)
-                throw new ArgumentOutOfRangeException("startOffset", startOffset, "Value must be between 0 and " + textLength);
-            if (length < 0 || startOffset + length > textLength)
-                throw new ArgumentOutOfRangeException("length", length, "length must not be negative and startOffset+length must not be after the end of the document");
+			int textLength = document.TextLength;
+			if (startOffset < 0 || startOffset > textLength)
+				throw new ArgumentOutOfRangeException("startOffset", startOffset, "Value must be between 0 and " + textLength);
+			if (length < 0 || startOffset + length > textLength)
+				throw new ArgumentOutOfRangeException("length", length, "length must not be negative and startOffset+length must not be after the end of the document");
 
-            TextMarker m = new TextMarker(startOffset, length);
-            markers.Add(m);
-            // no need to mark segment for redraw: the text marker is invisible until a property is set
-            return m;
-        }
+			TextMarker m = new TextMarker(this, startOffset, length);
+			markers.Add(m);
+			// no need to mark segment for redraw: the text marker is invisible until a property is set
+			return m;
+		}
 
 		public IEnumerable<ITextMarker> GetMarkersAtOffset(int offset)
 		{
@@ -95,10 +97,10 @@ namespace MDStudioPlus.Editor.BookMarks
 		}
 
 		public event EventHandler RedrawRequested;
-
+		#endregion
 
 		#region DocumentColorizingTransformer
-		/*protected void ColorizeLine(DocumentLine line)
+		protected override void ColorizeLine(DocumentLine line)
 		{
 			if (markers == null)
 				return;
@@ -130,7 +132,7 @@ namespace MDStudioPlus.Editor.BookMarks
 					}
 				);
 			}
-		}*/
+		}
 		#endregion
 
 		#region IBackgroundRenderer
@@ -218,6 +220,17 @@ namespace MDStudioPlus.Editor.BookMarks
 						}
 					}
 				}
+				if ((marker.MarkerTypes & TextMarkerTypes.RectangleHighlight) != 0)
+				{
+					foreach (Rect r in BackgroundGeometryBuilder.GetRectsForSegment(textView, marker))
+					{
+						marker.BackgroundColor = marker.MarkerColor;
+						var codeEditor = document.ServiceProvider.GetService(typeof(CodeEditor)) as CodeEditor;
+						var brush = codeEditor?.TextArea.SelectionBrush;
+						if (brush != null && brush is SolidColorBrush solidColorBrush)
+							marker.ForegroundColor = solidColorBrush.Color;
+					}
+				}
 			}
 		}
 
@@ -227,7 +240,7 @@ namespace MDStudioPlus.Editor.BookMarks
 				yield return new Point(start.X + i * offset, start.Y - ((i + 1) % 2 == 0 ? offset : 0));
 		}
 		#endregion
-/*
+
 		#region ITextViewConnect
 		readonly List<TextView> textViews = new List<TextView>();
 
@@ -248,136 +261,139 @@ namespace MDStudioPlus.Editor.BookMarks
 				textViews.Remove(textView);
 			}
 		}
-		#endregion*/
-	}
 
+        #endregion
+    }
 
 	public sealed class TextMarker : TextSegment, ITextMarker
-    {
-        //readonly TextMarkerService service;
+	{
+		readonly TextMarkerService service;
 
-        public TextMarker(int startOffset, int length)
-        {
-            this.StartOffset = startOffset;
-            this.Length = length;
-            this.markerTypes = TextMarkerTypes.None;
-        }
+		public TextMarker(TextMarkerService service, int startOffset, int length)
+		{
+			if (service == null)
+				throw new ArgumentNullException("service");
+			this.service = service;
+			this.StartOffset = startOffset;
+			this.Length = length;
+			this.markerTypes = TextMarkerTypes.None;
+		}
 
-        public event EventHandler Deleted;
+		public event EventHandler Deleted;
 
-        public bool IsDeleted
-        {
-            get { return !this.IsConnectedToCollection; }
-        }
+		public bool IsDeleted
+		{
+			get { return !this.IsConnectedToCollection; }
+		}
 
-        public void Delete()
-        {
-            TextMarkerFactory.Instance.Remove(this);
-        }
+		public void Delete()
+		{
+			service.Remove(this);
+		}
 
-        internal void OnDeleted()
-        {
-            if (Deleted != null)
-                Deleted(this, EventArgs.Empty);
-        }
+		internal void OnDeleted()
+		{
+			if (Deleted != null)
+				Deleted(this, EventArgs.Empty);
+		}
 
-        void Redraw()
-        {
-            TextMarkerFactory.Instance.Redraw(this);
-        }
+		void Redraw()
+		{
+			service.Redraw(this);
+		}
 
-        Color? backgroundColor;
+		Color? backgroundColor;
 
-        public Color? BackgroundColor
-        {
-            get { return backgroundColor; }
-            set
-            {
-                if (backgroundColor != value)
-                {
-                    backgroundColor = value;
-                    Redraw();
-                }
-            }
-        }
+		public Color? BackgroundColor
+		{
+			get { return backgroundColor; }
+			set
+			{
+				if (backgroundColor != value)
+				{
+					backgroundColor = value;
+					Redraw();
+				}
+			}
+		}
 
-        Color? foregroundColor;
+		Color? foregroundColor;
 
-        public Color? ForegroundColor
-        {
-            get { return foregroundColor; }
-            set
-            {
-                if (foregroundColor != value)
-                {
-                    foregroundColor = value;
-                    Redraw();
-                }
-            }
-        }
+		public Color? ForegroundColor
+		{
+			get { return foregroundColor; }
+			set
+			{
+				if (foregroundColor != value)
+				{
+					foregroundColor = value;
+					Redraw();
+				}
+			}
+		}
 
-        FontWeight? fontWeight;
+		FontWeight? fontWeight;
 
-        public FontWeight? FontWeight
-        {
-            get { return fontWeight; }
-            set
-            {
-                if (fontWeight != value)
-                {
-                    fontWeight = value;
-                    Redraw();
-                }
-            }
-        }
+		public FontWeight? FontWeight
+		{
+			get { return fontWeight; }
+			set
+			{
+				if (fontWeight != value)
+				{
+					fontWeight = value;
+					Redraw();
+				}
+			}
+		}
 
-        FontStyle? fontStyle;
+		FontStyle? fontStyle;
 
-        public FontStyle? FontStyle
-        {
-            get { return fontStyle; }
-            set
-            {
-                if (fontStyle != value)
-                {
-                    fontStyle = value;
-                    Redraw();
-                }
-            }
-        }
+		public FontStyle? FontStyle
+		{
+			get { return fontStyle; }
+			set
+			{
+				if (fontStyle != value)
+				{
+					fontStyle = value;
+					Redraw();
+				}
+			}
+		}
 
-        public object Tag { get; set; }
+		public object Tag { get; set; }
 
-        TextMarkerTypes markerTypes;
+		TextMarkerTypes markerTypes;
 
-        public TextMarkerTypes MarkerTypes
-        {
-            get { return markerTypes; }
-            set
-            {
-                if (markerTypes != value)
-                {
-                    markerTypes = value;
-                    Redraw();
-                }
-            }
-        }
+		public TextMarkerTypes MarkerTypes
+		{
+			get { return markerTypes; }
+			set
+			{
+				if (markerTypes != value)
+				{
+					markerTypes = value;
+					Redraw();
+				}
+			}
+		}
 
-        Color markerColor;
+		Color markerColor;
 
-        public Color MarkerColor
-        {
-            get { return markerColor; }
-            set
-            {
-                if (markerColor != value)
-                {
-                    markerColor = value;
-                    Redraw();
-                }
-            }
-        }
+		public Color MarkerColor
+		{
+			get { return markerColor; }
+			set
+			{
+				if (markerColor != value)
+				{
+					markerColor = value;
+					Redraw();
+				}
+			}
+		}
 
-        public object ToolTip { get; set; }
-    }
+		public object ToolTip { get; set; }
+	}
 }

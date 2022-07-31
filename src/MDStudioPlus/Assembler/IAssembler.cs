@@ -9,10 +9,9 @@ namespace MDStudioPlus
 
     public interface IAssembler
     {
-        Assembler Assembler { get; }
+        AssemblerVersion Assembler { get; }
         string AdditionalFlags { get; set; }
-/*        StringBuilder ProcessStandardOutput { get; }
-        StringBuilder ProcessErrorOutput { get; }*/
+        string AssemblerPath { get; set; }
 
         string[] Assemble(StringBuilder standardOutput, StringBuilder errorOutput);
     }

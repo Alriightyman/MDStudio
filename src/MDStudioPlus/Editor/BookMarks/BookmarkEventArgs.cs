@@ -15,10 +15,8 @@ namespace MDStudioPlus.Editor.BookMarks
 
         public Bookmark Bookmark
         {
-            get
-            {
-                return bookmark;
-            }
+            get => bookmark;
+            set => bookmark = value;
         }
 
         public BookmarkEventArgs(Bookmark bookmark)

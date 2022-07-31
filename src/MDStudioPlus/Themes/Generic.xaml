@@ -185,6 +185,7 @@
             </Setter.Value>
         </Setter>
     </Style>
+    
     <Style x:Key="ToolBarButton" BasedOn="{StaticResource BaseButtonStyle}" TargetType="{x:Type Button}">
         <Style.Triggers>
             <Trigger Property="IsDefault" Value="True">
@@ -192,6 +193,7 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+    
     <Style TargetType="avalonedit:SearchPanel">
         <Setter Property="Template">
             <Setter.Value>
@@ -240,5 +242,37 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style TargetType="DataGrid">
+        <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
+        <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.ControlNormalBackgroundKey}}" />
+        <Setter Property="RowBackground" Value="{x:Null}"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{x:Null}" />
+    </Style>
+    <Style TargetType="DataGridCell">
+        <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
+        <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
+    </Style>
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
+        <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
+        <Setter Property="SeparatorBrush" Value="Red"/> 
+    </Style>
+    <Style TargetType="DataGridCellsPanel">
+        <Setter Property="Background" Value="{x:Null}" />
+    </Style>
+    <Style TargetType="DataGridCellsPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
+        <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
+    </Style>
+    <Style TargetType="DataGridRow">
+        <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
+        <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
     </Style>
 </ResourceDictionary>

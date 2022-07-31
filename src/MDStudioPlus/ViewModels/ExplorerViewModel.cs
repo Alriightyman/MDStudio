@@ -54,7 +54,7 @@ namespace MDStudioPlus.ViewModels
             get => solution;
             set
             {
-                if (solution != value)
+                if (value != null && solution != value)
                 {
                     solution = value;
                     FileName = solution.Name;
@@ -62,8 +62,14 @@ namespace MDStudioPlus.ViewModels
                     solution.Load();
 
                     SetFiles();
-                    RaisePropertyChanged(nameof(Solution));
                 }
+                else if(value == null)
+                {
+                    solution = value;
+                    DirectoryItems.Clear();
+                }
+                
+                RaisePropertyChanged(nameof(Solution));
             }
         }
 

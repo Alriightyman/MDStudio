@@ -5,11 +5,8 @@ namespace MDStudioPlus
 {
     public class AsAssembler : AssemblerBase
     {
-        public override Assembler Assembler => Assembler.AS;
+        public override AssemblerVersion Assembler => AssemblerVersion.AS;
         
-       /* public override StringBuilder ProcessStandardOutput { get; protected set; } = new StringBuilder();
-        public override StringBuilder ProcessErrorOutput { get; protected set; } = new StringBuilder();*/
-
         public AsAssembler(Project project, string assemblerPath) 
                             : base(project, assemblerPath)
         {
@@ -17,7 +14,7 @@ namespace MDStudioPlus
         // "D:\\Dev\\s2disasm\\win32\\as\\asw.exe"
         protected override void Build(Process process)
         {
-            process.StartInfo.FileName = "D:\\Dev\\s2disasm\\win32\\as\\asw.exe";// assemblerPath;
+            process.StartInfo.FileName = AssemblerPath;
             process.StartInfo.WorkingDirectory = projectWorkingDirectory + @"\";
             // default ags:
             // -xx : Level 2 for detailed error messages

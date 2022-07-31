@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace MDStudioPlus.Targets
 {
@@ -141,7 +142,7 @@ namespace MDStudioPlus.Targets
 
         public void Start()
         {
-            task = new Task(() => ThreadLoop(cts.Token), cts.Token, TaskCreationOptions.LongRunning);
+            task = new Task(() => ThreadLoop(cts.Token), cts.Token);
             task.Start();
 
             // Process thread otherwise the emulator window will lock up
@@ -200,10 +201,20 @@ namespace MDStudioPlus.Targets
 
         private static void ThreadLoop(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
+            try
             {
-                dGen.Update();
-                Thread.Sleep(1);
+                while (!token.IsCancellationRequested)
+                {
+                    var sw = Stopwatch.StartNew();
+                    dGen.Update();
+                    //Thread.Sleep(1);
+                    //Debug.WriteLine($"Frame Time: {sw.ElapsedMilliseconds}");
+                    sw.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
     }
