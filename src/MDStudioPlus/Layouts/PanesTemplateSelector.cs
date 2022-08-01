@@ -52,7 +52,7 @@ namespace MDStudioPlus
             set;
         }
 
-        public DataTemplate ToolboxViewTemplate
+        public DataTemplate MemoryViewTemplate
         {
             get;
             set;
@@ -80,8 +80,8 @@ namespace MDStudioPlus
             if (item is RegistersViewModel)
                 return RegistersViewTemplate;
 
-            /*if (item is ToolboxViewModel)
-                return ToolboxViewTemplate;*/
+            if (item is MemoryViewModel)
+                return MemoryViewTemplate;
 
             return base.SelectTemplate(item, container);
         }

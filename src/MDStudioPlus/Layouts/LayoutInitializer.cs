@@ -35,7 +35,7 @@ namespace MDStudioPlus
                 }
             }
 
-            if (anchorableToShow.Content is OutputViewModel || anchorableToShow.Content is ErrorViewModel | anchorableToShow.Content is RegistersViewModel )
+            if (anchorableToShow.Content is OutputViewModel || anchorableToShow.Content is ErrorViewModel | anchorableToShow.Content is RegistersViewModel | anchorableToShow.Content is MemoryViewModel)
             {
                 var OutputPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "OutputPane");
                 if (OutputPane != null)

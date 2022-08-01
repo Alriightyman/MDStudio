@@ -127,6 +127,7 @@
                     <MenuItem Header="Debug">
                         <MenuItem Header="Windows">
                             <MenuItem Header="Registers" IsCheckable="True" IsChecked="{Binding Registers.IsVisible, Mode=TwoWay}"/>
+                            <MenuItem Header="Memory View" IsCheckable="True" IsChecked="{Binding Memory.IsVisible, Mode=TwoWay}"/>
                         </MenuItem>
                         <Separator/>
                         <MenuItem Header="Start Debugging" Command="{Binding RunEmulatorCommand}" InputGestureText="F5">
@@ -154,9 +155,101 @@
                                 </Style>
                             </MenuItem.Style>
                         </MenuItem>
+                        <MenuItem Header="Pause Debugging" Command="{Binding BreakAllCommand}" InputGestureText="Ctrl+Shift+Pause">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BreakAll.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
                         <MenuItem Header="Continue Debugging" Command="{Binding RunEmulatorCommand}" InputGestureText="F5">
                             <MenuItem.Icon>
-                                <Image Source="pack://application:,,,/Resources/Toolbar/Play.png" />
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Stop Debugging" Command="{Binding StopEmulatorCommand}" InputGestureText="Shift+F5">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Stop.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Reset" Command="{Binding RestartEmulatorCommand}" InputGestureText="Ctrl+Shift+F5">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Restart.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" InputGestureText="F10">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepOver.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" InputGestureText="F11">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepInto.png" />
                             </MenuItem.Icon>
                             <MenuItem.Style>
                                 <Style TargetType="MenuItem">
@@ -175,38 +268,6 @@
                             </MenuItem.Style>
                         </MenuItem>
 
-                        <MenuItem Header="Stop Debugging" Command="{Binding StopEmulatorCommand}" InputGestureText="Shift+F5">
-                            <MenuItem.Icon>
-                                <Image Source="pack://application:,,,/Resources/Toolbar/Stop.png" />
-                            </MenuItem.Icon>
-                            <MenuItem.Style>
-                                <Style TargetType="MenuItem">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsDebugging}" Value="False">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </MenuItem.Style>
-                        </MenuItem>
-                        <MenuItem Header="Reset" Command="{Binding RestartEmulatorCommand}" InputGestureText="Ctrl+Shift+F5">
-                            <MenuItem.Icon>
-                                <Image Source="pack://application:,,,/Resources/Toolbar/Restart.png" />
-                            </MenuItem.Icon>
-                            <MenuItem.Style>
-                                <Style TargetType="MenuItem">
-                                    <Setter Property="IsEnabled" Value="False"/>
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <!--Don't show Start Debugging if we are already debugging-->
-                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                            <Setter Property="IsEnabled" Value="True"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </MenuItem.Style>
-                        </MenuItem>
                     </MenuItem>
                     <MenuItem Header="Options">
                         <MenuItem Header="Configuration" Command="{Binding ConfigurationCommand}" />
@@ -950,6 +1011,43 @@
                             </Border>
                         </DataTemplate>
                     </local:PanesTemplateSelector.RegistersViewTemplate>
+
+                    <!-- Memory View Window -->
+                    <local:PanesTemplateSelector.MemoryViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <DataGrid AutoGenerateColumns="False"                                          
+                                          ItemsSource="{Binding Memory}"
+                                          HorizontalGridLinesBrush="{x:Null}"
+                                          VerticalGridLinesBrush="{x:Null}"
+                                          CanUserReorderColumns="False"
+                                          ColumnWidth="25"
+                                          CanUserResizeRows="False"
+                                          CanUserResizeColumns="False"
+                                          RowHeaderWidth="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Binding="{Binding Index}" Header="Addr" Width="40"/>
+                                        <DataGridTextColumn Binding="{Binding Value[0]}" Header="00"/>
+                                        <DataGridTextColumn Binding="{Binding Value[1]}" Header="01"/>
+                                        <DataGridTextColumn Binding="{Binding Value[2]}" Header="02"/>
+                                        <DataGridTextColumn Binding="{Binding Value[3]}" Header="03"/>
+                                        <DataGridTextColumn Binding="{Binding Value[4]}" Header="04"/>
+                                        <DataGridTextColumn Binding="{Binding Value[5]}" Header="05"/>
+                                        <DataGridTextColumn Binding="{Binding Value[6]}" Header="06"/>
+                                        <DataGridTextColumn Binding="{Binding Value[7]}" Header="07"/>
+                                        <DataGridTextColumn Binding="{Binding Value[8]}" Header="08"/>
+                                        <DataGridTextColumn Binding="{Binding Value[9]}" Header="09"/>
+                                        <DataGridTextColumn Binding="{Binding Value[10]}" Header="0A"/>
+                                        <DataGridTextColumn Binding="{Binding Value[11]}" Header="0B"/>
+                                        <DataGridTextColumn Binding="{Binding Value[12]}" Header="0C"/>
+                                        <DataGridTextColumn Binding="{Binding Value[13]}" Header="0D"/>
+                                        <DataGridTextColumn Binding="{Binding Value[14]}" Header="0E"/>
+                                        <DataGridTextColumn Binding="{Binding Value[15]}" Header="0F"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.MemoryViewTemplate>
                 </local:PanesTemplateSelector>
             </DockingManager.LayoutItemTemplateSelector>
 

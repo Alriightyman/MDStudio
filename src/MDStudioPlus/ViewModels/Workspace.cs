@@ -142,6 +142,7 @@ namespace MDStudioPlus.ViewModels
         private OutputViewModel output;
         private ConfigViewModel configViewModel;
         private RegistersViewModel registersViewModel;
+        private MemoryViewModel memoryViewModel;
         private SolidColorBrush statusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
         
         // commands
@@ -422,6 +423,19 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
+        public MemoryViewModel Memory
+        {
+            get
+            {
+                if (memoryViewModel == null)
+                {
+                    memoryViewModel = new MemoryViewModel();
+                }
+
+                return memoryViewModel;
+            }
+        }
+
         /// <summary>
         /// Shows errors in the error window
         /// </summary>
@@ -459,7 +473,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if (tools == null)
                     // TODO: Add debugging windows here - CRAM Viewer, Register View, etc.
-                    tools = new ToolViewModel[] { Explorer, Errors, Output, Registers };
+                    tools = new ToolViewModel[] { Explorer, Errors, Output, Registers, Memory };
                 return tools;
             }
         }
@@ -893,10 +907,10 @@ namespace MDStudioPlus.ViewModels
                     state = State.Debugging;
                 }
             }
-            else
+            else if(target != null && state == State.Running)
             {
                 // TODO update debug windows
-
+                UpdateMemoryView();
             }
         }
         #endregion
@@ -1108,6 +1122,16 @@ namespace MDStudioPlus.ViewModels
                                                                                      target.GetZ80Reg(Z80Regs.IY),
                                                                                      target.GetZ80Reg(Z80Regs.SP),
                                                                                      target.GetZ80Reg(Z80Regs.PC)));
+        }
+
+        private void UpdateMemoryView()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {               
+                byte[] memBuffer = new byte[0xFFFF];
+                target.ReadMemory(0xFFFF0000, 0xFFFF, memBuffer);
+                Memory.UpdateMemory(memBuffer);
+            });
         }
 
         internal void Close(FileViewModel fileToClose)

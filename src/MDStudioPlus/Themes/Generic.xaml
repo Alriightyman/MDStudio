@@ -247,7 +247,7 @@
     <Style TargetType="DataGrid">
         <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
         <Setter Property="Background" Value="{x:Null}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.ControlNormalBackgroundKey}}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
         <Setter Property="RowBackground" Value="{x:Null}"/>
         <Setter Property="HorizontalGridLinesBrush" Value="{x:Null}" />
     </Style>
@@ -260,7 +260,6 @@
         <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
         <Setter Property="Background" Value="{x:Null}" />
         <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
-        <Setter Property="SeparatorBrush" Value="Red"/> 
     </Style>
     <Style TargetType="DataGridCellsPanel">
         <Setter Property="Background" Value="{x:Null}" />
