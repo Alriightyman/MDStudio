@@ -1,4 +1,5 @@
 ﻿using AvalonDock.Themes;
+using ICSharpCode.AvalonEdit;
 using MDStudioPlus.Targets;
 using Microsoft.Win32;
 using System;
@@ -7,7 +8,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-
+using System.Windows.Media;
 
 namespace MDStudioPlus.ViewModels
 {
@@ -37,13 +38,46 @@ namespace MDStudioPlus.ViewModels
         private string asm68kPath;
         private string asPath;
         private ICommand openAsm68kCommand;
-        private ICommand openAsCommand;      
+        private ICommand openAsCommand;
+        private TextEditorOptions options = new TextEditorOptions();
+        public TextEditorOptions EditorOptions
+        {
+            get => options;
+            
+            set
+            {
+                options = value;
+                RaisePropertyChanged(nameof(EditorOptions));
+            }
+        }
         public Config Config
         {
             get => config;
             set
             {
                 config = value;
+            }
+        }
+
+        public FontFamily Font
+        {
+            get => new FontFamily(config.Font);
+            set
+            {
+                config.Font = value.Source;
+                RaisePropertyChanged(nameof(Font));
+            }
+        }
+
+        public int TabSize
+        {
+            get => config.TabSize;
+            set
+            {
+                config.TabSize = value;
+                RaisePropertyChanged(nameof(TabSize));
+                options.IndentationSize = value;
+                RaisePropertyChanged(nameof(EditorOptions));
             }
         }
 
@@ -349,6 +383,7 @@ namespace MDStudioPlus.ViewModels
             AutoOpenLastProject = Config.AutoOpenLastProject;
             AsPath = Config.AsPath;
             Asm68kPath = Config.Asm68kPath;
+            options.IndentationSize = config.TabSize;
         }
 
         public void SwitchExtendedTheme()

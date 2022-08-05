@@ -713,7 +713,10 @@
                                 <editor:CodeEditor x:Name="codeEditor" 
                                                    Document="{Binding Document, UpdateSourceTrigger=PropertyChanged}" 
                                                    SyntaxHighlighting="{Binding SyntaxHighlightName}"
-                                                   Loaded="codeEditor_Loaded" >
+                                                   Loaded="codeEditor_Loaded"
+                                                   Options="{Binding CodeEditorOptions}"
+                                                   FontFamily="{Binding EditorFont}" >
+                                    
                                     <editor:CodeEditor.Style>
                                         <Style TargetType="editor:CodeEditor">
                                             <Setter Property="Foreground" Value="{DynamicResource WindowForeground}"/>

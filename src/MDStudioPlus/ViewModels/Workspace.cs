@@ -1,4 +1,5 @@
 using AvalonDock.Themes;
+using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
 using MDStudioPlus.Debugging;
@@ -250,7 +251,25 @@ namespace MDStudioPlus.ViewModels
 
         #endregion
 
-        #region Properties        
+        #region Properties
+
+        public TextEditorOptions CodeEditorOptions
+        {
+            get => ConfigViewModel.EditorOptions;
+            set
+            {
+                ConfigViewModel.EditorOptions = value;
+            }
+        }
+        public FontFamily EditorFont
+        {
+            get => ConfigViewModel.Font;
+            set
+            {
+                ConfigViewModel.Font = value;
+            }
+        }
+
         private string projectPropertiesHeader = "Properties";
         public string ProjectPropertiesHeader
         {

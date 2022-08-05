@@ -1,4 +1,4 @@
-﻿using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
@@ -184,6 +184,25 @@ namespace MDStudioPlus.ViewModels
                     RaisePropertyChanged(nameof(IsDirty));
                     RaisePropertyChanged(nameof(FileName));
                 }
+            }
+        }
+
+        public TextEditorOptions CodeEditorOptions
+        {
+            get => Workspace.Instance.CodeEditorOptions;
+            set
+            {
+                Workspace.Instance.CodeEditorOptions = value;
+                RaisePropertyChanged(nameof(CodeEditorOptions));
+            }
+        }
+        public FontFamily EditorFont
+        {
+            get => Workspace.Instance.EditorFont;
+            set
+            {
+                Workspace.Instance.EditorFont = value;
+                RaisePropertyChanged(nameof(EditorFont));
             }
         }
 

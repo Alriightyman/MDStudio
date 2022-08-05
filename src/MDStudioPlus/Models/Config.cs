@@ -32,6 +32,9 @@ namespace MDStudioPlus
         public string MegaUSBPath { get; set; }
         public string Theme { get; set; } = "Light Theme";
 
+        public string Font { get; set; } = "Consolas";
+        public int TabSize { get; set; } = 4;
+
         public Config()
         {
             TargetName = typeof(TargetDGen).FullName;
@@ -78,6 +81,8 @@ namespace MDStudioPlus
                         MegaUSBPath = config.MegaUSBPath;
 
                         Theme = config.Theme;
+                        Font = config.Font;
+                        TabSize = config.TabSize;
 
                         sr.Close();
                     }
