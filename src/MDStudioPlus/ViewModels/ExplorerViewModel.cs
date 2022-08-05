@@ -26,7 +26,7 @@ namespace MDStudioPlus.ViewModels
         private RelayCommand expandCommand;
         #endregion fields
 
-        private ObservableCollection<Item> solutionDirectory = new ObservableCollection<Item>();
+        private ObservableCollection<ItemViewModel> solutionDirectory = new ObservableCollection<ItemViewModel>();
         
         #region constructors
         /// <summary>
@@ -41,8 +41,8 @@ namespace MDStudioPlus.ViewModels
         #endregion constructors
 
         #region Properties
-        public Item SelectedItem { get; set; }
-        public ObservableCollection<Item> DirectoryItems
+        public ItemViewModel SelectedItem { get; set; }
+        public ObservableCollection<ItemViewModel> DirectoryItems
         {
             get => solutionDirectory;
             set
@@ -149,7 +149,7 @@ namespace MDStudioPlus.ViewModels
 
         private void OnExpand()
         {
-            ((DirectoryItem)this.DirectoryItems.FirstOrDefault()).IsExpanded = true;
+            ((DirectoryItemViewModel)this.DirectoryItems.FirstOrDefault()).IsExpanded = true;
         }
 
         private void SetFiles()
@@ -157,17 +157,29 @@ namespace MDStudioPlus.ViewModels
             var currentDir = solution.SolutionPath;
             int projectCount = solution.Projects.Count;
             // set up name for solution
-            var solutionItem = new SolutionItem() { Name = $"Solution '{solution.Name}' ({projectCount} projects)", Path = solution.FullPath, Explorer=this };
+            var solutionItem = new SolutionItemViewModel() 
+            { 
+                Name = $"Solution '{solution.Name}' ({projectCount} projects)", 
+                Path = solution.FullPath, 
+                Explorer=this 
+            };
+
             solutionItem.IsExpanded = true;
 
-            solutionItem.Items = new ObservableCollection<Item>();
+            solutionItem.Items = new ObservableCollection<ItemViewModel>();
             solutionItem.OnSelectedItemChanged -= OnSelectedItem;
             solutionItem.OnSelectedItemChanged += OnSelectedItem;
             // go through each project
             foreach (var project in solution.Projects)
             {
                 // create a new project tree item
-                var projectItem = new ProjectItem(project) { Name = project.Name, Path = project.FullPath, Parent=solutionItem, Explorer = this };
+                var projectItem = new ProjectItemViewModel(project) 
+                { 
+                    Name = project.Name, 
+                    Path = project.FullPath,
+                    Parent = solutionItem, 
+                    Explorer = this 
+                };
                 projectItem.IsExpanded = true;
 
                 projectItem.OnSelectedItemChanged -= OnSelectedItem;
@@ -178,8 +190,8 @@ namespace MDStudioPlus.ViewModels
 
                 foreach (string selectedFile in project.AllFiles())
                 {
-                    DirectoryItem newDirectoryItem = null;
-                    DirectoryItem parentDirectoryItem = projectItem;
+                    DirectoryItemViewModel newDirectoryItem = null;
+                    DirectoryItemViewModel parentDirectoryItem = projectItem;
                     int projectPathLength = project.ProjectPath.Length;
                     string relativeFilename =  selectedFile;
                     string fullDirectory = System.IO.Path.GetDirectoryName(relativeFilename);
@@ -191,16 +203,16 @@ namespace MDStudioPlus.ViewModels
 
                         for (int count = 0; count < directories.Length; count++)
                         {
-                            newDirectoryItem = FindDirectory(parentDirectoryItem.Items.Where(di => di is DirectoryItem).Cast<DirectoryItem>().ToList(), directories[count]);
+                            newDirectoryItem = FindDirectory(parentDirectoryItem.Items.Where(di => di is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList(), directories[count]);
 
                             // if directory was not found and we have not gone through all directories
                             if (newDirectoryItem == null)
                             {
                                 var directory = System.IO.Path.GetDirectoryName(parentDirectoryItem.Path);
-                                newDirectoryItem = new DirectoryItem(project)
+                                newDirectoryItem = new DirectoryItemViewModel(project)
                                 {
                                     Name = directories[count],
-                                    Path = $"{directory}\\{directories[count]}",
+                                    //Path = $"{directory}\\{directories[count]}",
                                     Explorer = this,
                                     Parent = parentDirectoryItem,
                                 };
@@ -221,11 +233,11 @@ namespace MDStudioPlus.ViewModels
                     // now that the directory structure is set, create the file item
                     if (!String.IsNullOrEmpty(relativeFilename))
                     {
-                        FileItem newFileItem = new FileItem(project)
+                        FileItemViewModel newFileItem = new FileItemViewModel(project)
                         {
                             // since the project holds relative paths, we need to 
                             // create a full path
-                            Path = $"{project.ProjectPath}\\{selectedFile}",
+                            //Path = $"{project.ProjectPath}\\{selectedFile}",
                             Name = System.IO.Path.GetFileName(relativeFilename),
                             Explorer = this,
                             Parent = parentDirectoryItem,
@@ -239,8 +251,8 @@ namespace MDStudioPlus.ViewModels
                 }
 
                 // add the project to the solution
-                List<Item> projectList = Sort(projectItem.Items.ToList());
-                projectItem.Items = new ObservableCollection<Item>(projectList);
+                List<ItemViewModel> projectList = Sort(projectItem.Items.ToList());
+                projectItem.Items = new ObservableCollection<ItemViewModel>(projectList);
                 solutionItem.Items.Add(projectItem);
             }
 
@@ -250,7 +262,7 @@ namespace MDStudioPlus.ViewModels
            
         }
 
-        private DirectoryItem FindDirectory(List<DirectoryItem> directories, string directoryName)
+        private DirectoryItemViewModel FindDirectory(List<DirectoryItemViewModel> directories, string directoryName)
         {
             foreach (var directory in directories)
             {
@@ -258,8 +270,8 @@ namespace MDStudioPlus.ViewModels
                 if (directory.Name.ToLower() == directoryName.ToLower())
                     return directory;
                 // not found?  Look through its Items
-                List<DirectoryItem> items = directory.Items.Where(item => item is DirectoryItem).Cast<DirectoryItem>().ToList();
-                DirectoryItem directoryItem = FindDirectory(items, directoryName);
+                List<DirectoryItemViewModel> items = directory.Items.Where(item => item is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList();
+                DirectoryItemViewModel directoryItem = FindDirectory(items, directoryName);
 
                 // if we found it, return
                 if (directoryItem != null)
@@ -271,22 +283,22 @@ namespace MDStudioPlus.ViewModels
         }
 
         // sort the directory items in the hierarchy
-        private List<Item> Sort(List<Item> listItems)
+        private List<ItemViewModel> Sort(List<ItemViewModel> listItems)
         {
-            var sortedList = listItems.OrderByDescending(x => x.GetType() == typeof(DirectoryItem)).ThenBy(z => z.Name).ToList();
+            var sortedList = listItems.OrderByDescending(x => x.GetType() == typeof(DirectoryItemViewModel)).ThenBy(z => z.Name).ToList();
 
             foreach(var item in sortedList)
             {
-                if(item is DirectoryItem directoryItem)
+                if(item is DirectoryItemViewModel directoryItem)
                 {
-                    directoryItem.Items = new ObservableCollection<Item>(Sort(directoryItem.Items.ToList()));
+                    directoryItem.Items = new ObservableCollection<ItemViewModel>(Sort(directoryItem.Items.ToList()));
                 }
             }
 
             return sortedList;
         }
 
-        private DirectoryItem FindDirectory(DirectoryItem directoryItem, string name)
+        private DirectoryItemViewModel FindDirectory(DirectoryItemViewModel directoryItem, string name)
         {
             if (directoryItem == null)
                 return null;
@@ -294,11 +306,11 @@ namespace MDStudioPlus.ViewModels
             if(directoryItem.Name == name)
                 return directoryItem;
 
-            DirectoryItem foundDirectoryItem = null;
+            DirectoryItemViewModel foundDirectoryItem = null;
 
-            foreach (Item item in directoryItem.Items)
+            foreach (ItemViewModel item in directoryItem.Items)
             {
-                if (item is DirectoryItem dirItem)
+                if (item is DirectoryItemViewModel dirItem)
                 {
                     foundDirectoryItem = FindDirectory(dirItem, name);
 

@@ -867,7 +867,7 @@ namespace MDStudioPlus.ViewModels
 
         private void Explorer_OnSelectedItemChanged(object sender, SelectedItemEventArgs e)
         {
-            if (e.SelectedItem is FileExplorer.FileItem || e.SelectedItem is FileExplorer.ProjectItem)
+            if (e.SelectedItem is FileExplorer.FileItemViewModel || e.SelectedItem is FileExplorer.ProjectItemViewModel)
             {
                 var fileViewModel = Open(e.SelectedItem.Path);
                 
@@ -1035,13 +1035,10 @@ namespace MDStudioPlus.ViewModels
             }
             else
             {
-                // Display Disassembly
+                // TODO: Display Disassembly
 
             }
 
-            //int offset = currentCodeEditor.Document.PositionToOffset(new TextLocation(0, lineNumberEditor));
-
-            //currentCodeEditor.Document.MarkerStrategy.Clear();
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 ActiveDocument.RemoveAllMarkers();
@@ -1116,10 +1113,9 @@ namespace MDStudioPlus.ViewModels
 
             uint sr = target.GetSR();
 
-            // add register values
-
+            // add 68k register values
             Application.Current.Dispatcher.Invoke(() => Registers.UpdateRegisterValues(dregs, aregs, sr, pc));
-            // update z80 regs
+            // update z80 register values
             Application.Current.Dispatcher.Invoke(() => Registers.UpdateZ80Registers(target.GetZ80Reg(Z80Regs.FA),
                                                                                      target.GetZ80Reg(Z80Regs.CB),
                                                                                      target.GetZ80Reg(Z80Regs.ED),
@@ -1579,16 +1575,20 @@ namespace MDStudioPlus.ViewModels
 
         private IHighlightingDefinition GetCurrentHightlighting()
         {
+            IHighlightingDefinition definition = HighlightingManager.Instance.GetDefinition("ASM68K");
+
             switch (configViewModel.SelectedTheme.Item1)
             {
                 case "Dark Theme":
-                    return HighlightingManager.Instance.GetDefinition("ASM68KDark");
+                    definition = HighlightingManager.Instance.GetDefinition("ASM68KDark");
+                    break;
                 case "Light Theme":
                 case "Blue Theme":
-                    return HighlightingManager.Instance.GetDefinition("ASM68K");
+                    definition = HighlightingManager.Instance.GetDefinition("ASM68K");
+                    break;
             }
 
-            return HighlightingManager.Instance.GetDefinition("ASM68K");
+            return definition;
         }
 
         #region Open Command Methods
@@ -1607,9 +1607,10 @@ namespace MDStudioPlus.ViewModels
 
         private void OnOpenProjectSolution()
         {
-            // TODO: 
+            // TODO: Handle Opening just a project? 
             var dlg = new OpenFileDialog();
-            dlg.Filter = "All Project Files (*.mdsln,*.mdproj)|*.mdsln;*.mdproj|Mega Drive Solution (*.mdsln)|*.mdsln|Mega Drive Project (*.mdproj)|*.mdproj";
+            //dlg.Filter = "All Project Files (*.mdsln,*.mdproj)|*.mdsln;*.mdproj|Mega Drive Solution (*.mdsln)|*.mdsln|Mega Drive Project (*.mdproj)|*.mdproj";
+            dlg.Filter = "Mega Drive Solution (*.mdsln)|*.mdsln";
             if (dlg.ShowDialog().GetValueOrDefault())
             {
                 var file = dlg.FileName;

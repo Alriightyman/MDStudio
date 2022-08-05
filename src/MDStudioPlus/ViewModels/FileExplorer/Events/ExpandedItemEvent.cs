@@ -4,8 +4,8 @@ namespace MDStudioPlus.FileExplorer.Events
 {
     public class ExpandedItemEvent : EventArgs
     {
-        public DirectoryItem SelectedItem { get; set; }
-        public ExpandedItemEvent(DirectoryItem selectedItem)
+        public DirectoryItemViewModel SelectedItem { get; set; }
+        public ExpandedItemEvent(DirectoryItemViewModel selectedItem)
         {
             SelectedItem = selectedItem;
         }

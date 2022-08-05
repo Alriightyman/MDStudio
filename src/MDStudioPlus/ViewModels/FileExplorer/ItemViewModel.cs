@@ -12,7 +12,7 @@ namespace MDStudioPlus.FileExplorer
     /// <summary>
     /// 
     /// </summary>
-    public abstract class Item : ViewModelBase
+    public abstract class ItemViewModel : ViewModelBase
     {
         private RelayCommand renameCommand;
         private RelayCommand lostFocusCommand;
@@ -39,8 +39,20 @@ namespace MDStudioPlus.FileExplorer
                 }
             }
         }
-        public string Path { get; set; }
-        public Item Parent { get; set; }
+        public virtual string Path
+        {
+            get
+            {
+                string path = $"{Parent?.Path ?? String.Empty}\\{Name}";
+                if (Parent is ProjectItemViewModel projItem)
+                {
+                    path = $"{projItem.Project.ProjectPath}\\{Name}";
+                }
+                return path;
+            }
+            set { }
+        }
+        public ItemViewModel Parent { get; set; }
 
         public ExplorerViewModel Explorer { get; set; }
 
@@ -95,10 +107,6 @@ namespace MDStudioPlus.FileExplorer
                 }
                 return lostFocusCommand;
             }
-        }
-        
-        public Item()
-        {
         }
 
         private void OnRename()

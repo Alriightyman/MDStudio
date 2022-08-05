@@ -101,9 +101,15 @@ namespace MDStudioPlus
         [XmlIgnore]
         public uint BuildId { get; set; }
 
+        /// <summary>
+        ///  Path to project
+        /// </summary>
         [XmlIgnore]
-        public string ProjectPath { get; set; }               
+        public string ProjectPath { get; set; }
 
+        /// <summary>
+        /// Full Path to project including filename
+        /// </summary>
         [XmlIgnore]
         public string FullPath { get; set; }        
 

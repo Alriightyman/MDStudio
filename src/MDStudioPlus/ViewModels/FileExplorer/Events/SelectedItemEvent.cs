@@ -8,8 +8,8 @@ namespace MDStudioPlus.FileExplorer.Events
 {
     public class SelectedItemEventArgs : EventArgs
     {
-        public Item SelectedItem { get; set; }
-        public SelectedItemEventArgs(Item selectedItem)
+        public ItemViewModel SelectedItem { get; set; }
+        public SelectedItemEventArgs(ItemViewModel selectedItem)
         {
             SelectedItem = selectedItem;
         }

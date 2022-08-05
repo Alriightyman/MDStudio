@@ -10,7 +10,7 @@ using System.Windows.Input;
 
 namespace MDStudioPlus.FileExplorer
 {
-    public class ProjectItem : DirectoryItem
+    public class ProjectItemViewModel : DirectoryItemViewModel
     {
         private RelayCommand addExistingFileCommand;
 
@@ -26,7 +26,14 @@ namespace MDStudioPlus.FileExplorer
             }
         }
 
-        public ProjectItem(Project project) : base(project)
+
+        public override string Path
+        {
+            get;
+            set;
+        }
+
+        public ProjectItemViewModel(Project project) : base(project)
         {            
             this.Project = project;
         }
@@ -37,9 +44,6 @@ namespace MDStudioPlus.FileExplorer
             ofd.Filter = "ASM (*.asm),(*.s)|*.asm;*.s";
             ofd.Multiselect = true;
             
-            // get the project file list
-           
-
             if( ofd.ShowDialog() == true)
             {
 
@@ -55,8 +59,8 @@ namespace MDStudioPlus.FileExplorer
         {
             foreach(string selectedFile in selectedFiles)
             {
-                DirectoryItem newDirectoryItem = null;
-                DirectoryItem parentDirectoryItem = this;
+                DirectoryItemViewModel newDirectoryItem = null;
+                DirectoryItemViewModel parentDirectoryItem = this;
                 int projectPathLength = Project.ProjectPath.Length;
                 //TODO: test this again
                 string relativeFilename = selectedFile.Contains("\\") ? selectedFile.Remove(0, projectPathLength + 1) : selectedFile;
@@ -68,17 +72,17 @@ namespace MDStudioPlus.FileExplorer
 
                     for (int count = 0; count < directories.Length; count++)
                     {
-                        newDirectoryItem = FindDirectoryItem(parentDirectoryItem.Items.Where(di => di is DirectoryItem).Cast<DirectoryItem>().ToList(), directories[count]);
+                        newDirectoryItem = FindDirectoryItem(parentDirectoryItem.Items.Where(di => di is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList(), directories[count]);
 
                         // if directory was not found and we have not gone through all directories
                         if (newDirectoryItem == null)
                         {
                             var directory = System.IO.Path.GetDirectoryName(parentDirectoryItem.Path);
 
-                            newDirectoryItem = new DirectoryItem(Project)
+                            newDirectoryItem = new DirectoryItemViewModel(Project)
                             {
                                 Name = directories[count],
-                                Path = $"{directory}\\{directories[count]}",
+                                //Path = $"{directory}\\{directories[count]}",
                                 Explorer = Explorer,
                                 Parent = parentDirectoryItem,
                             };
@@ -86,7 +90,7 @@ namespace MDStudioPlus.FileExplorer
                             newDirectoryItem.OnSelectedItemChanged -= Explorer.OnSelectedItem;
                             newDirectoryItem.OnSelectedItemChanged += Explorer.OnSelectedItem;
 
-                            AddItem<DirectoryItem>(newDirectoryItem, parentDirectoryItem.Items);
+                            AddItem<DirectoryItemViewModel>(newDirectoryItem, parentDirectoryItem.Items);
                             parentDirectoryItem = newDirectoryItem;
                         }
                         else
@@ -104,11 +108,11 @@ namespace MDStudioPlus.FileExplorer
                     files.Add(relativeFilename);
                     Project.SourceFiles = files.ToArray();
 
-                    FileItem newFileItem = new FileItem(Project)
+                    FileItemViewModel newFileItem = new FileItemViewModel(Project)
                     {
                         // this file path is selected from the file system and
                         // is already a full path
-                        Path = selectedFile,
+                        //Path = selectedFile,
                         Name = System.IO.Path.GetFileName(relativeFilename),
                         Explorer = Explorer,
                         Parent = parentDirectoryItem,
@@ -117,13 +121,13 @@ namespace MDStudioPlus.FileExplorer
                     newFileItem.OnSelectedItemChanged -= Explorer.OnSelectedItem;
                     newFileItem.OnSelectedItemChanged += Explorer.OnSelectedItem;
 
-                    AddItem<FileItem>(newFileItem, parentDirectoryItem.Items);
+                    AddItem<FileItemViewModel>(newFileItem, parentDirectoryItem.Items);
                 }
             }
         }
 
         // This will insert an Item into position based on name
-        private static void AddItem<T>(Item newItem, ObservableCollection<Item> items)
+        private static void AddItem<T>(ItemViewModel newItem, ObservableCollection<ItemViewModel> items)
         {
 
             if (items.Count == 0)
@@ -136,13 +140,13 @@ namespace MDStudioPlus.FileExplorer
 
             if (specificItems.Count == 0)
             {
-                if (newItem is DirectoryItem)
+                if (newItem is DirectoryItemViewModel)
                 {
                     items.Insert(0, newItem);
                 }
-                else if (newItem is FileItem)
+                else if (newItem is FileItemViewModel)
                 {
-                    var insertIndex = items.IndexOf(items.LastOrDefault(d => d is DirectoryItem));
+                    var insertIndex = items.IndexOf(items.LastOrDefault(d => d is DirectoryItemViewModel));
                     if (insertIndex != -1)
                     {
                         items.Insert(insertIndex, newItem);
@@ -174,7 +178,7 @@ namespace MDStudioPlus.FileExplorer
         }
 
         // recursively finds the directory item, if it exists
-        private DirectoryItem FindDirectoryItem(List<DirectoryItem> directories, string directoryName)
+        private DirectoryItemViewModel FindDirectoryItem(List<DirectoryItemViewModel> directories, string directoryName)
         {
             foreach(var directory in directories)
             {
@@ -182,8 +186,8 @@ namespace MDStudioPlus.FileExplorer
                 if (directory.Name.ToLower() == directoryName.ToLower())
                     return directory;
                 // not found?  Look through its Items
-                List<DirectoryItem> items = directory.Items.Where(item => item is DirectoryItem).Cast<DirectoryItem>().ToList();
-                DirectoryItem directoryItem = FindDirectoryItem(items, directoryName);
+                List<DirectoryItemViewModel> items = directory.Items.Where(item => item is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList();
+                DirectoryItemViewModel directoryItem = FindDirectoryItem(items, directoryName);
                 
                 // if we found it, return
                 if (directoryItem != null)
@@ -195,23 +199,23 @@ namespace MDStudioPlus.FileExplorer
         }
 
         // recursively finds the file item, if it exists
-        private FileItem FindFileItem(List<Item> items, string filename)
+        private FileItemViewModel FindFileItem(List<ItemViewModel> items, string filename)
         {
             foreach (var item in items)
             {
                 // if found, return
-                if (item is FileItem && item.Name.ToLower() == filename.ToLower())
-                    return (FileItem)item;
+                if (item is FileItemViewModel && item.Name.ToLower() == filename.ToLower())
+                    return (FileItemViewModel)item;
 
-                Item foundFileItem = null;
+                ItemViewModel foundFileItem = null;
                 // not found?  Look through its Items
-                if (item is DirectoryItem dItem)
+                if (item is DirectoryItemViewModel dItem)
                 {
-                    List<Item> newItems = dItem.Items.ToList();
+                    List<ItemViewModel> newItems = dItem.Items.ToList();
                     foundFileItem = FindFileItem(newItems, filename);
                 }
                 // if we found it, return
-                if (foundFileItem != null && foundFileItem is FileItem fileItem)
+                if (foundFileItem != null && foundFileItem is FileItemViewModel fileItem)
                     return fileItem;
             }
 

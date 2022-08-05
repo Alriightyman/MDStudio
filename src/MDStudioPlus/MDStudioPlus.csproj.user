@@ -15,7 +15,7 @@
     <Compile Update="Views\ConfigView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Views\Emulator.xaml.cs">
+    <Compile Update="Views\NewSolution.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\ProjectPropertiesView.xaml.cs">
@@ -35,7 +35,7 @@
     <Page Update="Views\ConfigView.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Update="Views\Emulator.xaml">
+    <Page Update="Views\NewSolution.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\ProjectPropertiesView.xaml">

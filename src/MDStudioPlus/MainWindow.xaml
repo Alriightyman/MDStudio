@@ -788,28 +788,28 @@
                                                 <Separator/>
                                                 <MenuItem Header="Rename" Command="{Binding RenameCommand}"/>
                                             </ContextMenu>
-                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItem}"
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItemViewModel}"
                                                                   ItemsSource="{Binding Items}">
                                                 <DockPanel>
                                                     <Image Source="pack://application:,,,/Resources/SolutionIcon.png" Width="16" Height="16"/>
                                                     <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
                                                 </DockPanel>
                                             </HierarchicalDataTemplate>
-                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:ProjectItem}"
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:ProjectItemViewModel}"
                                                                     ItemsSource="{Binding Items}">
                                                 <DockPanel ContextMenu="{StaticResource ProjectContextMenu}">
                                                     <Image Source="pack://application:,,,/Resources/ProjectIcon.png" Width="16" Height="16" DockPanel.Dock="Left"/>
                                                     <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" DockPanel.Dock="Left"/>
                                                 </DockPanel>
                                             </HierarchicalDataTemplate>
-                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItem}"
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItemViewModel}"
                                                                   ItemsSource="{Binding Items}">
                                                 <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
                                                     <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
                                                     <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
                                                 </DockPanel>
                                             </HierarchicalDataTemplate>
-                                            <DataTemplate DataType="{x:Type fileexplorer:FileItem}">
+                                            <DataTemplate DataType="{x:Type fileexplorer:FileItemViewModel}">
                                                 <DockPanel ContextMenu="{StaticResource FileContextMenu}" >
                                                     <!-- File Icon -->
                                                     <Image Source="pack://application:,,,/Resources/FileIcon.png" Width="16" Height="16"/>
