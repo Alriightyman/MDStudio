@@ -15,35 +15,72 @@ namespace MDStudioPlus
     public class Project : ICloneable
     {
         #region Serializable Properties
+        /// <summary>
+        /// Name of the Project
+        /// </summary>
         [XmlElement("ProjectName")]
         public string Name { get; set; }
 
+        /// <summary>
+        /// Project Author
+        /// </summary>
         [XmlElement("Author")]
         public string Author { get; set; }
 
+        /// <summary>
+        /// Assembler Version this Project uses
+        /// </summary>
         [XmlElement("Assembler")]
         public AssemblerVersion AssemblerVersion { get; set; }
 
+        /// <summary>
+        /// Main File that will be passed to the assembler
+        /// </summary>
         [XmlElement("MainSourceFile")]
         public string MainSourceFile { get; set; }
 
+        /// <summary>
+        /// All Source files
+        /// </summary>
         [XmlElement("SourceFiles")]
         public string[] SourceFiles { get; set; }
 
+        /// <summary>
+        /// Script that runs before the assembler
+        /// </summary>
         [XmlElement("PreBuildScript")]
         public string PreBuildScript { get; set; }
 
-        [XmlElement]
-        public string OutputFileName { get; set; }
-        [XmlElement]
-        public string OutputExtension { get; set; }
-
+        /// <summary>
+        /// Script that runs after the assember finishes
+        /// </summary>
         [XmlElement("PostBuildScript")]
         public string PostBuildScript { get; set; }
 
+        /// <summary>
+        /// Name of the output binary, defaults to Project Name
+        /// </summary>
+        [XmlElement]
+        public string OutputFileName { get; set; }
+
+        /// <summary>
+        /// Output binary extension; `.bin` is default
+        /// </summary>
+        [XmlElement]
+        public string OutputExtension { get; set; }
+
+        /// <summary>
+        /// Additional aarguments to pass to the assembler
+        /// </summary>
         [XmlElement("AdditionalArgs")]
         public string AdditionalArguments { get; set; }
 
+        /// <summary>
+        /// files to exclude from debugging symbols
+        /// AS, for example, can do some fancy things 
+        /// that AS thinks are 'addresses' even though
+        /// they are not.
+        /// </summary>
         [XmlElement("FileToExclude")]
         public string[] FilesToExclude { get; set; }
 
@@ -99,6 +136,10 @@ namespace MDStudioPlus
         // used for serialization/deserialization
         protected Project() { }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="filepath">full path to project</param>
         public Project(string filepath)
         {
             ProjectPath = Path.GetDirectoryName(filepath);
@@ -107,10 +148,13 @@ namespace MDStudioPlus
         #endregion
 
         #region Public Methods
+
+
         /// <summary>
         /// Gets all the source files from this project
         /// </summary>
-        /// <returns>A list of files</returns>
+        /// <param name="fullPath">if true, returns full path, if false, returns relative paths</param>
+        /// <returns>A list of all files contained in the project</returns>
         public IList<string> AllFiles(bool fullPath = false)
         {
             List<string> files;
@@ -121,7 +165,7 @@ namespace MDStudioPlus
                 files.Add($"{ProjectPath}\\{MainSourceFile}");
                 foreach (var file in SourceFiles)
                 {
-                    files.Add($"{ProjectPath}\\{file}".ToLower());
+                    files.Add($"{ProjectPath}\\{file}");
                 }
             }
             else
@@ -192,8 +236,8 @@ namespace MDStudioPlus
                         Name = project.Name;
                         AssemblerVersion = project.AssemblerVersion;
                         Author = project.Author;
-                        MainSourceFile = project.MainSourceFile.Replace("/", "\\").ToLower();
-                        SourceFiles = project.SourceFiles?.Select(e =>e.Replace("/", "\\")).Select(p => p.ToLower()).ToArray();
+                        MainSourceFile = project.MainSourceFile.Replace("/", "\\");
+                        SourceFiles = project.SourceFiles?.Select(e =>e.Replace("/", "\\")).ToArray();
                         PreBuildScript = project.PreBuildScript ?? String.Empty;
                         PostBuildScript = project.PostBuildScript ?? String.Empty;
                         AdditionalArguments = project.AdditionalArguments ?? String.Empty;
@@ -269,6 +313,7 @@ namespace MDStudioPlus
         #endregion
 
         #region Private Methods
+
         // Runs a pre/post build script
         private string[] RunScript(string script)
         {
@@ -298,6 +343,7 @@ namespace MDStudioPlus
 
                         process.Start();
 
+                        // run each line as a command
                         using (StreamWriter sw = process.StandardInput)
                         {
                             foreach (var command in commands)
@@ -311,6 +357,7 @@ namespace MDStudioPlus
                                 }
                             }
                         }
+
 
                         try
                         {
@@ -327,11 +374,13 @@ namespace MDStudioPlus
                                         processStandardOutput.AppendLine(e.Data);
                                         Application.Current.Dispatcher.Invoke(new Action(() =>
                                         {
+                                            // send to build output window
                                             Workspace.Instance.Output.BuildOutput = processStandardOutput.ToString();
                                         }));
                                     }
                                 }
                             };
+
                             process.ErrorDataReceived += (sender, e) =>
                             {
                                 if (e.Data == null)
@@ -341,6 +390,8 @@ namespace MDStudioPlus
                                 else
                                 {
                                     processErrorOutput.AppendLine(e.Data);
+
+                                    // send to Error window
                                     Workspace.Instance.Errors.Update(e.Data);
                                 }
                             };
@@ -366,7 +417,7 @@ namespace MDStudioPlus
             {
                 Debug.WriteLine("build exception: " + e.Message);
             }
-
+            
             string[] output;
             if (processErrorOutput.Length > 0)
                 output = processErrorOutput.ToString().Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
@@ -384,12 +435,22 @@ namespace MDStudioPlus
             {
                 File.Delete($"{ProjectPath}\\{OutputFileName}.{OutputExtension}");
                 File.Delete($"{ProjectPath}\\{OutputFileName}.{fileExtension}");
+
                 try
                 {
-                    // rename binary
-                    File.Move($"{ProjectPath}\\{filename}.{OutputExtension}", $"{ProjectPath}\\{OutputFileName}.{OutputExtension}");
-                    // rename symbol file
-                    File.Move($"{ProjectPath}\\{filename}.{fileExtension}", $"{ProjectPath}\\{OutputFileName}.{fileExtension}");
+                    string binaryFile = $"{ProjectPath}\\{filename}.{OutputExtension}";
+                    string debugFile = $"{ProjectPath}\\{filename}.{fileExtension}";
+                    if (File.Exists(binaryFile))
+                    {
+                        // rename binary
+                        File.Move(binaryFile, $"{ProjectPath}\\{OutputFileName}.{OutputExtension}");
+                    }
+
+                    if (File.Exists(debugFile))
+                    {
+                        // rename symbol file
+                        File.Move(debugFile, $"{ProjectPath}\\{OutputFileName}.{fileExtension}");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -398,6 +459,7 @@ namespace MDStudioPlus
             }
         }
 
+        /// <inheritdoc/>
         public object Clone()
         {
             return this.MemberwiseClone();

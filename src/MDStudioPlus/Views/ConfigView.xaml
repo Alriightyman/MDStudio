@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MDStudioPlus.Views"
         mc:Ignorable="d"
         Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}"
-        Title="Options" Height="450" Width="404">
+        Title="Options" Height="482" Width="404">
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="80*"/>

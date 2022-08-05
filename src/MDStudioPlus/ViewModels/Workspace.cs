@@ -1,9 +1,11 @@
-﻿using AvalonDock.Themes;
+using AvalonDock.Themes;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
 using MDStudioPlus.Debugging;
 using MDStudioPlus.Editor;
 using MDStudioPlus.Editor.BookMarks;
+using MDStudioPlus.FileExplorer;
+using MDStudioPlus.FileExplorer.Events;
 using MDStudioPlus.Models;
 using MDStudioPlus.Targets;
 using MDStudioPlus.Views;
@@ -289,8 +291,12 @@ namespace MDStudioPlus.ViewModels
             {
                 isBreakpointHit = value;
                 RaisePropertyChanged(nameof(IsBreakPointHit));
+                Activated = value;
+                RaisePropertyChanged(nameof(Activated));
             }
         }
+
+        public bool Activated { get; set; } = true;
 
         /// <summary>
         /// Set when a Solution has been loaded
@@ -319,10 +325,20 @@ namespace MDStudioPlus.ViewModels
                 if(isDebugging)
                 {
                     StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackgroundDebugging"];
+                    Explorer.IsVisible = false;
+                    Registers.IsVisible = true;
+                    Registers.IsSelected = true;
+                    Memory.IsVisible = true;
+                    Memory.IsSelected = true;
+                    Errors.IsVisible = false;
                 }
                 else
                 {
                     StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
+                    Explorer.IsVisible = true;
+                    Registers.IsVisible = false;
+                    Memory.IsVisible = false;
+                    Errors.IsVisible = true;                    
                 }
 
             }
@@ -849,11 +865,19 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        private void Explorer_OnSelectedItemChanged(object sender, FileExplorer.SelectedItemEventArgs e)
+        private void Explorer_OnSelectedItemChanged(object sender, SelectedItemEventArgs e)
         {
             if (e.SelectedItem is FileExplorer.FileItem || e.SelectedItem is FileExplorer.ProjectItem)
             {
                 var fileViewModel = Open(e.SelectedItem.Path);
+                
+                if (e.SelectedItem is IProjectItemChild ipic)
+                {
+                    fileViewModel.Project = ipic.Project;
+                }
+
+                ProjectPropertiesHeader = fileViewModel.Project?.Name ?? "";                
+
                 fileViewModel.SyntaxHighlightName = GetCurrentHightlighting();
             }
         }
@@ -954,7 +978,7 @@ namespace MDStudioPlus.ViewModels
         {
             var file = project.AllFiles().Where(f => f == error.Filename).FirstOrDefault();
 
-            var fileViewModel = files.FirstOrDefault(fm => $"{fm.FileName}" == file);
+            var fileViewModel = files.FirstOrDefault(fm => $"{fm.FileName}".ToLower() == file.ToLower());
             if (fileViewModel == null)
             {
                 fileViewModel = new FileViewModel($"{project.ProjectPath}\\{file}", project);
@@ -1062,21 +1086,7 @@ namespace MDStudioPlus.ViewModels
                 sourceWatcher = null;
             }
 
-            if (Path.GetExtension(e.SelectedFile.FileName) == ".mdproj")
-            {
-                var projName = e.SelectedFile.FileName.Remove(e.SelectedFile.FileName.IndexOf('.'), ".mdproj".Length);
-                ProjectPropertiesHeader = projName;
-                if(solution.Projects.Any(p => p.Name == projName))
-                {
-                    solution.CurrentlySelectedProject = solution.Projects.First(p => p.Name == projName);
-                }
-            }
-            else
-            {
-                solution.CurrentlySelectedProject = e.SelectedFile?.Project;
-                ProjectPropertiesHeader = e.SelectedFile?.Project?.Name;
-            }
-
+            // TODO: File watcher to watch all directories instead of individual files?
             sourceWatcher = new FileSystemWatcher();
             sourceWatcher.Path = Path.GetDirectoryName(e.SelectedFile.FilePath);
             sourceWatcher.Filter = Path.GetFileName(e.SelectedFile.FilePath);
@@ -1128,8 +1138,8 @@ namespace MDStudioPlus.ViewModels
         {
             Application.Current.Dispatcher.Invoke(() =>
             {               
-                byte[] memBuffer = new byte[0xFFFF];
-                target.ReadMemory(0xFFFF0000, 0xFFFF, memBuffer);
+                byte[] memBuffer = new byte[0x10000];
+                target.ReadMemory(0xFFFF0000, 0x10000, memBuffer);
                 Memory.UpdateMemory(memBuffer);
             });
         }
@@ -1232,11 +1242,11 @@ namespace MDStudioPlus.ViewModels
             if (File.Exists(filepath))
             {
                 Project project = null;
-                fileViewModel = files.FirstOrDefault(fm => fm.FilePath == filepath.ToLower());
+                fileViewModel = files.FirstOrDefault(fm => fm.FilePath.ToLower() == filepath.ToLower());
                 if (fileViewModel == null)
                 {
-                    project = solution.Projects.FirstOrDefault(p => p.AllFiles(true).Any(f => f == filepath.ToLower()));
-                    fileViewModel = new FileViewModel(filepath.ToLower(), project);
+                    project = solution.Projects.FirstOrDefault(p => p.AllFiles().Any(f => f == filepath.ToLower()));
+                    fileViewModel = new FileViewModel(filepath, project);
                     fileViewModel.SyntaxHighlightName = GetCurrentHightlighting();
                     files.Add(fileViewModel);
                 }
@@ -1247,6 +1257,15 @@ namespace MDStudioPlus.ViewModels
                 bool watchingEvents = (sourceWatcher == null) || sourceWatcher.EnableRaisingEvents;
                 sourceWatcher.Changed -= onFileChanged;
                 sourceWatcher = null;
+
+                sourceWatcher = new FileSystemWatcher();
+                sourceWatcher.Path = Path.GetDirectoryName(ActiveDocument.FilePath);
+                sourceWatcher.Filter = Path.GetFileName(ActiveDocument.FilePath);
+                sourceWatcher.EnableRaisingEvents = watchingEvents;
+                sourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                sourceWatcher.Changed += onFileChanged;
+
+                sourceMode = SourceMode.Source;
 
                 // These need to run after binding events in order to access the "Code Editor" in ActiveDocument
                 Application.Current.Dispatcher.Invoke(new Action(() =>
@@ -1263,20 +1282,12 @@ namespace MDStudioPlus.ViewModels
                     }
                 }), DispatcherPriority.Render);
                 
-                sourceWatcher = new FileSystemWatcher();
-                sourceWatcher.Path = Path.GetDirectoryName(ActiveDocument.FilePath);
-                sourceWatcher.Filter = Path.GetFileName(ActiveDocument.FilePath);
-                sourceWatcher.EnableRaisingEvents = watchingEvents;
-                sourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                sourceWatcher.Changed += onFileChanged;
-
-
-                sourceMode = SourceMode.Source;
             }
             return fileViewModel;
         }
 
         #region Debugging
+        // TODO: Add debugging related stuff here
         private void StartDebugging()
         {
             //throw new NotImplementedException();
@@ -1286,6 +1297,7 @@ namespace MDStudioPlus.ViewModels
             //breakMenu.Enabled = true;
         }
 
+        // TODO: Turn off debugging related stuff here
         private void StopDebugging()
         {
             //throw new NotImplementedException();
@@ -1310,24 +1322,6 @@ namespace MDStudioPlus.ViewModels
             {
                 target.RemoveBreakpoint(address);
             }
-        }
-
-        /// <summary>
-        /// Unused??
-        /// </summary>
-        /// <param name="address"></param>
-        public void SetBreakpoint(uint address)
-        {
-            //if (m_BreakpointView != null)
-            //{
-            //    m_BreakpointView.SetBreakpoint(address);
-            //}
-
-            //SetTargetBreakpoint(address);
-
-            //Tuple<string, int, int> fileLine = debugSymbols.GetFileLine(address);
-
-            //breakpoints.Add(new Breakpoint(fileLine.Item1, fileLine.Item3));
         }
 
         public int SetBreakpoint(string filename, int line)
@@ -1359,24 +1353,6 @@ namespace MDStudioPlus.ViewModels
                 breakpoints.Add(new Breakpoint(filename, line));
                 return line;
             }
-        }
-
-        public void RemoveBreakpoint(uint address)
-        {
-            //if (breakpointView != null)
-            //{
-            //    //TODO: Breakpoint view should be by file/line, not address
-            //    breakpointView.RemoveBreakpoint(address);
-            //}
-
-            /*RemoveTargetBreakpoint(address);
-
-            Tuple<string, int, int> fileLine = debugSymbols.GetFileLine(address);
-
-            breakpoints.Remove(breakpoints.Find(breakpoint => 
-                                                breakpoint.Filename.Equals(fileLine.Item1, StringComparison.OrdinalIgnoreCase) && 
-                                                breakpoint.Line >= fileLine.Item2 && 
-                                                breakpoint.Line <= fileLine.Item3));*/
         }
 
         public int RemoveBreakpoint(string filename, int line)
@@ -1724,6 +1700,14 @@ namespace MDStudioPlus.ViewModels
                 state = State.Running;
                 IsBreakPointHit = false;
                 ActiveDocument?.RemoveAllMarkers();
+
+                if (target is EmulatorTarget emulator)
+                {
+                    Application.Current.Dispatcher.Invoke(new Action(() =>
+                    {
+                        emulator.BringToFront();
+                    }));
+                }
             }
         }
 
@@ -1925,7 +1909,11 @@ namespace MDStudioPlus.ViewModels
         {           
             int returnValue = 0;
             var worker = new System.ComponentModel.BackgroundWorker();
-            worker.DoWork += (sender, e) => e.Result = Build();
+            worker.DoWork += (sender, e) =>
+            {
+                 SaveAll();
+                e.Result = Build();
+            };
             worker.RunWorkerCompleted += (sender, e) =>
             {
                 returnValue = (int)e.Result;                
@@ -2018,6 +2006,7 @@ namespace MDStudioPlus.ViewModels
             else if (state == State.Stopped)
             {
                 SaveAll();
+
                 int errorCount = 0;
 
                 if(!alreadyBuilt)

@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace MDStudioPlus.FileExplorer
 {
-    public class SolutionItem : DirectoryItem
+    public class FileItem : Item, IProjectItemChild
     {
-        public SolutionItem() : base()
+        public Project Project { get; protected set; }
+        public FileItem(Project project)
         {
-
+            Project = project;
         }
     }
 }

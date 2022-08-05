@@ -8,7 +8,8 @@
         xmlns:editor="clr-namespace:MDStudioPlus.Editor"
         xmlns:fileexplorer="clr-namespace:MDStudioPlus.FileExplorer"
         xmlns:controls="clr-namespace:MDStudioPlus.Controls"
-        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
+        xmlns:behaviors="clr-namespace:MDStudioPlus.Behaviors"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance viewModels:Workspace, IsDesignTimeCreatable=True}"
         Title="MD Studio Plus" MinWidth="140" MinHeight="116" 
@@ -22,7 +23,9 @@
         <WindowChrome x:Name="chrome" ResizeBorderThickness="8" 
                           CornerRadius="0" GlassFrameThickness="0" NonClientFrameEdges="None" />
     </WindowChrome.WindowChrome>
-
+    <i:Interaction.Behaviors>
+        <behaviors:ActivateBehavior Activated="{Binding Activated, Mode=TwoWay}"/>
+    </i:Interaction.Behaviors>
     <Window.Style>
         <Style TargetType="{x:Type Window}">
             <Setter Property="BorderThickness" Value="1" />
@@ -113,7 +116,7 @@
                                 <Style TargetType="MenuItem">
                                     <Style.Triggers>
                                         <!--Don't allow build if the solution is not loaded-->
-                                        <DataTrigger Binding="{Binding IsLoaded}" Value="False">
+                                        <DataTrigger Binding="{Binding IsSolutionLoaded}" Value="False">
                                             <Setter Property="IsEnabled" Value="False"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding IsBuilding}" Value="True">
@@ -754,29 +757,34 @@
                     <local:PanesTemplateSelector.ExplorerViewTemplate>
                         <DataTemplate>
                             <Border>
-                                <TreeView ItemsSource="{Binding DirectoryItems}">
+                                <DockPanel>
+                                        <!--Hiding toolbar until it is ready to be implemented-->
+                                    <StackPanel Orientation="Vertical" DockPanel.Dock="Top" Visibility="Collapsed">
+                                        <ToolBarPanel Orientation="Horizontal">
+                                            <MenuItem Width="24" Command="{Binding ExpandCommand}">
+                                                <MenuItem.Icon>
+                                                    <Image Source="pack://application:,,,/Resources/Toolbar/Play.png" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </ToolBarPanel>
+                                        <TextBox></TextBox>
+                                    </StackPanel>
+                                <TreeView ItemsSource="{Binding DirectoryItems}" DockPanel.Dock="Bottom">
                                     <TreeView.Resources>
                                         <ContextMenu x:Key="ProjectContextMenu">
                                             <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
                                             <MenuItem Header="Open Existing File..." Command="{Binding AddExistingFileCommand}"/>
                                             <MenuItem Header="Add Folder"/>
                                         </ContextMenu>
-                                        <ContextMenu x:Key="FileContextMenu">
-                                            <MenuItem Header="Open" IsEnabled="False"/>
-                                            <MenuItem Header="Exclude From Debugger" IsEnabled="False"/>
-                                        </ContextMenu>
                                         <ContextMenu x:Key="DirectoryContextMenu">
                                             <MenuItem Header="Add New File..."/>
                                             <MenuItem Header="Open Existing File..."/>
                                             <MenuItem Header="Add Folder"/>
                                         </ContextMenu>
-                                        <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItem}"
-                                                                  ItemsSource="{Binding Items}">
-                                            <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
-                                                <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
-                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
-                                            </DockPanel>
-                                        </HierarchicalDataTemplate>
+                                        <ContextMenu x:Key="FileContextMenu">
+                                            <MenuItem Header="Open" IsEnabled="False"/>
+                                            <MenuItem Header="Exclude From Debugger" IsEnabled="False"/>
+                                        </ContextMenu>
                                         <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItem}"
                                                                   ItemsSource="{Binding Items}">
                                             <DockPanel>
@@ -791,6 +799,13 @@
                                                 <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" DockPanel.Dock="Left"/>
                                             </DockPanel>
                                         </HierarchicalDataTemplate>
+                                        <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItem}"
+                                                                  ItemsSource="{Binding Items}">
+                                            <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
+                                                <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
+                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
+                                            </DockPanel>
+                                        </HierarchicalDataTemplate>
                                         <DataTemplate DataType="{x:Type fileexplorer:FileItem}">
                                             <DockPanel ContextMenu="{StaticResource FileContextMenu}" >
                                                 <Image Source="pack://application:,,,/Resources/FileIcon.png" Width="16" Height="16"/>
@@ -801,9 +816,11 @@
                                     <TreeView.ItemContainerStyle>
                                         <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                                             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                                         </Style>
                                     </TreeView.ItemContainerStyle>
                                 </TreeView>
+                                </DockPanel>
                             </Border>
                         </DataTemplate>
                     </local:PanesTemplateSelector.ExplorerViewTemplate>
@@ -892,14 +909,14 @@
                                                       CanUserResizeRows="False"
                                                       CanUserResizeColumns="False"
                                                       RowHeaderWidth="0">
-                                                <DataGrid.Columns>
-                                                    <DataGridTextColumn Binding="{Binding Name}" 
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Binding="{Binding Name}" 
                                                                         Header="Data Register" 
                                                                         IsReadOnly="True" 
                                                                         Width="25"/>
-                                                    <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
-                                                </DataGrid.Columns>
-                                            </DataGrid>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
                                                 <!--Address Registers-->
                                                 <DataGrid ItemsSource="{Binding AddressRegisters}" 
                                                       AutoGenerateColumns="False"
@@ -1011,7 +1028,6 @@
                             </Border>
                         </DataTemplate>
                     </local:PanesTemplateSelector.RegistersViewTemplate>
-
                     <!-- Memory View Window -->
                     <local:PanesTemplateSelector.MemoryViewTemplate>
                         <DataTemplate>
@@ -1020,29 +1036,31 @@
                                           ItemsSource="{Binding Memory}"
                                           HorizontalGridLinesBrush="{x:Null}"
                                           VerticalGridLinesBrush="{x:Null}"
+                                          BorderBrush="{x:Null}"
                                           CanUserReorderColumns="False"
                                           ColumnWidth="25"
                                           CanUserResizeRows="False"
                                           CanUserResizeColumns="False"
-                                          RowHeaderWidth="0">
+                                          RowHeaderWidth="0"
+                                          CellStyle="{StaticResource DataGridCellStyle}">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Binding="{Binding Index}" Header="Addr" Width="40"/>
-                                        <DataGridTextColumn Binding="{Binding Value[0]}" Header="00"/>
-                                        <DataGridTextColumn Binding="{Binding Value[1]}" Header="01"/>
-                                        <DataGridTextColumn Binding="{Binding Value[2]}" Header="02"/>
-                                        <DataGridTextColumn Binding="{Binding Value[3]}" Header="03"/>
-                                        <DataGridTextColumn Binding="{Binding Value[4]}" Header="04"/>
-                                        <DataGridTextColumn Binding="{Binding Value[5]}" Header="05"/>
-                                        <DataGridTextColumn Binding="{Binding Value[6]}" Header="06"/>
-                                        <DataGridTextColumn Binding="{Binding Value[7]}" Header="07"/>
-                                        <DataGridTextColumn Binding="{Binding Value[8]}" Header="08"/>
-                                        <DataGridTextColumn Binding="{Binding Value[9]}" Header="09"/>
-                                        <DataGridTextColumn Binding="{Binding Value[10]}" Header="0A"/>
-                                        <DataGridTextColumn Binding="{Binding Value[11]}" Header="0B"/>
-                                        <DataGridTextColumn Binding="{Binding Value[12]}" Header="0C"/>
-                                        <DataGridTextColumn Binding="{Binding Value[13]}" Header="0D"/>
-                                        <DataGridTextColumn Binding="{Binding Value[14]}" Header="0E"/>
-                                        <DataGridTextColumn Binding="{Binding Value[15]}" Header="0F"/>
+                                        <DataGridTextColumn Binding="{Binding Value[0]}" Header="$00"/>
+                                        <DataGridTextColumn Binding="{Binding Value[1]}" Header="$01"/>
+                                        <DataGridTextColumn Binding="{Binding Value[2]}" Header="$02"/>
+                                        <DataGridTextColumn Binding="{Binding Value[3]}" Header="$03"/>
+                                        <DataGridTextColumn Binding="{Binding Value[4]}" Header="$04"/>
+                                        <DataGridTextColumn Binding="{Binding Value[5]}" Header="$05"/>
+                                        <DataGridTextColumn Binding="{Binding Value[6]}" Header="$06"/>
+                                        <DataGridTextColumn Binding="{Binding Value[7]}" Header="$07"/>
+                                        <DataGridTextColumn Binding="{Binding Value[8]}" Header="$08"/>
+                                        <DataGridTextColumn Binding="{Binding Value[9]}" Header="$09"/>
+                                        <DataGridTextColumn Binding="{Binding Value[10]}" Header="$0A"/>
+                                        <DataGridTextColumn Binding="{Binding Value[11]}" Header="$0B"/>
+                                        <DataGridTextColumn Binding="{Binding Value[12]}" Header="$0C"/>
+                                        <DataGridTextColumn Binding="{Binding Value[13]}" Header="$0D"/>
+                                        <DataGridTextColumn Binding="{Binding Value[14]}" Header="$0E"/>
+                                        <DataGridTextColumn Binding="{Binding Value[15]}" Header="$0F"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -1090,6 +1108,7 @@
                             <LayoutAnchorablePane Name="ErrorsPane" />
                             <LayoutAnchorablePane Name="OutputPane"/>
                             <LayoutAnchorablePane Name="RegistersPane"/>
+                            <LayoutAnchorablePane Name="MemoryPane"/>
                         </LayoutAnchorablePaneGroup>
                     </LayoutPanel>
 

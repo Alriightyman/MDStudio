@@ -251,14 +251,19 @@
         <Setter Property="RowBackground" Value="{x:Null}"/>
         <Setter Property="HorizontalGridLinesBrush" Value="{x:Null}" />
     </Style>
-    <Style TargetType="DataGridCell">
+    <Style x:Key="DataGridCellStyle" TargetType="DataGridCell">
         <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
         <Setter Property="Background" Value="{x:Null}" />
         <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
     </Style>
-    <Style TargetType="DataGridColumnHeader">
+    <Style x:Key="DataGridCellStyleNoBorders" TargetType="DataGridCell">
         <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
         <Setter Property="Background" Value="{x:Null}" />
+        <Setter Property="BorderBrush" Value="{x:Null}" />
+    </Style>
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}" />
+        <Setter Property="Background" Value="{DynamicResource ControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource {x:Static reskeys:ResourceKeys.GrayNormalBrushKey}}" />
     </Style>
     <Style TargetType="DataGridCellsPanel">

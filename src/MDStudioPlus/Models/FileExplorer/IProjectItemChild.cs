@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace MDStudioPlus.FileExplorer
 {
-    public class FileItem : Item
+    public interface IProjectItemChild
     {
-
+        Project Project { get; }
     }
 }

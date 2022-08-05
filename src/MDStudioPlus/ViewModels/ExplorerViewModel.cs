@@ -1,9 +1,11 @@
-﻿using MDStudioPlus.FileExplorer;
+using MDStudioPlus.FileExplorer;
+using MDStudioPlus.FileExplorer.Events;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Windows.Input;
 
 namespace MDStudioPlus.ViewModels
 {
@@ -12,7 +14,7 @@ namespace MDStudioPlus.ViewModels
         #region Event Handlers
         public event SelectedItemEventHandler OnSelectedItemChanged;
         #endregion
-
+        
         #region fields
         public const string ToolContentId = "FileStatsTool";
         private DateTime lastModified;
@@ -21,10 +23,11 @@ namespace MDStudioPlus.ViewModels
         private string filePath;
 
         private Solution solution;
+        private RelayCommand expandCommand;
         #endregion fields
 
         private ObservableCollection<Item> solutionDirectory = new ObservableCollection<Item>();
-
+        
         #region constructors
         /// <summary>
         /// Class constructor
@@ -127,13 +130,36 @@ namespace MDStudioPlus.ViewModels
 
         #endregion Properties
 
+        #region Commands
+        public ICommand ExpandCommand
+        {
+            get
+            {
+                if(expandCommand == null)
+                {
+                    expandCommand = new RelayCommand((p) => OnExpand());
+                }
+
+                return expandCommand;
+            }
+        }
+        #endregion
+
         #region methods
+
+        private void OnExpand()
+        {
+            ((DirectoryItem)this.DirectoryItems.FirstOrDefault()).IsExpanded = true;
+        }
+
         private void SetFiles()
         {
             var currentDir = solution.SolutionPath;
             int projectCount = solution.Projects.Count;
             // set up name for solution
             var solutionItem = new SolutionItem() { Name = $"Solution '{solution.Name}' ({projectCount} projects)", Path = solution.FullPath, Explorer=this };
+            solutionItem.IsExpanded = true;
+
             solutionItem.Items = new ObservableCollection<Item>();
             solutionItem.OnSelectedItemChanged -= OnSelectedItem;
             solutionItem.OnSelectedItemChanged += OnSelectedItem;
@@ -142,96 +168,73 @@ namespace MDStudioPlus.ViewModels
             {
                 // create a new project tree item
                 var projectItem = new ProjectItem(project) { Name = project.Name, Path = project.FullPath, Parent=solutionItem, Explorer = this };
+                projectItem.IsExpanded = true;
+
                 projectItem.OnSelectedItemChanged -= OnSelectedItem;
                 projectItem.OnSelectedItemChanged += OnSelectedItem;
                 // get all of the files in this project and sort
                 List<string> files = (List<string>)project.AllFiles();
                 files.Sort();
 
-
-                foreach(var file in files)
+                foreach (string selectedFile in project.AllFiles())
                 {
-                    // get the directory the file lives under
-                    var directory = Path.GetDirectoryName(file);
-                    // get the filename of the file
-                    var filename = Path.GetFileName(file);
+                    DirectoryItem newDirectoryItem = null;
+                    DirectoryItem parentDirectoryItem = projectItem;
+                    int projectPathLength = project.ProjectPath.Length;
+                    string relativeFilename =  selectedFile;
+                    string fullDirectory = System.IO.Path.GetDirectoryName(relativeFilename);
 
-                    // only bother if the file doesn't exist
-                    var existingFileItem = projectItem.Items.Where(i => i is FileItem && i.Name.ToLower() == filename.ToLower()).FirstOrDefault();
-                    if (existingFileItem == null)
+                    if (fullDirectory != String.Empty)
                     {
-                        foreach (var item in projectItem.Items)
+                        var directories = fullDirectory.Split('\\');
+
+
+                        for (int count = 0; count < directories.Length; count++)
                         {
-                            if (item is DirectoryItem directoryItem)
+                            newDirectoryItem = FindDirectory(parentDirectoryItem.Items.Where(di => di is DirectoryItem).Cast<DirectoryItem>().ToList(), directories[count]);
+
+                            // if directory was not found and we have not gone through all directories
+                            if (newDirectoryItem == null)
                             {
-                                existingFileItem = directoryItem.Items.Where(i => i is FileItem && i.Name.ToLower() == filename.ToLower()).FirstOrDefault() as FileItem;
-                                if (existingFileItem != null)
-                                    break;
+                                var directory = System.IO.Path.GetDirectoryName(parentDirectoryItem.Path);
+                                newDirectoryItem = new DirectoryItem(project)
+                                {
+                                    Name = directories[count],
+                                    Path = $"{directory}\\{directories[count]}",
+                                    Explorer = this,
+                                    Parent = parentDirectoryItem,
+                                };
+
+                                newDirectoryItem.OnSelectedItemChanged -= OnSelectedItem;
+                                newDirectoryItem.OnSelectedItemChanged += OnSelectedItem;
+
+                                parentDirectoryItem.Items.Add(newDirectoryItem);
+                                parentDirectoryItem = newDirectoryItem;
+                            }
+                            else
+                            {
+                                parentDirectoryItem = newDirectoryItem;
                             }
                         }
                     }
 
-                    if (existingFileItem == null)
+                    // now that the directory structure is set, create the file item
+                    if (!String.IsNullOrEmpty(relativeFilename))
                     {
-
-                        DirectoryItem directoryItem = null;
-                        // TODO: Check multiple Directories..
-                        string[] directories = directory.Split('\\');
-                        DirectoryItem possibleParent = null;
-
-                        foreach (var dir in directories)
+                        FileItem newFileItem = new FileItem(project)
                         {
-                            // determine if the directory exists
-                            directoryItem = projectItem.Items.Where(i => i is DirectoryItem && i.Name.ToLower() == dir.ToLower()).FirstOrDefault() as DirectoryItem;
+                            // since the project holds relative paths, we need to 
+                            // create a full path
+                            Path = $"{project.ProjectPath}\\{selectedFile}",
+                            Name = System.IO.Path.GetFileName(relativeFilename),
+                            Explorer = this,
+                            Parent = parentDirectoryItem,
+                        };
 
-                            // 
-                            if (directoryItem == null)
-                            {
-                                foreach(var item in projectItem.Items)
-                                {
-                                    if (item is DirectoryItem dirItem)
-                                    {
-                                        directoryItem = FindDirectory(dirItem, dir);
-                                    }
-                                }
-                            }
+                        newFileItem.OnSelectedItemChanged -= OnSelectedItem;
+                        newFileItem.OnSelectedItemChanged += OnSelectedItem;
 
-                            // also, no point if there is no directory
-                            if (directoryItem == null && directory != string.Empty)
-                            {
-                                var dirAdjustment = dir != string.Empty ? $"{dir}\\" : "";
-                                var fullDirpath = $"{currentDir}\\{dirAdjustment}";
-                                directoryItem = new DirectoryItem() { Name = dir.ToLower(), Path = fullDirpath.ToLower(), Parent = (possibleParent ?? projectItem), Explorer = this };
-                                directoryItem.OnSelectedItemChanged -= OnSelectedItem;
-                                directoryItem.OnSelectedItemChanged += OnSelectedItem;
-                                if (possibleParent != null)
-                                {
-                                    possibleParent.Items.Add(directoryItem);
-                                }
-                                else
-                                {
-                                    projectItem.Items.Add(directoryItem);
-                                }                                
-                            }
-
-                            possibleParent = directoryItem as DirectoryItem;
-                        }
-
-                        // create the file and add it to the directory (if it exists)
-                        // otherwise, add it to the project
-                        var fileItem = new FileItem() { Name = filename, Path = $"{project.ProjectPath}\\{file}" };
-                        fileItem.OnSelectedItemChanged -= OnSelectedItem;
-                        fileItem.OnSelectedItemChanged += OnSelectedItem;
-                        if (directory != string.Empty)
-                        {
-                            fileItem.Parent = directoryItem;
-                            directoryItem.Items.Add(fileItem);
-                        }
-                        else
-                        {
-                            fileItem.Parent = projectItem;
-                            projectItem.Items.Add(fileItem);
-                        }                        
+                        parentDirectoryItem.Items.Add(newFileItem);
                     }
                 }
 
@@ -245,6 +248,26 @@ namespace MDStudioPlus.ViewModels
             solutionDirectory.Clear();
             solutionDirectory.Add(solutionItem);
            
+        }
+
+        private DirectoryItem FindDirectory(List<DirectoryItem> directories, string directoryName)
+        {
+            foreach (var directory in directories)
+            {
+                // if found, return
+                if (directory.Name.ToLower() == directoryName.ToLower())
+                    return directory;
+                // not found?  Look through its Items
+                List<DirectoryItem> items = directory.Items.Where(item => item is DirectoryItem).Cast<DirectoryItem>().ToList();
+                DirectoryItem directoryItem = FindDirectory(items, directoryName);
+
+                // if we found it, return
+                if (directoryItem != null)
+                    return directoryItem;
+            }
+
+            // was never found.. just return null instead
+            return null;
         }
 
         // sort the directory items in the hierarchy
@@ -316,6 +339,7 @@ namespace MDStudioPlus.ViewModels
             }
         }
         #endregion Events
+        
         #endregion methods
 
     }
