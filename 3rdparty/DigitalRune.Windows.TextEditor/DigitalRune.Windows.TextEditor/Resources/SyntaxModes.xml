@@ -2,7 +2,11 @@
   <Mode file       = "68k-Mode.xshd"
       name       = "ASM68k"
       extensions = ".s;.asm"/>
-  
+	
+	<Mode file       = "68k-Mode-Dark.xshd"
+		name       = "ASM68k-Dark"
+		extensions = ".s;.asm"/>
+	
   <Mode file       = "ASPX.xshd"
 	      name       = "ASP/XHTML"
 	      extensions = ".asp;.aspx;.asax;.asmx"/>

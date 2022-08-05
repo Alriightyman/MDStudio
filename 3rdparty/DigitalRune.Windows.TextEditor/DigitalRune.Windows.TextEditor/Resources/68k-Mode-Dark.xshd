@@ -1,15 +1,34 @@
 <?xml version="1.0"?>
 
-<SyntaxDefinition name = "ASM68k" extensions = ".s;.asm">	
+<SyntaxDefinition name = "ASM68k-Dark" extensions = ".s;.asm">
+	<Environment>
+		<Default      color = "#c7c7c7" bgcolor = "#1e1e1e"/>
+		<Selection    color = "White" bgcolor = "Purple"/>
+		<VRuler       color = "DimGray"/>
+		<InvalidLines color = "Red"/>
+		<CaretMarker  color = "White"/>
+
+		<LineNumbers  color = "#c7c7c7" bgcolor = "#1e1e1e"/>
+
+		<FoldLine     color = "Cyan" bgcolor = "Black"/>
+		<FoldMarker   color = "Cyan" bgcolor = "White"/>
+		<SelectedFoldLine color = "Green" bgcolor="Black"/>
+
+		<EOLMarkers   color = "#E0E0E5"/>
+		<SpaceMarkers color = "#E0E0E5"/>
+		<TabMarkers   color = "#E0E0E5"/>
+	</Environment>
+	
 	<Properties>
-    <Property name="LineComment" value="//"/>
+    <Property name="LineComment" value=";"/>
     <Property name="BlockCommentBegin" value="/*"/>
     <Property name="BlockCommentEnd" value="*/"/>
-  </Properties>
-
-  <Digits name = "Digits" bold = "false" italic = "false" color = "DarkRed"/>
+  </Properties>	
+	
+	<Digits name = "Digits" bold = "false" italic = "false" color = "#b5ce9a"/>
   <RuleSets>
     <RuleSet ignorecase = "true">
+
       <Delimiters>~!%^*()-+=|\/{}[]:;"'&lt;&gt; , .?</Delimiters>
 
       <Span name = "LineComment" bold = "true" italic = "false" color = "Green" stopateol = "true">
@@ -20,17 +39,18 @@
         <Begin startofline="true" color = "Blue">#include</Begin>
       </Span>
 
-      <MarkPrevious bold = "true" italic = "false" color = "DarkRed">:</MarkPrevious>
+      <MarkPrevious bold = "true" italic = "false" color = "Red">:</MarkPrevious>
       
-      <KeyWords name = "PreprocessorDirectives" bold="false" italic="false" color="Blue">
+      <KeyWords name = "PreprocessorDirectives" bold="false" italic="false" color="#c586c0">
         <Key word = "include" />
+        <Key word = "even" />
       </KeyWords>
 
-      <KeyWords name = "PreprocessorDirectives" bold="false" italic="false" color="Red">
-        <Key word = "equ" />
+      <KeyWords name = "PreprocessorDirectives" bold="true" italic="false" color="#c586c0">
+		  <Key word = "vdpCommDelta"/>		  
       </KeyWords>
 
-       <KeyWords name = "Instructions" bold="false" italic="false" color="Blue">
+       <KeyWords name = "Instructions" bold="true" italic="false" color="#569cd6">
          <Key word = "add" />
 		 <Key word = "addi" />
 		 <Key word = "adda" />
@@ -120,17 +140,16 @@
         <Key word = "a5" />
         <Key word = "a6" />
         <Key word = "a7" />
-      </KeyWords>
-      
+      </KeyWords>		
     </RuleSet>
 
     <RuleSet name = "IncludeStatemetSet" ignorecase = "false">
       <Delimiters>&lt;&gt;~!@%^*()-+=|\#/{}[]:;"' ,	.?</Delimiters>
-      <Span name = "LocalFile" bold = "false" italic = "false" color = "DarkRed" stopateol = "true" escapecharacter="\">
+      <Span name = "LocalFile" bold = "false" italic = "false" color = "#ce9178" stopateol = "true" escapecharacter="\">
         <Begin>"</Begin>
         <End>"</End>
       </Span>
-      <Span name = "GlobalFile" bold = "false" italic = "false" color = "DarkRed" stopateol = "true" escapecharacter="\">
+      <Span name = "GlobalFile" bold = "false" italic = "false" color = "Red" stopateol = "true" escapecharacter="\">
         <Begin>&lt;</Begin>
         <End>&gt;</End>
       </Span>

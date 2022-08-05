@@ -73,6 +73,8 @@
             this.AsPath = new System.Windows.Forms.TextBox();
             this.label19 = new System.Windows.Forms.Label();
             this.P2Bin_button = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
+            this.ThemeCombobox = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -96,7 +98,7 @@
             // okBtn
             // 
             this.okBtn.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.okBtn.Location = new System.Drawing.Point(352, 489);
+            this.okBtn.Location = new System.Drawing.Point(352, 532);
             this.okBtn.Name = "okBtn";
             this.okBtn.Size = new System.Drawing.Size(75, 23);
             this.okBtn.TabIndex = 2;
@@ -117,7 +119,7 @@
             // cancelBtn
             // 
             this.cancelBtn.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelBtn.Location = new System.Drawing.Point(255, 489);
+            this.cancelBtn.Location = new System.Drawing.Point(255, 532);
             this.cancelBtn.Name = "cancelBtn";
             this.cancelBtn.Size = new System.Drawing.Size(75, 23);
             this.cancelBtn.TabIndex = 4;
@@ -128,7 +130,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(41, 88);
+            this.label3.Location = new System.Drawing.Point(41, 131);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(99, 13);
             this.label3.TabIndex = 7;
@@ -138,7 +140,7 @@
             // 
             this.emuResolution.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.emuResolution.FormattingEnabled = true;
-            this.emuResolution.Location = new System.Drawing.Point(148, 85);
+            this.emuResolution.Location = new System.Drawing.Point(148, 128);
             this.emuResolution.Name = "emuResolution";
             this.emuResolution.Size = new System.Drawing.Size(144, 21);
             this.emuResolution.TabIndex = 8;
@@ -161,7 +163,7 @@
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.inputUp);
             this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Location = new System.Drawing.Point(19, 345);
+            this.groupBox1.Location = new System.Drawing.Point(19, 388);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(408, 138);
             this.groupBox1.TabIndex = 9;
@@ -316,7 +318,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(27, 112);
+            this.label12.Location = new System.Drawing.Point(27, 155);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(115, 13);
             this.label12.TabIndex = 10;
@@ -327,7 +329,7 @@
             this.autoOpenLastProject.AutoSize = true;
             this.autoOpenLastProject.Checked = true;
             this.autoOpenLastProject.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.autoOpenLastProject.Location = new System.Drawing.Point(148, 112);
+            this.autoOpenLastProject.Location = new System.Drawing.Point(148, 155);
             this.autoOpenLastProject.Name = "autoOpenLastProject";
             this.autoOpenLastProject.Size = new System.Drawing.Size(15, 14);
             this.autoOpenLastProject.TabIndex = 11;
@@ -336,7 +338,7 @@
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(53, 188);
+            this.label13.Location = new System.Drawing.Point(53, 231);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(87, 13);
             this.label13.TabIndex = 12;
@@ -344,14 +346,14 @@
             // 
             // megaUSBPath
             // 
-            this.megaUSBPath.Location = new System.Drawing.Point(146, 185);
+            this.megaUSBPath.Location = new System.Drawing.Point(146, 228);
             this.megaUSBPath.Name = "megaUSBPath";
             this.megaUSBPath.Size = new System.Drawing.Size(281, 20);
             this.megaUSBPath.TabIndex = 13;
             // 
             // pathMegaUSBButton
             // 
-            this.pathMegaUSBButton.Location = new System.Drawing.Point(435, 183);
+            this.pathMegaUSBButton.Location = new System.Drawing.Point(435, 226);
             this.pathMegaUSBButton.Name = "pathMegaUSBButton";
             this.pathMegaUSBButton.Size = new System.Drawing.Size(24, 23);
             this.pathMegaUSBButton.TabIndex = 14;
@@ -363,7 +365,7 @@
             // 
             this.modeNTSC.AutoSize = true;
             this.modeNTSC.Checked = true;
-            this.modeNTSC.Location = new System.Drawing.Point(146, 135);
+            this.modeNTSC.Location = new System.Drawing.Point(146, 178);
             this.modeNTSC.Name = "modeNTSC";
             this.modeNTSC.Size = new System.Drawing.Size(54, 17);
             this.modeNTSC.TabIndex = 15;
@@ -374,7 +376,7 @@
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(93, 134);
+            this.label14.Location = new System.Drawing.Point(93, 177);
             this.label14.Name = "label14";
             this.label14.Size = new System.Drawing.Size(47, 13);
             this.label14.TabIndex = 16;
@@ -384,7 +386,7 @@
             // modePAL
             // 
             this.modePAL.AutoSize = true;
-            this.modePAL.Location = new System.Drawing.Point(206, 135);
+            this.modePAL.Location = new System.Drawing.Point(206, 178);
             this.modePAL.Name = "modePAL";
             this.modePAL.Size = new System.Drawing.Size(45, 17);
             this.modePAL.TabIndex = 17;
@@ -394,7 +396,7 @@
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(93, 158);
+            this.label15.Location = new System.Drawing.Point(93, 201);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(44, 13);
             this.label15.TabIndex = 18;
@@ -404,7 +406,7 @@
             // 
             this.emuRegion.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.emuRegion.FormattingEnabled = true;
-            this.emuRegion.Location = new System.Drawing.Point(146, 155);
+            this.emuRegion.Location = new System.Drawing.Point(146, 198);
             this.emuRegion.Name = "emuRegion";
             this.emuRegion.Size = new System.Drawing.Size(144, 21);
             this.emuRegion.TabIndex = 19;
@@ -430,7 +432,7 @@
             // label17
             // 
             this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(41, 218);
+            this.label17.Location = new System.Drawing.Point(41, 261);
             this.label17.Name = "label17";
             this.label17.Size = new System.Drawing.Size(99, 13);
             this.label17.TabIndex = 22;
@@ -439,14 +441,14 @@
             // listIncludes
             // 
             this.listIncludes.FormattingEnabled = true;
-            this.listIncludes.Location = new System.Drawing.Point(146, 218);
+            this.listIncludes.Location = new System.Drawing.Point(146, 261);
             this.listIncludes.Name = "listIncludes";
             this.listIncludes.Size = new System.Drawing.Size(281, 121);
             this.listIncludes.TabIndex = 23;
             // 
             // btnIncludeAdd
             // 
-            this.btnIncludeAdd.Location = new System.Drawing.Point(435, 218);
+            this.btnIncludeAdd.Location = new System.Drawing.Point(435, 261);
             this.btnIncludeAdd.Name = "btnIncludeAdd";
             this.btnIncludeAdd.Size = new System.Drawing.Size(24, 23);
             this.btnIncludeAdd.TabIndex = 24;
@@ -456,7 +458,7 @@
             // 
             // btnInlcudesRemove
             // 
-            this.btnInlcudesRemove.Location = new System.Drawing.Point(435, 247);
+            this.btnInlcudesRemove.Location = new System.Drawing.Point(435, 290);
             this.btnInlcudesRemove.Name = "btnInlcudesRemove";
             this.btnInlcudesRemove.Size = new System.Drawing.Size(24, 23);
             this.btnInlcudesRemove.TabIndex = 25;
@@ -492,11 +494,34 @@
             this.P2Bin_button.UseVisualStyleBackColor = true;
             this.P2Bin_button.Click += new System.EventHandler(this.P2Bin_button_Click);
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(64, 93);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(73, 13);
+            this.label2.TabIndex = 35;
+            this.label2.Text = "Editor Theme:";
+            // 
+            // ThemeCombobox
+            // 
+            this.ThemeCombobox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ThemeCombobox.FormattingEnabled = true;
+            this.ThemeCombobox.Items.AddRange(new object[] {
+            "Light",
+            "Dark"});
+            this.ThemeCombobox.Location = new System.Drawing.Point(148, 90);
+            this.ThemeCombobox.Name = "ThemeCombobox";
+            this.ThemeCombobox.Size = new System.Drawing.Size(144, 21);
+            this.ThemeCombobox.TabIndex = 36;
+            // 
             // ConfigForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(479, 522);
+            this.ClientSize = new System.Drawing.Size(479, 563);
+            this.Controls.Add(this.ThemeCombobox);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.P2Bin_button);
             this.Controls.Add(this.AsPath);
             this.Controls.Add(this.label19);
@@ -581,5 +606,7 @@
         public System.Windows.Forms.TextBox AsPath;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.Button P2Bin_button;
+        private System.Windows.Forms.Label label2;
+        public System.Windows.Forms.ComboBox ThemeCombobox;
     }
 }

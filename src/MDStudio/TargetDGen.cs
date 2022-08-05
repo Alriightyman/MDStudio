@@ -199,6 +199,11 @@ namespace MDStudio
             return (uint)DGenThread.GetDGen().GetColor(index);
         }
 
+        public override void SetVolume(int vol)
+        {
+            DGenThread.GetDGen().SetVolume(vol);
+        }
+
         public override uint Disassemble(uint address, ref string text)
         {
             uint size = 0;

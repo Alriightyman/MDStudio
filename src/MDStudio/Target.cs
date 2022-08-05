@@ -83,6 +83,9 @@ namespace MDStudio
 
         //Disassembly
         public abstract uint Disassemble(uint address, ref string text);
+
+        // Sound
+        public abstract void SetVolume(int vol);
     }
 
     abstract class EmulatorTarget : Target

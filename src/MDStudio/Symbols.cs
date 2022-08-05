@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Data                         ;
+using System.IO;
 
 namespace MDStudio
 {
@@ -215,7 +216,7 @@ namespace MDStudio
                     {
                         continue; // ignore this
                     }
-                    else if (line.Contains("\\") || line.Contains("/"))
+                    else if (line.Contains("\\") || line.Contains("/") || Path.GetExtension(line) == ".asm")
                     {                        
 
                         int fileIndex = line.IndexOf(' ') + 1;
@@ -418,7 +419,7 @@ namespace MDStudio
 
                         int bytesRead = 0;
                         int totalBytes = data.Length;
-
+                        bool continuing = false;
                         // Symbol lines are 1-based, text editor lines are 0-based
                         int currentLine = 1;
 
@@ -433,166 +434,188 @@ namespace MDStudio
                                 throw new Exception("Bad chunk length or malformed file");
                             }
                         }
-
-                        //Iterate over chunks
-                        while (bytesRead < data.Length)
+                        StringBuilder builder = new StringBuilder();
+                        using (StringWriter fs = new StringWriter(builder))
                         {
-                            //Read chunk header
-                            bytesRead += Serialise(ref stream, out chunkHeader);
-
-                            //What is it?
-                            switch (chunkHeader.chunkId)
+                            //Iterate over chunks
+                            while (bytesRead < data.Length)
                             {
-                                case ChunkId.Filename:
-                                    {
-                                        //Read filename header
-                                        bytesRead += Serialise(ref stream, out filenameHeader);
-                                        filenameHeader.length = Endian.Swap(filenameHeader.length);
+                                //Read chunk header
+                                bytesRead += Serialise(ref stream, out chunkHeader);
 
-                                        //Read string
-                                        CheckSize(filenameHeader.length);
-                                        bytesRead += Serialise(ref stream, filenameHeader.length, out readString);
+                                //What is it?
+                                switch (chunkHeader.chunkId)
+                                {
+                                    case ChunkId.Filename:
+                                        {
+                                            //Read filename header
+                                            bytesRead += Serialise(ref stream, out filenameHeader);
+                                            filenameHeader.length = Endian.Swap(filenameHeader.length);
 
-                                        if (filenameHeader.flags == 0x1)
-                                        {
-                                            //This is the filename passed for assembly
-                                            m_AssembledFile = readString;
-                                        }
-                                        else
-                                        {
-                                            //If filename already exists, continue adding data to it
-                                            int sectionIdx = m_Filenames.FindIndex(element => element.filename == readString);
-                                            if (sectionIdx >= 0)
+                                            //Read string
+                                            CheckSize(filenameHeader.length);
+                                            bytesRead += Serialise(ref stream, filenameHeader.length, out readString);
+
+                                            readString = readString.Trim();
+
+                                            fs.WriteLine(readString);
+                                            fs.WriteLine($"\tFirst Line: {filenameHeader.firstLine}");                                            
+
+                                            if (filenameHeader.flags == 0x1)
                                             {
-                                                //Continue
-                                                filenameSection = m_Filenames[sectionIdx];
-
-                                                //Fetch line counter
-                                                currentLine = filenameSection.addresses[filenameSection.addresses.Count - 1].lineTo;
+                                                //This is the filename passed for assembly
+                                                m_AssembledFile = readString;
                                             }
                                             else
                                             {
-                                                //This is the first address in a filename chunk
-                                                filenameSection = new FilenameSection();
-                                                filenameSection.addresses = new List<AddressEntry>();
-
-                                                try
+                                                //If filename already exists, continue adding data to it
+                                                int sectionIdx = m_Filenames.FindIndex(element => element.filename == readString);
+                                                if (sectionIdx >= 0)
                                                 {
-                                                    string pathSanitised = System.IO.Path.GetFullPath(readString).ToUpper();
-                                                    filenameSection.filename = pathSanitised;
+                                                    //Continue
+                                                    filenameSection = m_Filenames[sectionIdx];
+
+                                                    //Fetch line counter
+                                                    currentLine = filenameSection.addresses[filenameSection.addresses.Count - 1].lineTo;
+                                                    continuing = true;
                                                 }
-                                                catch (Exception e)
+                                                else
                                                 {
-                                                    Console.WriteLine("Exception caught sanitising symbol path \'" + readString + "\': " + e.Message);
+                                                    //This is the first address in a filename chunk
+                                                    filenameSection = new FilenameSection();
+                                                    filenameSection.addresses = new List<AddressEntry>();
+
+                                                    try
+                                                    {
+                                                        string pathSanitised = System.IO.Path.GetFullPath(readString).ToUpper();
+                                                        filenameSection.filename = pathSanitised;
+                                                    }
+                                                    catch (Exception e)
+                                                    {
+                                                        Console.WriteLine("Exception caught sanitising symbol path \'" + readString + "\': " + e.Message);
+                                                    }
+
+                                                    continuing = false;
+                                                    //Reset line counter
+                                                    currentLine = 1;
                                                 }
 
-                                                //Reset line counter
-                                                currentLine = 1;
+                                                //Chunk payload contains address
+                                                addressEntry.address = chunkHeader.payload;
+                                                if (continuing)
+                                                {
+                                                    addressEntry.lineFrom = currentLine;
+                                                    addressEntry.lineTo = currentLine+1;
+                                                    currentLine = currentLine + 1;
+                                                }
+                                                else
+                                                {
+                                                    addressEntry.lineFrom = currentLine - 1;
+                                                    addressEntry.lineTo = filenameHeader.firstLine - 1;
+                                                    currentLine = filenameHeader.firstLine;
+                                                }
+
+                                                filenameSection.addresses.Add(addressEntry);
+
+                                                fs.WriteLine($"\t{addressEntry.address}:{addressEntry.lineFrom}:{addressEntry.lineTo}");
+                                                //Next
+                                                currentLine++;
+
+                                                //Add to filename list
+                                                m_Filenames.Add(filenameSection);
                                             }
 
-                                            //Chunk payload contains address
+                                            break;
+                                        }
+
+                                    case ChunkId.Address:
+                                        {
+                                            //Chunk payload contains address for a single line
                                             addressEntry.address = chunkHeader.payload;
+
+                                            //Set line range
                                             addressEntry.lineFrom = currentLine - 1;
-                                            addressEntry.lineTo = filenameHeader.firstLine - 1;
-                                            currentLine = filenameHeader.firstLine;
-                                            filenameSection.addresses.Add(addressEntry);
+                                            addressEntry.lineTo = currentLine - 1;
 
                                             //Next
                                             currentLine++;
 
-                                            //Add to filename list
-                                            m_Filenames.Add(filenameSection);
+                                            //Add
+                                            filenameSection.addresses.Add(addressEntry);
+                                            fs.WriteLine($"\t{addressEntry.address}:{addressEntry.lineFrom}:{addressEntry.lineTo}");
+                                            break;
                                         }
 
+                                    case ChunkId.AddressWithCount:
+                                        {
+                                            //Chunk payload contains address for a rage of lines
+                                            addressEntry.address = chunkHeader.payload;
+
+                                            //Read line count
+                                            byte lineCount = 0;
+                                            bytesRead += Serialise(ref stream, out lineCount);
+
+                                            //Set line range
+                                            addressEntry.lineFrom = currentLine - 1;
+                                            addressEntry.lineTo = currentLine + (lineCount - 1) - 1;
+                                            fs.WriteLine($"\t{addressEntry.address}:{addressEntry.lineFrom}:{addressEntry.lineTo}");
+                                            //Next
+                                            currentLine += lineCount;
+
+                                            //Add
+                                            filenameSection.addresses.Add(addressEntry);
+
+                                            break;
+                                        }
+
+                                    case ChunkId.Equate:
+                                        {
+                                            //Read equate string length
+                                            byte stringLength = 0;
+                                            bytesRead += Serialise(ref stream, out stringLength);
+
+                                            //Read string
+                                            string str;
+                                            CheckSize(stringLength);
+                                            bytesRead += Serialise(ref stream, stringLength, out str);
+
+                                            Console.WriteLine($"EQU: {str}");
+
+                                            break;
+                                        }
+
+                                    case ChunkId.Symbol:
+                                        {
+                                            //Read symbol string length
+                                            byte stringLength = 0;
+                                            bytesRead += Serialise(ref stream, out stringLength);
+
+                                            //Read string
+                                            CheckSize(stringLength);
+                                            bytesRead += Serialise(ref stream, stringLength, out symbolEntry.name);
+
+                                            //Payload contains address
+                                            symbolEntry.address = chunkHeader.payload;
+                                            fs.WriteLine($"\t{symbolEntry.name}:{symbolEntry.address}");
+                                            Symbols.Add(symbolEntry);
+
+                                            break;
+                                        }
+
+                                    case ChunkId.EndOfSection:
+                                        //Payload contains section size
                                         break;
-                                    }
 
-                                case ChunkId.Address:
-                                    {
-                                        //Chunk payload contains address for a single line
-                                        addressEntry.address = chunkHeader.payload;
-
-                                        //Set line range
-                                        addressEntry.lineFrom = currentLine - 1;
-                                        addressEntry.lineTo = currentLine - 1;
-
-                                        //Next
-                                        currentLine++;
-
-                                        //Add
-                                        filenameSection.addresses.Add(addressEntry);
-
+                                    default:
+                                        short mysteryWord = 0;
+                                        bytesRead += Serialise(ref stream, out mysteryWord);
                                         break;
-                                    }
-
-                                case ChunkId.AddressWithCount:
-                                    {
-                                        //Chunk payload contains address for a rage of lines
-                                        addressEntry.address = chunkHeader.payload;
-
-                                        //Read line count
-                                        byte lineCount = 0;
-                                        bytesRead += Serialise(ref stream, out lineCount);
-
-                                        //Set line range
-                                        addressEntry.lineFrom = currentLine - 1;
-                                        addressEntry.lineTo = currentLine + (lineCount - 1) - 1;
-
-                                        //Next
-                                        currentLine += lineCount;
-
-                                        //Add
-                                        filenameSection.addresses.Add(addressEntry);
-
-                                        break;
-                                    }
-
-                                case ChunkId.Equate:
-                                    {
-                                        //Read equate string length
-                                        byte stringLength = 0;
-                                        bytesRead += Serialise(ref stream, out stringLength);
-
-                                        //Read string
-                                        string str;
-                                        CheckSize(stringLength);
-                                        bytesRead += Serialise(ref stream, stringLength, out str);
-
-                                        Console.WriteLine($"EQU: {str}");
-
-                                        break;
-                                    }
-
-                                case ChunkId.Symbol:
-                                    {
-                                        //Read symbol string length
-                                        byte stringLength = 0;
-                                        bytesRead += Serialise(ref stream, out stringLength);
-
-                                        //Read string
-                                        CheckSize(stringLength);
-                                        bytesRead += Serialise(ref stream, stringLength, out symbolEntry.name);
-
-                                        //Payload contains address
-                                        symbolEntry.address = chunkHeader.payload;
-
-                                        Symbols.Add(symbolEntry);
-
-                                        break;
-                                    }
-
-                                case ChunkId.EndOfSection:
-                                    //Payload contains section size
-                                    break;
-
-                                default:
-                                    short mysteryWord = 0;
-                                    bytesRead += Serialise(ref stream, out mysteryWord);
-                                    break;
+                                }
                             }
                         }
-
                         pinnedData.Free();
+
+                        File.WriteAllText("D:\\mapfile.txt", builder.ToString());
 
                         //Build address to file/line map
                         m_Addr2FileLine = new Dictionary<uint, Tuple<string, int, int>>();
