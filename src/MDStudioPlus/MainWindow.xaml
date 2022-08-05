@@ -758,7 +758,7 @@
                         <DataTemplate>
                             <Border>
                                 <DockPanel>
-                                        <!--Hiding toolbar until it is ready to be implemented-->
+                                    <!--Hiding toolbar until it is ready to be implemented-->
                                     <StackPanel Orientation="Vertical" DockPanel.Dock="Top" Visibility="Collapsed">
                                         <ToolBarPanel Orientation="Horizontal">
                                             <MenuItem Width="24" Command="{Binding ExpandCommand}">
@@ -769,57 +769,105 @@
                                         </ToolBarPanel>
                                         <TextBox></TextBox>
                                     </StackPanel>
-                                <TreeView ItemsSource="{Binding DirectoryItems}" DockPanel.Dock="Bottom">
-                                    <TreeView.Resources>
-                                        <ContextMenu x:Key="ProjectContextMenu">
-                                            <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
-                                            <MenuItem Header="Open Existing File..." Command="{Binding AddExistingFileCommand}"/>
-                                            <MenuItem Header="Add Folder"/>
-                                        </ContextMenu>
-                                        <ContextMenu x:Key="DirectoryContextMenu">
-                                            <MenuItem Header="Add New File..."/>
-                                            <MenuItem Header="Open Existing File..."/>
-                                            <MenuItem Header="Add Folder"/>
-                                        </ContextMenu>
-                                        <ContextMenu x:Key="FileContextMenu">
-                                            <MenuItem Header="Open" IsEnabled="False"/>
-                                            <MenuItem Header="Exclude From Debugger" IsEnabled="False"/>
-                                        </ContextMenu>
-                                        <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItem}"
+                                    <TreeView ItemsSource="{Binding DirectoryItems}" DockPanel.Dock="Bottom">
+                                        <TreeView.Resources>
+                                            <ContextMenu x:Key="ProjectContextMenu">
+                                                <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
+                                                <MenuItem Header="Open Existing File..." Command="{Binding AddExistingFileCommand}"/>
+                                                <MenuItem Header="Add Folder"/>
+                                            </ContextMenu>
+                                            <ContextMenu x:Key="DirectoryContextMenu">
+                                                <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
+                                                <MenuItem Header="Open Existing File..."/>
+                                                <MenuItem Header="Add Folder"/>
+                                            </ContextMenu>
+                                            <ContextMenu x:Key="FileContextMenu">
+                                                <MenuItem Header="Open" IsEnabled="False"/>
+                                                <Separator/>
+                                                <MenuItem Header="Exclude From Debugger" IsEnabled="False"/>
+                                                <Separator/>
+                                                <MenuItem Header="Rename" Command="{Binding RenameCommand}"/>
+                                            </ContextMenu>
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItem}"
                                                                   ItemsSource="{Binding Items}">
-                                            <DockPanel>
-                                                <Image Source="pack://application:,,,/Resources/SolutionIcon.png" Width="16" Height="16"/>
-                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
-                                            </DockPanel>
-                                        </HierarchicalDataTemplate>
-                                        <HierarchicalDataTemplate DataType="{x:Type fileexplorer:ProjectItem}"
+                                                <DockPanel>
+                                                    <Image Source="pack://application:,,,/Resources/SolutionIcon.png" Width="16" Height="16"/>
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
+                                                </DockPanel>
+                                            </HierarchicalDataTemplate>
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:ProjectItem}"
                                                                     ItemsSource="{Binding Items}">
-                                            <DockPanel ContextMenu="{StaticResource ProjectContextMenu}">
-                                                <Image Source="pack://application:,,,/Resources/ProjectIcon.png" Width="16" Height="16" DockPanel.Dock="Left"/>
-                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" DockPanel.Dock="Left"/>
-                                            </DockPanel>
-                                        </HierarchicalDataTemplate>
-                                        <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItem}"
+                                                <DockPanel ContextMenu="{StaticResource ProjectContextMenu}">
+                                                    <Image Source="pack://application:,,,/Resources/ProjectIcon.png" Width="16" Height="16" DockPanel.Dock="Left"/>
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" DockPanel.Dock="Left"/>
+                                                </DockPanel>
+                                            </HierarchicalDataTemplate>
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItem}"
                                                                   ItemsSource="{Binding Items}">
-                                            <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
-                                                <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
-                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
-                                            </DockPanel>
-                                        </HierarchicalDataTemplate>
-                                        <DataTemplate DataType="{x:Type fileexplorer:FileItem}">
-                                            <DockPanel ContextMenu="{StaticResource FileContextMenu}" >
-                                                <Image Source="pack://application:,,,/Resources/FileIcon.png" Width="16" Height="16"/>
-                                                <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" />
-                                            </DockPanel>
-                                        </DataTemplate>
-                                    </TreeView.Resources>
-                                    <TreeView.ItemContainerStyle>
-                                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
-                                        </Style>
-                                    </TreeView.ItemContainerStyle>
-                                </TreeView>
+                                                <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
+                                                    <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
+                                                </DockPanel>
+                                            </HierarchicalDataTemplate>
+                                            <DataTemplate DataType="{x:Type fileexplorer:FileItem}">
+                                                <DockPanel ContextMenu="{StaticResource FileContextMenu}" >
+                                                    <!-- File Icon -->
+                                                    <Image Source="pack://application:,,,/Resources/FileIcon.png" Width="16" Height="16"/>
+                                                    <!-- Static File Name -->
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <!-- Renamable TextBox -->
+                                                    <TextBox x:Name="fileItemTxt" Text="{Binding Path=Name}" Margin="5,0,0,0" >
+                                                        <TextBox.Style>
+                                                            <Style TargetType="{x:Type TextBox}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                        <Setter Property="AutoWordSelection" Value="True"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBox.Style>
+                                                        <i:Interaction.Behaviors>
+                                                            <behaviors:TextBoxEnterKeyUpdateBehavior />
+                                                        </i:Interaction.Behaviors>
+                                                        <i:Interaction.Triggers>
+                                                            <i:EventTrigger EventName="LostFocus" >
+                                                                <i:InvokeCommandAction Command="{Binding LostFocusCommand}" CommandParameter="{Binding Path=Text, ElementName=fileItemTxt}" />
+                                                            </i:EventTrigger>
+                                                        </i:Interaction.Triggers>
+                                                    </TextBox>
+                                                    <!-- Focuses on TextBox -->
+                                                    <DockPanel.Style>
+                                                        <Style>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElementName=fileItemTxt, Path=IsVisible}" Value="True">
+                                                                    <Setter Property="FocusManager.FocusedElement" Value="{Binding ElementName=fileItemTxt}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DockPanel.Style>
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </TreeView.Resources>
+                                        <TreeView.ItemContainerStyle>
+                                            <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                            </Style>
+                                        </TreeView.ItemContainerStyle>
+                                    </TreeView>
                                 </DockPanel>
                             </Border>
                         </DataTemplate>
