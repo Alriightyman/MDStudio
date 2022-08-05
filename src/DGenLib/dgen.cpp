@@ -26,12 +26,13 @@ extern "C" {
 
 FILE *debug_log = NULL;
 
-md*				s_DGenInstance = NULL;
-SDL_Window*		g_SDLWindow = NULL;
-SDL_Renderer*	g_SDLRenderer = NULL;
-SDL_Texture*	g_BackBuffer = NULL;
-SDL_AudioSpec	g_AudioSpec;
-HWND			g_HWND = NULL;
+md*					s_DGenInstance = NULL;
+SDL_Window*			g_SDLWindow = NULL;
+SDL_Renderer*		g_SDLRenderer = NULL;
+SDL_Texture*		g_BackBuffer = NULL;
+SDL_AudioSpec		g_AudioSpec;
+SDL_AudioDeviceID	g_audio_device = 0;
+HWND				g_HWND = NULL;
 
 int usec = 0;
 int newclk = 0, oldclk = 0, startclk = 0;
@@ -160,7 +161,6 @@ void DGenAudioCallback(void *userdata, Uint8 * stream, int len)
 		memset(&stream[wrote], 0, ((size_t)len - wrote));
 	}
 }
-SDL_AudioDeviceID g_audio_device = 0;
 
 int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region, int use_gamepad)
 {
