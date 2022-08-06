@@ -202,7 +202,7 @@ namespace MDStudioPlus.Targets
 
         public override void SetVolume(int vol)
         {
-            DGenThread.GetDGen().SetVolume(vol);
+            DGenThread.GetDGen().SetVolume(vol, true);
         }
 
         public override void PauseAudio(bool pause)

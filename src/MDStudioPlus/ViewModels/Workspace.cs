@@ -171,7 +171,7 @@ namespace MDStudioPlus.ViewModels
         private RelayCommand breakAllCommand;
         private RelayCommand stepIntoCommand;
         private RelayCommand stepOverCommand;
-
+        private RelayCommand muteAudioCommand;
         // themes
         private Tuple<string, Theme> selectedTheme;
 
@@ -298,14 +298,7 @@ namespace MDStudioPlus.ViewModels
         public bool IsBreakPointHit
         {
             get => isBreakpointHit;
-           /* {
-                if (state == State.Paused)
-                {
-                    return true;
-                }
 
-                return false;                
-            }*/
             set
             {
                 isBreakpointHit = value;
@@ -327,6 +320,19 @@ namespace MDStudioPlus.ViewModels
             {
                 isSolutionLoaded = value;
                 RaisePropertyChanged(nameof(IsSolutionLoaded));
+            }
+        }
+
+        private bool isMuted = false;
+        public bool IsMuted
+        {
+            get => isMuted;
+            set
+            {
+                isMuted = value;
+                RaisePropertyChanged(nameof(IsMuted));
+                int vol = isMuted == true ? 0 : 100;
+                target.SetVolume(vol);
             }
         }
 
@@ -855,6 +861,18 @@ namespace MDStudioPlus.ViewModels
                 }
 
                 return stepOverCommand;
+            }
+        }
+
+        public ICommand MuteAudioCommand
+        {
+            get
+            {
+                if (muteAudioCommand == null)
+                {
+                    muteAudioCommand = new RelayCommand((p) => IsMuted = !IsMuted);
+                }
+                return muteAudioCommand;
             }
         }
 

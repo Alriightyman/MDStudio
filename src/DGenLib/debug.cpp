@@ -37,6 +37,7 @@ static const char *debug_context_names[] = {
 	"M68K", "Z80", "YM2612", "SN76489"
 };
 
+
 /**
  * Aliases for the various cores.
  * @{
@@ -1587,6 +1588,7 @@ int md::debug_cmd_cont(int n_args, char **args)
 	(void) args;
 
 	debug_trap = false;
+	SetVolume(volValue, 0);
 	return (0); // causes debugger to exit
 }
 
@@ -2264,6 +2266,7 @@ void md::debug_leave()
 		return;
 	linenoise_nb_clean();
 	debug_trap = false;
+	SetVolume(volValue,0);
 }
 
 /**
@@ -2281,6 +2284,7 @@ int md::debug_enter()
 
 	if (debug_trap == false) {
 		pd_message("Debug trap.");
+		SetVolume(0,0);
 		debug_trap = true;
 
 		if (debug_context == DBG_CONTEXT_M68K)

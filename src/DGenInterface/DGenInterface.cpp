@@ -229,9 +229,9 @@ unsigned char* DGenInterface::DGen::GetVRAM()
 	return ::GetVRAM();
 }
 
-void DGenInterface::DGen::SetVolume(int vol)
+void DGenInterface::DGen::SetVolume(int vol, bool isSetDebug)
 {
-	::SetVolume(vol);
+	::SetVolume(vol, isSetDebug);
 }
 
 void DGenInterface::DGen::PauseAudio(bool pause)

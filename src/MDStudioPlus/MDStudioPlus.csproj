@@ -47,6 +47,8 @@
     <None Remove="Resources\SolutionIcon.png" />
     <None Remove="Resources\SyntaxHighlighting\Asm68k.xshd" />
     <None Remove="Resources\SyntaxHighlighting\Asm68KDark.xshd" />
+    <None Remove="Resources\Toolbar\AudioState.png" />
+    <None Remove="Resources\Toolbar\AudioStateMuted.png" />
     <None Remove="Resources\Toolbar\BreakAll.png" />
     <None Remove="Resources\Toolbar\NewProject.png" />
     <None Remove="Resources\Toolbar\Open.png" />
@@ -84,6 +86,8 @@
     <Resource Include="Resources\SolutionIcon.png" />
     <Resource Include="Resources\SyntaxHighlighting\Asm68kDark.xshd" />
     <Resource Include="Resources\SyntaxHighlighting\Asm68k.xshd" />
+    <Resource Include="Resources\Toolbar\AudioState.png" />
+    <Resource Include="Resources\Toolbar\AudioStateMuted.png" />
     <Resource Include="Resources\Toolbar\BreakAll.png" />
     <Resource Include="Resources\Toolbar\NewProject.png" />
     <Resource Include="Resources\Toolbar\Open.png" />

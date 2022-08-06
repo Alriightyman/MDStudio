@@ -101,7 +101,7 @@ namespace DGenInterface {
 
 		unsigned int Disassemble(unsigned int address, char* text);
 
-		void SetVolume(int vol);
+		void SetVolume(int vol, bool isSetDebug);
 		void PauseAudio(bool pause);
 		unsigned char* GetVRAM();
 

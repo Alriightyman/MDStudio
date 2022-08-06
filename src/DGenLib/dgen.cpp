@@ -21,6 +21,8 @@ extern "C" {
 
 #define	IS_MAIN_CPP
 #include "rc-vars.h"
+#include <exception>
+#include <fstream>
 
 #define AUDIO_CHANNELS 2
 
@@ -40,6 +42,7 @@ int frames_todo = 0;
 
 int sdlWindowWidth;
 int sdlWindowHeight;
+int volValue = 100;
 
 static unsigned char*	mdpal = NULL;
 static struct sndinfo	sndi;
@@ -173,7 +176,15 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 		auto error = SDL_GetError();
 	}
 
-	g_SDLWindow		= SDL_CreateWindow("DGen",				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+	// prefer rendering with vulkan
+	g_SDLWindow = SDL_CreateWindow("DGen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+
+	// but if not, then use opengl
+	if (g_SDLWindow == NULL)
+	{
+		g_SDLWindow = SDL_CreateWindow("DGen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+	}
+
 	g_SDLRenderer	= SDL_CreateRenderer(g_SDLWindow, -1,	SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_TARGETTEXTURE);
 	g_BackBuffer	= SDL_CreateTexture(g_SDLRenderer,		SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, windowWidth, windowHeight);
 	sdlWindowWidth = windowWidth;
@@ -474,66 +485,74 @@ void	ProcessInputs()
  */
 int UpdateDGen()
 {
-	ProcessInputs();
-	BeginFrame();
+	try {
+		ProcessInputs();
+		BeginFrame();
 
-	const unsigned int usec_frame = (1000000 / dgen_hz);
+		const unsigned int usec_frame = (1000000 / dgen_hz);
 
-	newclk = pd_usecs();
+		newclk = pd_usecs();
 
-	// Measure how many frames to do this round.
-	usec += ((newclk - oldclk) & 0x3fffff); // no more than 4 secs
-	frames_todo = (usec / usec_frame);
-	usec %= usec_frame;
-	oldclk = newclk;
+		// Measure how many frames to do this round.
+		usec += ((newclk - oldclk) & 0x3fffff); // no more than 4 secs
+		frames_todo = (usec / usec_frame);
+		usec %= usec_frame;
+		oldclk = newclk;
 
-	if (frames_todo == 0) {
-		// No frame to do yet, relax the CPU until next one.
-		int tmp = (usec_frame - usec);
-		if (tmp > 1000) {
-			// Never sleep for longer than the 50Hz value
-			// so events are checked often enough.
-			if (tmp > (1000000 / 50))
-				tmp = (1000000 / 50);
-			tmp -= 1000;
-			uSleep(tmp);
+		if (frames_todo == 0) {
+			// No frame to do yet, relax the CPU until next one.
+			int tmp = (usec_frame - usec);
+			if (tmp > 1000) {
+				// Never sleep for longer than the 50Hz value
+				// so events are checked often enough.
+				if (tmp > (1000000 / 50))
+					tmp = (1000000 / 50);
+				tmp -= 1000;
+				uSleep(tmp);
+			}
 		}
-	}
-	else
-	{
+		else
+		{
 #ifdef WITH_MUSA
-		s_DGenInstance->md_set_musa(true);
+			s_DGenInstance->md_set_musa(true);
 #endif
 
 #ifdef WITH_STAR
-		s_DGenInstance->md_set_star(true);
+			s_DGenInstance->md_set_star(true);
 #endif
 
-		int pc = s_DGenInstance->m68k_get_pc();
+			int pc = s_DGenInstance->m68k_get_pc();
 
-		// 			for(int i = 0; i < 32 ;++i)
-		// 			{
-		// 				unsigned int instrsize;
-		// 				const char* code = m68ki_disassemble_quick(pc, M68K_CPU_TYPE_68000, &instrsize);
-		// 				SDL_Log("#$%x\t%s", pc, code);
-		// 				pc += instrsize;
-		// 			}
+			// 			for(int i = 0; i < 32 ;++i)
+			// 			{
+			// 				unsigned int instrsize;
+			// 				const char* code = m68ki_disassemble_quick(pc, M68K_CPU_TYPE_68000, &instrsize);
+			// 				SDL_Log("#$%x\t%s", pc, code);
+			// 				pc += instrsize;
+			// 			}
 
-		s_DGenInstance->one_frame(&mdscr, mdpal, &sndi);
-		//pd_sound_write();
+			s_DGenInstance->one_frame(&mdscr, mdpal, &sndi);
+			//pd_sound_write();
+		}
+
+		void* pixels = NULL;
+		int		pitch = 0;
+		SDL_LockTexture(g_BackBuffer, NULL, &pixels, &pitch);
+		memcpy(pixels, mdscr.data, mdscr.h * mdscr.pitch);
+		SDL_UnlockTexture(g_BackBuffer);
+
+		//Write sound buffer to ringbuffer
+		SDL_LockAudioDevice(g_audio_device);
+		cbuf_write(&cbuf, (uint8_t*)sndi.lr, (sndi.len * 4));
+		SDL_UnlockAudioDevice(g_audio_device);
+		EndFrame();
 	}
-
-	void*	pixels = NULL;
-	int		pitch = 0;
-	SDL_LockTexture(g_BackBuffer, NULL, &pixels, &pitch);
-	memcpy(pixels, mdscr.data, mdscr.h * mdscr.pitch);
-	SDL_UnlockTexture(g_BackBuffer);
-
-	//Write sound buffer to ringbuffer
-	SDL_LockAudioDevice(g_audio_device);
-	cbuf_write(&cbuf, (uint8_t*)sndi.lr, (sndi.len * 4));
-	SDL_UnlockAudioDevice(g_audio_device);
-	EndFrame();
+	catch (std::exception e)
+	{
+		std::ofstream fout("log.txt");
+		fout << e.what();
+		fout.close();
+	}
 	return 1;
 }
 
@@ -745,9 +764,11 @@ unsigned char* GetVRAM()
 	return vram;
 }
 
-void SetVolume(int vol)
+void SetVolume(int vol, int isdebugVol = 0)
 {
 	dgen_volume = vol;
+	if (isdebugVol == 1)
+		volValue = vol;
 }
 
 void PauseAudio(int pause)

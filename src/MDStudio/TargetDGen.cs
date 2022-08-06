@@ -201,7 +201,7 @@ namespace MDStudio
 
         public override void SetVolume(int vol)
         {
-            DGenThread.GetDGen().SetVolume(vol);
+            DGenThread.GetDGen().SetVolume(vol, true);
         }
 
         public override uint Disassemble(uint address, ref string text)
