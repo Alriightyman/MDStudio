@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace MDStudioPlus.Targets
 {
-    class TargetDGen : EmulatorTarget
+    class TargetGenesisPlusGX : EmulatorTarget
     {
-        private DGenThread thread;
+        private GenesisPlusGxThread thread;
         private static string disassembleString = new string('\0', 128);
 
-        public TargetDGen()
+        public TargetGenesisPlusGX()
         {
             try
             {
-                thread = new DGenThread();
+                thread = new GenesisPlusGxThread();
             }
             catch (Exception e)
             {
@@ -36,17 +36,17 @@ namespace MDStudioPlus.Targets
 
         public override void BringToFront()
         {
-            DGenThread.GetDGen().BringToFront();
+            GenesisPlusGxThread.GetGenPlusGX().BringToFront();
         }
 
         public override void SetInputMapping(EmulatorInputs input, int mapping)
         {
-            DGenThread.GetDGen().SetInputMapping((DGenInterface.DGen.SDLInputs)input, mapping);
+            GenesisPlusGxThread.GetGenPlusGX().SetInputMapping((GenesisPlusGXInterface.GenesisPlusGX.SDLInputs)input, mapping);
         }
 
         public override void SendKeyPress(int vkCode, int keyDown)
         {
-            DGenThread.GetDGen().KeyPressed(vkCode, keyDown);
+            //GenesisPlusGxThread.GetGenPlusGX().KeyPressed(vkCode, keyDown);
         }
 
         public override bool LoadBinary(string filename)
@@ -63,69 +63,69 @@ namespace MDStudioPlus.Targets
 
         public override void Reset()
         {
-            DGenThread.GetDGen().Reset();
+            GenesisPlusGxThread.GetGenPlusGX().Reset();
         }
 
         public override void SoftReset()
         {
-            DGenThread.GetDGen().SoftReset();
+            GenesisPlusGxThread.GetGenPlusGX().SoftReset();
         }
 
         public override uint Break()
         {
-            DGenThread.GetDGen().Break();
+            GenesisPlusGxThread.GetGenPlusGX().Break();
             return GetPC();
         }
 
         public override void Resume()
         {
-            DGenThread.GetDGen().Resume();
+            GenesisPlusGxThread.GetGenPlusGX().Resume();
         }
 
         public override uint Step()
         {
-            DGenThread.GetDGen().StepInto();
+            GenesisPlusGxThread.GetGenPlusGX().StepInto();
             return GetPC();
         }
 
         public override bool IsHalted()
         {
-            return (DGenThread.GetDGen() != null) ? DGenThread.GetDGen().IsDebugging() : false;
+            return (GenesisPlusGxThread.GetGenPlusGX() != null) ? GenesisPlusGxThread.GetGenPlusGX().IsDebugging() : false;
         }
 
         public override uint GetAReg(int index)
         {
-            return (uint)DGenThread.GetDGen().GetAReg(index);
+            return (uint)GenesisPlusGxThread.GetGenPlusGX().GetAReg(index);
         }
 
         public override uint GetDReg(int index)
         {
-            return (uint)DGenThread.GetDGen().GetDReg(index);
+            return (uint)GenesisPlusGxThread.GetGenPlusGX().GetDReg(index);
         }
 
         public override uint GetPC()
         {
-            return (uint)DGenThread.GetDGen().GetCurrentPC();
+            return (uint)GenesisPlusGxThread.GetGenPlusGX().GetCurrentPC();
         }
 
         public override uint GetSR()
         {
-            return (uint)DGenThread.GetDGen().GetSR();
+            return (uint)GenesisPlusGxThread.GetGenPlusGX().GetSR();
         }
 
         public override byte ReadByte(uint address)
         {
-            return DGenThread.GetDGen().ReadByte(address);
+            return GenesisPlusGxThread.GetGenPlusGX().ReadByte(address);
         }
 
         public override uint ReadLong(uint address)
         {
-            return DGenThread.GetDGen().ReadLong(address);
+            return GenesisPlusGxThread.GetGenPlusGX().ReadLong(address);
         }
 
         public override ushort ReadWord(uint address)
         {
-            return DGenThread.GetDGen().ReadWord(address);
+            return GenesisPlusGxThread.GetGenPlusGX().ReadWord(address);
         }
 
         public override void ReadMemory(uint address, uint size, byte[] memory)
@@ -134,80 +134,80 @@ namespace MDStudioPlus.Targets
             {
                 fixed (byte* ptr = memory)
                 {
-                    DGenThread.GetDGen().ReadMemory(address, size, ptr);
+                    GenesisPlusGxThread.GetGenPlusGX().ReadMemory(address, size, ptr);
                 }
             }
         }
 
         public override uint GetZ80Reg(Z80Regs reg)
         {
-            return (uint)DGenThread.GetDGen().GetZ80Reg((DGenInterface.DGen.Z80Regs)reg);
+            return (uint)GenesisPlusGxThread.GetGenPlusGX().GetZ80Reg((GenesisPlusGXInterface.GenesisPlusGX.Z80Regs)reg);
         }
 
         public override byte ReadZ80Byte(uint address)
         {
-            return DGenThread.GetDGen().ReadZ80Byte(address);
+            return GenesisPlusGxThread.GetGenPlusGX().ReadZ80Byte(address);
         }
 
         public override bool AddBreakpoint(uint addr)
         {
-            if (DGenThread.GetDGen() != null)
-                return DGenThread.GetDGen().AddBreakpoint((int)addr) != 0;
+            if (GenesisPlusGxThread.GetGenPlusGX() != null)
+                return GenesisPlusGxThread.GetGenPlusGX().AddBreakpoint((int)addr) != 0;
             else
                 return false;
         }
 
         public override bool AddWatchpoint(uint fromAddr, uint toAddr)
         {
-            if (DGenThread.GetDGen() != null)
-                return DGenThread.GetDGen().AddWatchpoint((int)fromAddr, (int)toAddr) != 0;
+            if (GenesisPlusGxThread.GetGenPlusGX() != null)
+                return GenesisPlusGxThread.GetGenPlusGX().AddWatchpoint((int)fromAddr, (int)toAddr) != 0;
             else
                 return false;
         }
 
         public override void RemoveBreakpoint(uint addr)
         {
-            if (DGenThread.GetDGen() != null)
-                DGenThread.GetDGen().ClearBreakpoint((int)addr);
+            if (GenesisPlusGxThread.GetGenPlusGX() != null)
+                GenesisPlusGxThread.GetGenPlusGX().ClearBreakpoint((int)addr);
         }
 
         public override void RemoveWatchpoint(uint addr)
         {
-            if (DGenThread.GetDGen() != null)
-                DGenThread.GetDGen().ClearWatchpoint((int)addr);
+            if (GenesisPlusGxThread.GetGenPlusGX() != null)
+                GenesisPlusGxThread.GetGenPlusGX().ClearWatchpoint((int)addr);
         }
 
         public override void RemoveAllBreakpoints()
         {
-            if (DGenThread.GetDGen() != null)
-                DGenThread.GetDGen().ClearBreakpoints();
+            if (GenesisPlusGxThread.GetGenPlusGX() != null)
+                GenesisPlusGxThread.GetGenPlusGX().ClearBreakpoints();
         }
 
         public override void RemoveAllWatchPoints()
         {
             //TODO
-            if (DGenThread.GetDGen() != null)
-                DGenThread.GetDGen().ClearBreakpoints();
+            if (GenesisPlusGxThread.GetGenPlusGX() != null)
+                GenesisPlusGxThread.GetGenPlusGX().ClearBreakpoints();
         }
 
         public override byte GetVDPRegisterValue(int index)
         {
-            return DGenThread.GetDGen().GetVDPRegisterValue(index);
+            return GenesisPlusGxThread.GetGenPlusGX().GetVDPRegisterValue(index);
         }
 
         public override uint GetColor(int index)
         {
-            return (uint)DGenThread.GetDGen().GetColor(index);
+            return (uint)GenesisPlusGxThread.GetGenPlusGX().GetColor(index);
         }
 
         public override void SetVolume(int vol)
         {
-            DGenThread.GetDGen().SetVolume(vol, true);
+            GenesisPlusGxThread.GetGenPlusGX().SetVolume(vol, true);
         }
 
         public override void PauseAudio(bool pause)
         {
-            DGenThread.GetDGen().PauseAudio(pause);
+            GenesisPlusGxThread.GetGenPlusGX().PauseAudio(pause);
         }
 
         public override uint Disassemble(uint address, ref string text)
@@ -218,7 +218,7 @@ namespace MDStudioPlus.Targets
             {
                 fixed (char* cstr = disassembleString)
                 {
-                    size = DGenThread.GetDGen().Disassemble(address, (sbyte*)cstr);
+                    size = GenesisPlusGxThread.GetGenPlusGX().Disassemble(address, (sbyte*)cstr);
                     text = System.Runtime.InteropServices.Marshal.PtrToStringAnsi((System.IntPtr)cstr);
                 }
             }

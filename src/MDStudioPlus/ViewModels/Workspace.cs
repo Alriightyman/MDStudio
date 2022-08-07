@@ -229,8 +229,16 @@ namespace MDStudioPlus.ViewModels
 
             //try
             {
-                //target = TargetFactory.Create();
-                target = new TargetDGen();
+                var selectedTarget = configViewModel.Target;
+                target = TargetFactory.Create(selectedTarget.Item1, selectedTarget.Item2);
+                TargetName = selectedTarget.Item1;
+                // if no target, then select Genesis Plus GX
+                if (target == null)
+                {
+                    target = new TargetGenesisPlusGX();
+                    TargetName = $"{nameof(TargetGenesisPlusGX)}";
+                }
+
                 // updat config
             }
 
@@ -395,6 +403,17 @@ namespace MDStudioPlus.ViewModels
             {
                 solutionName = value;
                 RaisePropertyChanged(nameof(solutionName));
+            }
+        }
+
+        private string targetName;
+        public string TargetName
+        {
+            get => targetName;
+            set
+            {
+                targetName = value;
+                RaisePropertyChanged(nameof(TargetName));
             }
         }
 
@@ -1849,6 +1868,9 @@ namespace MDStudioPlus.ViewModels
             {
                 configViewModel = view.DataContext as ConfigViewModel;
                 configViewModel.Config.Save();
+                var selectedTarget = configViewModel.Target;
+                target = TargetFactory.Create(selectedTarget.Item1, selectedTarget.Item2);
+                TargetName = selectedTarget.Item1;
 
                 if (solution != null)
                 {

@@ -20,25 +20,26 @@ namespace MDStudioPlus.Targets
 
         }
 
-        public static List<string> GetTargetNames()
+        public static List<Tuple<string, string>> GetTargetNames()
         {
-            List<string> names = new List<string>();
+            List<Tuple<string, string>> names = new List<Tuple<string, string>>();
             var targets = FindAllDerivedTypes<Target>();
 
             foreach (var target in targets)
             {
                 if (!target.IsAbstract)
                 {
-                    names.Add(target.FullName);
+                    names.Add( new Tuple<string,string>(target.Name, target.Namespace));
                 }
             }
 
             return names;
         }
 
-        public static Target Create(string targetName)
+        public static Target Create(string targetName, string targetNamespace)
         {
-            return (Target)System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(targetName);
+            var newTargetName = $"{targetNamespace}.{targetName}";
+            return (Target)System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(newTargetName);
         }
     }
 }

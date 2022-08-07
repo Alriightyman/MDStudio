@@ -76,7 +76,8 @@
                         <ComboBox Grid.Column="1" Grid.Row="0"
                             Margin="10,3,50,3"
                             WindowChrome.IsHitTestVisibleInChrome="True"
-                            ItemsSource="{Binding Targets}"
+                            ItemsSource="{Binding Targets}" 
+                            DisplayMemberPath="Item1"
                             SelectedItem="{Binding SelectedTarget}"/>
                         <TextBlock Text="Region" 
                                Grid.Column="0" Grid.Row="1" 

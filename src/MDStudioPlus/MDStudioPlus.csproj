@@ -6,14 +6,20 @@
 	  
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resources\mdstudio_mjd_icon.ico</ApplicationIcon>
-    <Platforms>AnyCPU</Platforms>
+    <Platforms>AnyCPU;x64</Platforms>
     <StartupObject>MDStudioPlus.App</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>	
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
 	  <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>	
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -25,6 +31,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	  <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
@@ -134,11 +145,12 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\DGenInterface\DGenInterface.vcxproj" />
+	  <ProjectReference Include="..\GenesisPlusGXInterface\GenesisPlusGXInterface.vcxproj" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Reference Include="WindowsFormsIntegration" />
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="copy /Y &quot;$(SolutionDir)\..\3rdparty\SDL2-2.0.12\lib\x86\SDL2.dll&quot; &quot;$(TargetDir)\SDL2.dll&quot;" />
+	  <Exec Command="copy /Y &quot;$(SolutionDir)$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />
 	</Target>
 </Project>

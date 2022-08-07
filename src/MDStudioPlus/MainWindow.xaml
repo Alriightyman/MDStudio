@@ -17,7 +17,7 @@
         MaxHeight="{x:Static SystemParameters.MaximizedPrimaryScreenHeight}" 
         Height="900" Width="1600" SnapsToDevicePixels="True" 
         Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}" 
-        WindowStyle="None" ResizeMode="CanResizeWithGrip" StateChanged="WindowStateChanged">
+        WindowStyle="None" ResizeMode="CanResizeWithGrip" StateChanged="WindowStateChanged" >
     <!--<DockPanel Margin="5,0,5,0">-->
     <WindowChrome.WindowChrome>
         <WindowChrome x:Name="chrome" ResizeBorderThickness="8" 
@@ -412,6 +412,23 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
+                            <!--Separator-->
+                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
+                            <!-- Emulator Target Name -->
+                            <Border Background="{DynamicResource ProjectNameBackground}" Padding="8,0" Margin="14,0">
+                                <TextBlock Text="{Binding TargetName}" VerticalAlignment="Center" Padding="0,1,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}" Value="False">
+                                                    <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
                             <!--Separator-->
                             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
                             <!--Run Emulator Button-->

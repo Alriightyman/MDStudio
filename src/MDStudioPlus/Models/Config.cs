@@ -37,7 +37,7 @@ namespace MDStudioPlus
 
         public Config()
         {
-            TargetName = typeof(TargetDGen).FullName;
+            TargetName = typeof(TargetDGen).Name;
         }
 
         public void Read()

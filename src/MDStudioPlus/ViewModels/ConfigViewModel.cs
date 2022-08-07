@@ -32,7 +32,7 @@ namespace MDStudioPlus.ViewModels
         private Tuple<string, Theme> selectedTheme;
         private Tuple<string, Point> selectedResolution;
         private bool autoOpenLastProject;
-        private string selectedTarget;
+        private Tuple<string, string> selectedTarget;
         private Tuple<char, string> selectedRegion;
         private Config config = new Config();
         private string asm68kPath;
@@ -104,18 +104,25 @@ namespace MDStudioPlus.ViewModels
         #endregion
 
         #region Targets
-        public List<string> Targets { get; set; } = TargetFactory.GetTargetNames();
+        public List<Tuple<string,string>> Targets { get; set; } = TargetFactory.GetTargetNames();
 
-        public string SelectedTarget
+        public Tuple<string, string> SelectedTarget
         {
             get => selectedTarget;
             set
             {
                 selectedTarget = value;
-                Config.TargetName = value;
+                Config.TargetName = value.Item1;
                 RaisePropertyChanged(nameof(SelectedTarget));
             }
         }
+
+        /// <summary>
+        /// Gets the selected Target as a tuple. 
+        /// Item1 is is the name of the emulator and item2 is the namespace
+        /// Item2 is assumed that all Targets will be assigned to MDStudioPlus.Targets
+        /// </summary>
+        public Tuple<string, string> Target => new Tuple<string, string>(selectedTarget.Item1, selectedTarget.Item2);
 
         #endregion
 
@@ -379,7 +386,7 @@ namespace MDStudioPlus.ViewModels
                     break;
             }
             SelectedResolution = ValidResolutions.First(r => r.Item1 == Config.EmuResolution);
-            SelectedTarget = Config.TargetName;
+            SelectedTarget = new Tuple<string, string>(Config.TargetName, $"{nameof(MDStudioPlus)}.{nameof(Targets)}");
             AutoOpenLastProject = Config.AutoOpenLastProject;
             AsPath = Config.AsPath;
             Asm68kPath = Config.Asm68kPath;
