@@ -1524,6 +1524,9 @@ namespace MDStudioPlus.ViewModels
                         return;
                     }
                 }
+/////////////////// TODO: Need to work out a better way to handle Step Over. If stepping OVER too fast more breakpoints  ///////////////////////////////////////
+///////////////////       are added and not deleted on the emulator side thus you hit "ghost breakpoints".  Consider     ///////////////////////////////////////
+///////////////////       looking into using Genesis Plus GX step over functions.                                        ///////////////////////////////////////
 
                 //Get total num lines
                 //TODO: Verify current filename in editor matches emulator?
