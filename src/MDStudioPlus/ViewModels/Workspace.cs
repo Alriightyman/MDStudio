@@ -2157,9 +2157,6 @@ namespace MDStudioPlus.ViewModels
                     target.Run();
                     
                     // TODO: Breakpoints and watchpoints
-
-
-
                 }
             }
         }
