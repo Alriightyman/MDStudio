@@ -22,7 +22,7 @@ namespace MDStudioPlus
         [XmlIgnore]
         public string SolutionPath { get; set; }
         [XmlElement("Projects")]
-        public List<string> ProjectFiles { get; set; }
+        public List<string> ProjectFiles { get; set; } = new List<string>();
 
         // non serializable items
         [XmlIgnore]
@@ -141,7 +141,7 @@ namespace MDStudioPlus
             {
                 var proj = Projects.FirstOrDefault(p => p.BuildId == i);
 
-                output.AddRange(proj?.Build());
+                output.AddRange(proj?.Build() ?? new string[] {""});
                 ////// TODO: This needs to be fixed
                 BinaryPath = $"{SolutionPath}\\{proj.OutputFileName}.{proj.OutputExtension}";
             }

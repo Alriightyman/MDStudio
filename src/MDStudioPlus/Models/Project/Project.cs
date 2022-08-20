@@ -76,7 +76,7 @@ namespace MDStudioPlus
         /// Output binary extension; `.bin` is default
         /// </summary>
         [XmlElement]
-        public string OutputExtension { get; set; }
+        public string OutputExtension { get; set; } = "bin";
 
         /// <summary>
         /// Additional aarguments to pass to the assembler
@@ -279,8 +279,11 @@ namespace MDStudioPlus
                         PostBuildScript = project.PostBuildScript ?? String.Empty;
                         AdditionalArguments = project.AdditionalArguments ?? String.Empty;
                         FilesToExclude = project.FilesToExclude ?? new string[0];
+
                         OutputFileName = project.OutputFileName ?? project.Name;
+                        OutputFileName = OutputFileName == String.Empty ? project.Name : OutputFileName;
                         OutputExtension = project.OutputExtension ?? "bin";
+                        OutputExtension = OutputExtension == String.Empty ? "bin" : OutputExtension;
 
                         switch (AssemblerVersion)
                         {

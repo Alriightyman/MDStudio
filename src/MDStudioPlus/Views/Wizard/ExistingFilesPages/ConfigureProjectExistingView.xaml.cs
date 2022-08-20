@@ -39,8 +39,9 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
         {
             Solution solution = new Solution($"{LocationTextbox.Text}\\{this.NameTextbox.Text}.mdsln");
             Project project = new Project($"{LocationTextbox.Text}\\{this.NameTextbox.Text}.mdproj");
-
-            project.MainSourceFile = System.IO.Path.GetFileName(this.MainSourceTextbox.Text);
+            int length = $"{project.ProjectPath}\\".Length;
+            string mainsource = this.MainSourceTextbox.Text.Remove(0, length);
+            project.MainSourceFile = mainsource;
             project.Author = this.AuthorTextbox.Text;
             project.Name = this.NameTextbox.Text;
             project.PostBuildScript = this.PostbuildTextbox.Text;
@@ -50,7 +51,7 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
             foreach (var item in SourceFilesListbox.Items)
             {
                 string file = (string)item;
-                int length = $"{project.ProjectPath}\\".Length;
+                length = $"{project.ProjectPath}\\".Length;
                 file = file.Remove(0, length);
                 files.Add(file);
             }
@@ -62,7 +63,7 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
             foreach (var item in ExcludedFilesListbox.Items)
             {
                 string file = (string)item;
-                int length = $"{project.ProjectPath}\\".Length;
+                length = $"{project.ProjectPath}\\".Length;
                 file = file.Remove(0, length);
                 files.Add(file);
             }
@@ -73,11 +74,21 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
             project.OutputFileName = this.BinaryNameTextbox.Text;
 
             project.AssemblerVersion = (AssemblerVersion)this.AssemberVersionCombo.SelectedItem;
+            project.AdditionalArguments = this.ArgsTextbox.Text;
 
-            solution.Projects.Add(project);
+            string projFile = project.FullPath;
+            length = $"{project.ProjectPath}\\".Length;
+            projFile = projFile.Remove(0, length);
+            solution.ProjectFiles.Add(projFile);
 
             project.Save();
             solution.Save();
+
+            project = null;
+            solution = null;
+
+            solution = new Solution($"{LocationTextbox.Text}\\{this.NameTextbox.Text}.mdsln");
+            //solution.Load();
 
             ((WizardData)DataContext).Solution = solution;
 
@@ -100,6 +111,8 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
                     }
                 }
             }
+
+            EnableFinishButtonCheck();
         }
 
         private void MainSourceButtonClick(object sender, RoutedEventArgs e)
@@ -111,7 +124,7 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
             {
                 MainSourceTextbox.Text = sourceFile;
             }
-
+            EnableFinishButtonCheck();
         }
         
         private void AddSourceFile_Click(object sender, RoutedEventArgs e)
@@ -173,7 +186,15 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
             return null;
         }
 
+        private void EnableFinishButtonCheck()
+        {
+            bool isReady = NameTextbox.Text != String.Empty
+                        && LocationTextbox.Text != String.Empty
+                          && MainSourceTextbox.Text != String.Empty
+                          && (AssemblerVersion)AssemberVersionCombo.SelectedItem != AssemblerVersion.None;
 
+            FinishButtion.IsEnabled = isReady;
+        }
         private void CloseClick(object sender, RoutedEventArgs e)
         {
             // Cancel the wizard and don't return any data
@@ -185,6 +206,26 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
             // If returning, wizard was completed (finished or canceled),
             // so continue returning to calling page
             OnReturn(e);
+        }
+
+        private void NameTextbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            EnableFinishButtonCheck();
+        }
+
+        private void LocationTextbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            EnableFinishButtonCheck();
+        }
+
+        private void AssemberVersionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            EnableFinishButtonCheck();
+        }
+
+        private void MainSourceTextbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            EnableFinishButtonCheck();
         }
     }
 }

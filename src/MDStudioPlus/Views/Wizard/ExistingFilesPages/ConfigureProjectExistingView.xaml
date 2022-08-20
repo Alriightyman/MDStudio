@@ -10,7 +10,7 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
     mc:Ignorable="d"
     Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}"
-    Height="670" Width="850"
+    d:DesignHeight="670" d:DesignWidth="850"
     KeepAlive="True">
 
     <wizard:WizardPageBase.Resources>
@@ -25,7 +25,7 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50*"/>
-            <ColumnDefinition Width="425"/>
+            <ColumnDefinition Width="50*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"/>
@@ -44,7 +44,9 @@
                     Click="CloseClick" HorizontalAlignment="Right" />
         </Grid>
         <DockPanel Grid.Column="1" Grid.Row="3">
-            <Button Content="Finish" 
+            <Button x:Name="FinishButtion"
+                    Content="Finish"
+                    IsEnabled="False"
                     DockPanel.Dock="Right" 
                     Width="80" 
                     Margin="0,0,20,0"
@@ -61,11 +63,11 @@
 
         <Grid Grid.Row="2" Grid.Column="0" Margin="20,0,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="120"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                
+
                 <RowDefinition Height="30"/>
                 <!-- Project Name -->
                 <RowDefinition Height="30"/>
@@ -74,6 +76,8 @@
                 <!-- Project Description -->
                 <RowDefinition Height="90"/>
                 <!-- Assembler -->
+                <RowDefinition Height="30"/>
+                <!-- Assembler arguments -->
                 <RowDefinition Height="30"/>
                 <!-- Output Name/extension -->
                 <RowDefinition Height="30"/>
@@ -85,47 +89,70 @@
             <!-- Grid Column 0 -->
             <!-- Name -->
             <TextBlock Text="Name:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0"/>
-            <TextBox x:Name="NameTextbox" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="240" Grid.Row="0" Grid.Column="1" Width="295"/>
+            <TextBox x:Name="NameTextbox" 
+                     VerticalAlignment="Center" HorizontalAlignment="Center" 
+                     MinWidth="240" Width="285" Grid.Column="1"
+                     TextChanged="NameTextbox_TextChanged"/>
 
             <!-- Location -->
             <TextBlock Text="Location:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="1"/>
             <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="1">
-                <TextBox x:Name="LocationTextbox" VerticalAlignment="Center" Width="240" ToolTip="This file is the main file that you would pass to the assembler"/>
+                <TextBox x:Name="LocationTextbox" 
+                         VerticalAlignment="Center" 
+                         Width="225" 
+                         ToolTip="This file is the main file that you would pass to the assembler"
+                         TextChanged="LocationTextbox_TextChanged"/>
                 <Button Content="..." Width="50" VerticalAlignment="Center" Margin="5,0" Click="LocationButtonClick"/>
             </StackPanel>
 
             <!-- Author -->
             <TextBlock Text="Author:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2"/>
-            <TextBox x:Name="AuthorTextbox" VerticalAlignment="Center" HorizontalAlignment="Center" Width="295" Grid.Column="1" Grid.Row="2"/>
+            <TextBox x:Name="AuthorTextbox" VerticalAlignment="Center" HorizontalAlignment="Center" Width="285" Grid.Column="1" Grid.Row="2"/>
 
             <!-- Description -->
             <TextBlock Text="Description:" VerticalAlignment="Top" Grid.Column="0" Grid.Row="3"/>
-            <TextBox x:Name="DescriptionTextbox" HorizontalAlignment="Center" Width="295" Grid.Column="1" Grid.Row="3" Margin="0,5,0,0"/>
+            <TextBox x:Name="DescriptionTextbox" 
+                     HorizontalAlignment="Center" 
+                     Width="285" 
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     Grid.Column="1" Grid.Row="3" 
+                     Margin="0,5,0,0"/>
 
             <!-- Assembler -->
             <TextBlock Text="Assembler:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4"/>
             <ComboBox x:Name="AssemberVersionCombo"  Grid.Column="1" Grid.Row="4"
-                       VerticalAlignment="Center"                        
-                        ItemsSource="{Binding Source={StaticResource dataFromEnum}}"/>
+                      VerticalAlignment="Center"                        
+                      ItemsSource="{Binding Source={StaticResource dataFromEnum}}"
+                      SelectionChanged="AssemberVersionCombo_SelectionChanged"/>
+            <!-- Author -->
+            <TextBlock Text="Additional Arguments:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="5"/>
+            <TextBox x:Name="ArgsTextbox" VerticalAlignment="Center" HorizontalAlignment="Center" Width="285" Grid.Column="1" Grid.Row="5"/>
+
             <!-- Binary Name and Extention -->
-            <TextBlock Text="Binary Name:" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center"/>
-            <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="1">
+            <TextBlock Text="Binary Name:" Grid.Column="0" Grid.Row="6" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="1">
                 <TextBox x:Name="BinaryNameTextbox" VerticalAlignment="Center" Width="140"/>
                 <TextBlock Text="Binary Extension:" VerticalAlignment="Center" Margin="5,0,0,0"/>
-                <TextBox x:Name="BinaryExtensionTextbox" VerticalAlignment="Center" Width="55" Margin="5,0,0,0"/>
+                <TextBox x:Name="BinaryExtensionTextbox" VerticalAlignment="Center" Width="45" Margin="5,0,0,0"/>
             </StackPanel>
 
             <!-- Main Source File -->
-            <TextBlock Text="Main Source File:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6" ToolTip="This file is the main file that you would pass to the assembler"/>
-            <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="1">
-                <TextBox x:Name="MainSourceTextbox" VerticalAlignment="Center" Width="240" ToolTip="This file is the main file that you would pass to the assembler"/>
+            <TextBlock Text="Main Source File:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="7" ToolTip="This file is the main file that you would pass to the assembler"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="7" Grid.Column="1">
+                <TextBox x:Name="MainSourceTextbox" 
+                         VerticalAlignment="Center" 
+                         Width="225" 
+                         ToolTip="This file is the main file that you would pass to the assembler"
+                         TextChanged="MainSourceTextbox_TextChanged"/>
                 <Button Content="..." Width="50" VerticalAlignment="Center" Margin="5,0" Click="MainSourceButtonClick"/>
             </StackPanel>
 
             <!-- Source Files -->
-            <TextBlock Text="Source Files:" VerticalAlignment="Top"  Grid.Column="0" Grid.Row="7"/>
-            <StackPanel Grid.Row="7" Grid.Column="1">
-                <ListBox x:Name="SourceFilesListbox" Height="240"  ToolTip="These files are any support files that are part of your project.  You don't have to add them all now, you can do that later"/>
+            <TextBlock Text="Source Files:" VerticalAlignment="Top"  Grid.Column="0" Grid.Row="8"/>
+            <StackPanel Grid.Row="8" Grid.Column="1">
+                <ListBox x:Name="SourceFilesListbox" Height="210"  ToolTip="These files are any support files that are part of your project.  You don't have to add them all now, you can do that later"/>
                 <StackPanel Orientation="Horizontal">
                     <Button Content="+"
                             Margin="0,5,5,5"
@@ -159,11 +186,20 @@
             <!-- Prebuild Script -->
             <TextBlock Text="Prebuild Events:" VerticalAlignment="Top"
                        Grid.Column="0" Grid.Row="0"/>
-            <TextBox x:Name="PrebuildTextbox" Margin="0,5" Grid.Column="1" Grid.Row="0"/>
+            <TextBox x:Name="PrebuildTextbox" Margin="0,5" 
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     Grid.Column="1" Grid.Row="0"/>
             <!-- Postbuild Script -->
             <TextBlock Text="Postbuild Events:" VerticalAlignment="Top"
                        Grid.Column="0" Grid.Row="1"/>
-            <TextBox x:Name="PostbuildTextbox" Margin="0,5" Grid.Column="1" Grid.Row="1"/>
+            <TextBox x:Name="PostbuildTextbox" 
+                     Margin="0,5" 
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     Grid.Column="1" Grid.Row="1"/>
             <!-- Exclude from Debugger -->
             <TextBlock Text="Exclude from Debugger:" VerticalAlignment="Top"
                        Grid.Column="0" Grid.Row="2"/>

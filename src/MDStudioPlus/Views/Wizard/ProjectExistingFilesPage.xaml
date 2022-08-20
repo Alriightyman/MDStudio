@@ -7,7 +7,7 @@
     xmlns:local="clr-namespace:MDStudioPlus.Views.Wizard"
     Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}"
     mc:Ignorable="d"
-    Height="670" Width="850"
+    d:DesignHeight="670" d:DesignWidth="850"
     KeepAlive="True">
     <Grid>
         <Grid.ColumnDefinitions>
