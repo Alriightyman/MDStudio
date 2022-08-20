@@ -274,7 +274,7 @@ namespace MDStudioPlus
                         AssemblerVersion = project.AssemblerVersion;
                         Author = project.Author;
                         MainSourceFile = project.MainSourceFile.Replace("/", "\\");
-                        SourceFiles = project.SourceFiles?.Select(e =>e.Replace("/", "\\")).ToArray();
+                        SourceFiles = project.SourceFiles?.Select(e => e.Replace("/", "\\")).ToArray();
                         PreBuildScript = project.PreBuildScript ?? String.Empty;
                         PostBuildScript = project.PostBuildScript ?? String.Empty;
                         AdditionalArguments = project.AdditionalArguments ?? String.Empty;
@@ -282,6 +282,9 @@ namespace MDStudioPlus
 
                         OutputFileName = project.OutputFileName ?? project.Name;
                         OutputFileName = OutputFileName == String.Empty ? project.Name : OutputFileName;
+
+                        OutputFileName = OutputFileName.Replace(" ", "_");
+
                         OutputExtension = project.OutputExtension ?? "bin";
                         OutputExtension = OutputExtension == String.Empty ? "bin" : OutputExtension;
 

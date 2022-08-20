@@ -35,20 +35,6 @@
                    Margin="20,0,20,5" 
                    FontSize="35" 
                    Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
-
-        <!-- Open Recent Row 2, Column 0-->
-        <!--<DockPanel Margin="20,0,5,10" 
-                   Grid.Row="2" Grid.Column="0">
-            <TextBlock Text="Open Recent" 
-                       DockPanel.Dock="Top"
-                       FontSize="20"
-                       Margin="0,0,0,10"
-                       Foreground="{DynamicResource IconInactiveBrush}"/>
-            <ListBox DockPanel.Dock="Bottom"
-                     Background="{x:Null}">
-
-            </ListBox>
-        </DockPanel>-->
         <!-- Get Started Row 1, Column 1-->
         <DockPanel Margin="20,0,20,10" 
                    Grid.Row="2" Grid.Column="1">

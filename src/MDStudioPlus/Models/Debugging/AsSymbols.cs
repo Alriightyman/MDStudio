@@ -227,7 +227,7 @@ namespace MDStudioPlus.Debugging
                 {
                     continue; // ignore this
                 }
-                else if (line.Contains("\\") || line.Contains("/") || Path.GetExtension(line) == ".asm")
+                else if (line.Contains("\\") || line.Contains("/") || (Path.GetExtension(line) == ".asm" || Path.GetExtension(line) == ".s"))
                 {
 
                     int fileIndex = line.IndexOf(' ') + 1;

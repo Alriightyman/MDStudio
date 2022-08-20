@@ -227,5 +227,10 @@ namespace MDStudioPlus.Views.Wizard.ExistingFilesPages
         {
             EnableFinishButtonCheck();
         }
+
+        private void BinaryNameTextbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            this.BinaryNameTextbox.Text = BinaryNameTextbox.Text.Replace(" ", "_");
+        }
     }
 }

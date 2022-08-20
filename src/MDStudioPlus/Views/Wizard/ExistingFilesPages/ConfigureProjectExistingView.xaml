@@ -133,7 +133,7 @@
             <!-- Binary Name and Extention -->
             <TextBlock Text="Binary Name:" Grid.Column="0" Grid.Row="6" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="1">
-                <TextBox x:Name="BinaryNameTextbox" VerticalAlignment="Center" Width="140"/>
+                <TextBox x:Name="BinaryNameTextbox" VerticalAlignment="Center" Width="140" TextChanged="BinaryNameTextbox_TextChanged"/>
                 <TextBlock Text="Binary Extension:" VerticalAlignment="Center" Margin="5,0,0,0"/>
                 <TextBox x:Name="BinaryExtensionTextbox" VerticalAlignment="Center" Width="45" Margin="5,0,0,0"/>
             </StackPanel>

@@ -1935,7 +1935,8 @@ namespace MDStudioPlus.ViewModels
                 // clean up breakpoints
                 var allBreakpoints = breakpoints.ToList();
                 allBreakpoints.AddRange(stepOverBreakpoints.ToList());
-                var addresses = target.CleanupBreakpoints().ToList();
+                List<uint> addresses = new List<uint>();
+                addresses = target.CleanupBreakpoints().ToList();
 
                 foreach (var breakPoint in allBreakpoints)
                 {

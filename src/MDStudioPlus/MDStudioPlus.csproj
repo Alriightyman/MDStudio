@@ -127,6 +127,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Resources\Source Template\hello_world.s">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -153,9 +156,6 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Reference Include="WindowsFormsIntegration" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="Views\Wizard\NewProjectPages\" />
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 	  <Exec Command="copy /Y &quot;$(SolutionDir)$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />
