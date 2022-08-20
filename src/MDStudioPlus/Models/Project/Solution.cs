@@ -45,7 +45,7 @@ namespace MDStudioPlus
         public string BinaryPath { get; private set; }
 
         
-        protected Solution() { }
+        public Solution() { }
 
         public Solution(string filepath)
         {
@@ -142,7 +142,8 @@ namespace MDStudioPlus
                 var proj = Projects.FirstOrDefault(p => p.BuildId == i);
 
                 output.AddRange(proj?.Build());
-                BinaryPath = $"{SolutionPath}\\{proj.OutputFileName}.bin";
+                ////// TODO: This needs to be fixed
+                BinaryPath = $"{SolutionPath}\\{proj.OutputFileName}.{proj.OutputExtension}";
             }
 
             int errorCount = 0;
@@ -186,6 +187,18 @@ namespace MDStudioPlus
             return symbols;
         }
 
+        public bool IsAlreadyBuilt()
+        {
+            bool isBuilt = false;
+            foreach(var project in Projects)
+            {
+                isBuilt |= project.IsBuilt;
+                if(isBuilt)
+                    BinaryPath = $"{SolutionPath}\\{project.OutputFileName}.{project.OutputExtension}";
+            }
+
+            return isBuilt;
+        }
 
         private Project LoadProject(string filepath)
         {            

@@ -773,5 +773,7 @@ void SetVolume(int vol, int isdebugVol = 0)
 
 void PauseAudio(int pause)
 {
-	SDL_PauseAudio(pause);
+	int vol = 100;
+	if (pause) vol = 0;
+	SetVolume(vol);
 }

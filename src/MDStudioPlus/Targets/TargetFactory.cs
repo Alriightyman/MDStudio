@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MDStudioPlus.Targets
@@ -20,16 +21,18 @@ namespace MDStudioPlus.Targets
 
         }
 
-        public static List<Tuple<string, string>> GetTargetNames()
+        public static List<Tuple<string, string, string>> GetTargetNames()
         {
-            List<Tuple<string, string>> names = new List<Tuple<string, string>>();
+            List<Tuple<string, string,string>> names = new List<Tuple<string, string, string>>();
             var targets = FindAllDerivedTypes<Target>();
 
             foreach (var target in targets)
             {
                 if (!target.IsAbstract)
                 {
-                    names.Add( new Tuple<string,string>(target.Name, target.Namespace));
+                    var newTargetName = target.Name.Remove(0, 6);
+                    newTargetName = Regex.Replace(newTargetName, "([a-z])([A-Z])", "$1 $2");
+                    names.Add( new Tuple<string,string,string>(target.Name, target.Namespace, newTargetName));
                 }
             }
 

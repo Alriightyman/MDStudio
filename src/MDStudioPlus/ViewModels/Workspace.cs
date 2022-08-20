@@ -10,6 +10,7 @@ using MDStudioPlus.FileExplorer.Events;
 using MDStudioPlus.Models;
 using MDStudioPlus.Targets;
 using MDStudioPlus.Views;
+using MDStudioPlus.Views.Wizard;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -147,7 +149,8 @@ namespace MDStudioPlus.ViewModels
         private RegistersViewModel registersViewModel;
         private MemoryViewModel memoryViewModel;
         private SolidColorBrush statusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
-        
+        private ObservableCollection<Tuple<string, int, string>> navigatedItems = new ObservableCollection<Tuple<string, int, string>>();
+       
         // commands
         private RelayCommand openProjectSolutionCommand;
         private RelayCommand openFileCommand;
@@ -172,6 +175,11 @@ namespace MDStudioPlus.ViewModels
         private RelayCommand stepIntoCommand;
         private RelayCommand stepOverCommand;
         private RelayCommand muteAudioCommand;
+        private RelayCommand backwardNaviagtorCommand;
+        private RelayCommand forwardNaviagtorCommand;
+
+
+
         // themes
         private Tuple<string, Theme> selectedTheme;
 
@@ -193,10 +201,12 @@ namespace MDStudioPlus.ViewModels
         private string solutionName = "No Project Opened";
         private bool isSolutionLoaded = false;
         private Project selectedProject = null;
+        int currentNavigationIndex = 0;
 
         // building
         private bool alreadyBuilt = false;
         private bool isBuilding = false;
+        private bool isDirty = false;
         private List<Error> ErrorMarkers = new List<Error>();
 
         private string status = "Ready";
@@ -204,7 +214,7 @@ namespace MDStudioPlus.ViewModels
         private BreakMode breakMode = BreakMode.Breakpoint;
 
         private SourceMode sourceMode = SourceMode.Source;
-        private Breakpoint stepOverBreakpoint;
+        private List<Breakpoint> stepOverBreakpoints = new List<Breakpoint>();
 
         private List<Breakpoint> breakpoints;
         private List<uint> watchpoints;
@@ -229,16 +239,7 @@ namespace MDStudioPlus.ViewModels
 
             //try
             {
-                var selectedTarget = configViewModel.Target;
-                target = TargetFactory.Create(selectedTarget.Item1, selectedTarget.Item2);
-                TargetName = selectedTarget.Item1;
-                // if no target, then select Genesis Plus GX
-                if (target == null)
-                {
-                    target = new TargetGenesisPlusGX();
-                    TargetName = $"{nameof(TargetGenesisPlusGX)}";
-                }
-
+                SelectedTarget = configViewModel.Target;              
                 // updat config
             }
 
@@ -248,6 +249,8 @@ namespace MDStudioPlus.ViewModels
 
             onFileChanged = new FileSystemEventHandler(OnSourceChanged);
 
+            // check if we had already build previously
+            
             StopDebugging();
         }
 
@@ -260,6 +263,30 @@ namespace MDStudioPlus.ViewModels
         #endregion
 
         #region Properties
+        #region Navigation
+        public ObservableCollection<Tuple<string, int, string>> NavigatedItems
+        {
+            get => navigatedItems;
+            set
+            {
+                navigatedItems = value;
+                RaisePropertyChanged(nameof(NavigatedItems));
+            }
+        }
+        #endregion
+
+        #region IsHidden
+        private bool isHidden = true;
+        public bool IsHidden
+        {
+            get => isHidden;
+            set
+            {
+                isHidden = value;
+                RaisePropertyChanged(nameof(IsHidden));
+            }
+        }
+        #endregion
 
         public TextEditorOptions CodeEditorOptions
         {
@@ -269,6 +296,7 @@ namespace MDStudioPlus.ViewModels
                 ConfigViewModel.EditorOptions = value;
             }
         }
+
         public FontFamily EditorFont
         {
             get => ConfigViewModel.Font;
@@ -340,7 +368,8 @@ namespace MDStudioPlus.ViewModels
                 isMuted = value;
                 RaisePropertyChanged(nameof(IsMuted));
                 int vol = isMuted == true ? 0 : 100;
-                target.SetVolume(vol);
+                //target.SetVolume(vol);
+                target.PauseAudio(isMuted);
             }
         }
 
@@ -403,17 +432,6 @@ namespace MDStudioPlus.ViewModels
             {
                 solutionName = value;
                 RaisePropertyChanged(nameof(solutionName));
-            }
-        }
-
-        private string targetName;
-        public string TargetName
-        {
-            get => targetName;
-            set
-            {
-                targetName = value;
-                RaisePropertyChanged(nameof(TargetName));
             }
         }
 
@@ -549,7 +567,11 @@ namespace MDStudioPlus.ViewModels
                 if (activeDocument != value)
                 {
                     // unhook events
-                    if (activeDocument != null) activeDocument.OnFileSelected -= ActiveDocument_OnFileSelected;
+                    if (activeDocument != null)
+                    {
+                        activeDocument.OnFileSelected -= ActiveDocument_OnFileSelected;
+                        activeDocument.OnFileDirty -= ActiveDocument_OnFileDirty;
+                    }
                     
                     activeDocument = value;
                     
@@ -557,6 +579,7 @@ namespace MDStudioPlus.ViewModels
                     if (activeDocument != null)
                     {
                         activeDocument.OnFileSelected += ActiveDocument_OnFileSelected;
+                        activeDocument.OnFileDirty += ActiveDocument_OnFileDirty;
                         if (ActiveDocumentChanged != null)
                             ActiveDocumentChanged(this, EventArgs.Empty);
                     }
@@ -596,6 +619,25 @@ namespace MDStudioPlus.ViewModels
                 RaisePropertyChanged(nameof (StatusBackgroundColor));
             }
     
+        }
+
+        public List<Tuple<string, string, string>> Targets { get; set; } = TargetFactory.GetTargetNames();
+
+        public Tuple<string, string, string> SelectedTarget
+        {
+            get => configViewModel.SelectedTarget;
+            set
+            {
+                configViewModel.SelectedTarget = value;
+                RaisePropertyChanged(nameof(value));
+                target = TargetFactory.Create(value.Item1, value.Item2);
+
+                // if no target, then select Genesis Plus GX
+                if (target == null)
+                {
+                    target = new TargetGenesisPlusGX();
+                }
+            }
         }
 
         #endregion
@@ -863,7 +905,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if(stepIntoCommand == null)
                 {
-                    stepIntoCommand = new RelayCommand((p) => StepInto());
+                    stepIntoCommand = new RelayCommand((p) => StepInto(), (p) => IsBreakPointHit);
                 }
 
                 return stepIntoCommand;
@@ -876,7 +918,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if (stepOverCommand == null)
                 {
-                    stepOverCommand = new RelayCommand((p) => StepOver());
+                    stepOverCommand = new RelayCommand((p) => StepOver(), (p) => IsBreakPointHit);
                 }
 
                 return stepOverCommand;
@@ -892,6 +934,63 @@ namespace MDStudioPlus.ViewModels
                     muteAudioCommand = new RelayCommand((p) => IsMuted = !IsMuted);
                 }
                 return muteAudioCommand;
+            }
+        }
+
+        public ICommand BackwardNaviagtorCommand
+        {
+            get
+            {
+                if (backwardNaviagtorCommand == null)
+                {
+                    backwardNaviagtorCommand = new RelayCommand((p) =>
+                    {
+                        currentNavigationIndex--;
+                        if (currentNavigationIndex < 1)
+                            currentNavigationIndex = 1;
+
+                        var item = navigatedItems[currentNavigationIndex - 1];
+
+                        GoTo(item.Item1, item.Item2);
+                    }, 
+                    (p) => navigatedItems.Count != 0 && currentNavigationIndex > 1);
+                }
+                return backwardNaviagtorCommand;
+            }
+        }
+        public ICommand ForwardNaviagtorCommand
+        {
+            get
+            {
+                if (forwardNaviagtorCommand == null)
+                {
+                    forwardNaviagtorCommand = new RelayCommand((p) =>
+                    {
+                        currentNavigationIndex++;
+                        if (currentNavigationIndex >= navigatedItems.Count)
+                            currentNavigationIndex = navigatedItems.Count;
+
+                        var item = navigatedItems[currentNavigationIndex - 1];
+
+                        GoTo(item.Item1, item.Item2);
+
+                    }, 
+                    (p) => navigatedItems.Count != 0 && currentNavigationIndex < navigatedItems.Count);
+                }
+                return forwardNaviagtorCommand;
+            }
+        }
+
+        public RelayCommand mouseLeftButtonDownEditorCommand;
+        public ICommand MouseLeftButtonDownEditorCommand
+        {
+            get
+            {
+                if (mouseLeftButtonDownEditorCommand == null)
+                {
+                    mouseLeftButtonDownEditorCommand = new RelayCommand((p) => UpdateNavigationList());
+                }
+                return mouseLeftButtonDownEditorCommand;
             }
         }
 
@@ -926,7 +1025,11 @@ namespace MDStudioPlus.ViewModels
             if (e.SelectedItem is FileExplorer.FileItemViewModel || e.SelectedItem is FileExplorer.ProjectItemViewModel)
             {
                 var fileViewModel = Open(e.SelectedItem.Path);
-                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    UpdateNavigationList();
+                },DispatcherPriority.Render);
+
                 if (e.SelectedItem is IProjectItemChild ipic)
                 {
                     fileViewModel.Project = ipic.Project;
@@ -957,29 +1060,38 @@ namespace MDStudioPlus.ViewModels
                     Application.Current.Dispatcher.Invoke(() => IsBreakPointHit = true);
                     uint currentPC = target.GetPC();
                     GoTo(currentPC);
-
-                    // TODO: update registers and call stack here
+                    
                     UpdateRegisterView(currentPC);
+                    UpdateMemoryView();
+
+                    // TODO: Update Call Stack
 
                     if (breakMode == BreakMode.StepOver)
                     {
                         //If hit desired step over address
-                        if (currentPC == stepOverBreakpoint.Address)
+                        //if (currentPC == stepOverBreakpoint.Address)
+                        if (stepOverBreakpoints.Any(sb => sb.Address == currentPC))
                         {
                             //Clear step over breakpoint, if we don't have a user breakpoint here
-                            if (breakpoints.IndexOf(stepOverBreakpoint) == -1)
+                            var breakPoints = stepOverBreakpoints.ToList();
+                            foreach (var breakPoint in breakPoints)
                             {
-                                target.RemoveBreakpoint(stepOverBreakpoint.Address);                                
+                                if (breakpoints.IndexOf(breakPoint) == -1)
+                                {
+                                    target.RemoveBreakpoint(breakPoint.Address);
+                                }
+
+                                //Return to breakpoint mode
+                                stepOverBreakpoints.Remove(breakPoint);
                             }
-
-                            //Return to breakpoint mode
-                            stepOverBreakpoint = null;
-
                             breakMode = BreakMode.Breakpoint;
                         }
                         else
                         {
                             Console.WriteLine("Step-over hit unexpected breakpoint at " + currentPC);
+
+                            // assume its a breakpoint that wasn't cleared in the target emulator
+                            target.RemoveBreakpoint(currentPC);
                         }
                     }
 
@@ -989,7 +1101,6 @@ namespace MDStudioPlus.ViewModels
             }
             else if(target != null && state == State.Running)
             {
-                // TODO update debug windows
                 UpdateMemoryView();
             }
         }
@@ -1000,19 +1111,54 @@ namespace MDStudioPlus.ViewModels
         {
             var window = Application.Current.MainWindow;
             handle = new WindowInteropHelper(window).Handle;
-
+            
             if (cmdlineArgs.Length > 1)
             {
                 OpenSolution(cmdlineArgs[1]);
+                IsHidden = false;
+                return;
             }
             else if (ConfigViewModel.Config.AutoOpenLastProject)
             {
                 //Open last project
                 OpenSolution(ConfigViewModel.Config.LastProject);
-            }            
+                IsHidden = false;
+                return;
+            }
+
+            // show the welcome screen on load (Main Window is hidden)            
+            WizardView welcomeScreen = new WizardView(Models.Wizard.WizardType.StartPage);
+            welcomeScreen.ShowDialog();
+            var dialogResult = welcomeScreen.DialogResult;
+            if (dialogResult == false)
+            {
+                // close app
+                window.Close();
+                return;
+            }
+
+            var wizardData = welcomeScreen.WizardData;
+
+            switch(wizardData.Result)
+            {
+                case Models.Wizard.WizardResult.RecentProjectSelected:
+                {
+                    OpenSolution(wizardData.RecentProjectPath);
+                }
+                break;
+                case Models.Wizard.WizardResult.SolutionCreated:
+                case Models.Wizard.WizardResult.ProjectCreated:
+                {
+                        LoadSolution(wizardData.Solution);
+                }
+                break;
+            }
+
+            IsHidden = false;
+
         }
 
-        public void UpdateDocument()
+        public void UpdateDocumentErrors()
         {
             // add the error markers if any
             foreach (var error in ErrorMarkers)
@@ -1022,7 +1168,6 @@ namespace MDStudioPlus.ViewModels
                     ActiveDocument.AddMarker(Int32.Parse(error.LineNumber), TextMarkerTypes.SquigglyUnderline, Colors.Red);
                 }
             }
-
         }
 
         public void UpdateSyntaxHighlighting()
@@ -1048,13 +1193,14 @@ namespace MDStudioPlus.ViewModels
         public void GoTo(string filename, int lineNumber, bool isError = false)
         {
             string fullFilename = Solution.GetFullPath(filename);
-
-            if(ActiveDocument?.FileName != fullFilename)
+            FileViewModel oldDocument = null;
+            if(ActiveDocument?.FilePath.ToLower() != fullFilename.ToLower())
             {
+                oldDocument = ActiveDocument;              
                 // open with the active documents filename instead
                 // otherwise, you get UPPER case filename and can 
                 // open the same file but in lower case..
-                Open(ActiveDocument?.FileName ?? fullFilename);
+                Open(fullFilename);
             }
 
             // set priority lower priority level so we can guarenttee 
@@ -1065,6 +1211,10 @@ namespace MDStudioPlus.ViewModels
                 CodeEditor codeEd = ActiveDocument.Editor;
                 if (codeEd != null)
                 {
+                    codeEd.Focus();
+
+                    // clear all of the markers from the old file first
+                    if (oldDocument != null) oldDocument.RemoveAllMarkers();
                     var line = ActiveDocument.Document.GetLineByNumber(lineNumber);
                     codeEd.CaretOffset = line.Offset;
                     codeEd.TextArea.Caret.BringCaretToView();
@@ -1079,6 +1229,7 @@ namespace MDStudioPlus.ViewModels
             string filename = currentLine.Filename;
             int lineNumberSymbols = currentLine.LineFrom;
             int lineNumberEditor = currentLine.LineTo;
+            FileViewModel oldDocument = null;
 
             if (lineNumberSymbols >= 0 && filename.Length > 0)
             {
@@ -1086,6 +1237,7 @@ namespace MDStudioPlus.ViewModels
                 //Load file
                 if (ActiveDocument?.FilePath.ToLower() != filename)
                 {
+                    oldDocument = ActiveDocument;
                     Open(filename);
                 }
             }
@@ -1095,11 +1247,16 @@ namespace MDStudioPlus.ViewModels
 
             }
 
+            UpdateNavigationList();
+
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
+                // clear all of the markers from the old file first
+                if (oldDocument != null) oldDocument.RemoveAllMarkers();
+
                 ActiveDocument.RemoveAllMarkers();
 
-                if (lineNumberEditor < ActiveDocument.Document.LineCount)
+                if (lineNumberEditor < ActiveDocument.Document.LineCount && lineNumberEditor >= 0)
                 {
 
                     ActiveDocument.AddMarker(lineNumberEditor, TextMarkerTypes.RectangleHighlight, Colors.Yellow);
@@ -1148,6 +1305,11 @@ namespace MDStudioPlus.ViewModels
             sourceWatcher.Changed += onFileChanged;
         }
 
+        private void ActiveDocument_OnFileDirty(object sender, FileViewModelIsDirtyEventArgs e)
+        {
+            if(e.IsDirty)
+                isDirty = true;
+        }
         #endregion
 
         #region Private Methods
@@ -1171,19 +1333,23 @@ namespace MDStudioPlus.ViewModels
 
             // add 68k register values
             Application.Current.Dispatcher.Invoke(() => Registers.UpdateRegisterValues(dregs, aregs, sr, pc));
+
             // update z80 register values
-            Application.Current.Dispatcher.Invoke(() => Registers.UpdateZ80Registers(target.GetZ80Reg(Z80Regs.FA),
-                                                                                     target.GetZ80Reg(Z80Regs.CB),
-                                                                                     target.GetZ80Reg(Z80Regs.ED),
-                                                                                     target.GetZ80Reg(Z80Regs.LH),
-                                                                                     target.GetZ80Reg(Z80Regs.FA_ALT),
-                                                                                     target.GetZ80Reg(Z80Regs.CB_ALT),
-                                                                                     target.GetZ80Reg(Z80Regs.ED_ALT),
-                                                                                     target.GetZ80Reg(Z80Regs.LH_ALT),
-                                                                                     target.GetZ80Reg(Z80Regs.IX),
-                                                                                     target.GetZ80Reg(Z80Regs.IY),
-                                                                                     target.GetZ80Reg(Z80Regs.SP),
-                                                                                     target.GetZ80Reg(Z80Regs.PC)));
+            Application.Current.Dispatcher.Invoke(() => {
+                Registers.UpdateZ80Registers(
+                    target.GetZ80Reg(Z80Regs.FA),
+                    target.GetZ80Reg(Z80Regs.CB),
+                    target.GetZ80Reg(Z80Regs.ED),
+                    target.GetZ80Reg(Z80Regs.LH),
+                    target.GetZ80Reg(Z80Regs.FA_ALT),
+                    target.GetZ80Reg(Z80Regs.CB_ALT),
+                    target.GetZ80Reg(Z80Regs.ED_ALT),
+                    target.GetZ80Reg(Z80Regs.LH_ALT),
+                    target.GetZ80Reg(Z80Regs.IX),
+                    target.GetZ80Reg(Z80Regs.IY),
+                    target.GetZ80Reg(Z80Regs.SP),
+                    target.GetZ80Reg(Z80Regs.PC));
+             });
         }
 
         private void UpdateMemoryView()
@@ -1217,17 +1383,23 @@ namespace MDStudioPlus.ViewModels
         internal void OnSolutionClose()
         {
             var allFiles = files.ToList();
+            
             foreach(var file in allFiles)
             {
                 Close(file);
             }
+
             files.Clear();
+            
             solution = null;
             IsSolutionLoaded = false;
             SolutionName = "No Project Loaded";            
             Explorer.Solution = null;
             output.BuildOutput = "";
+            
             Errors.Clear();
+
+            breakpoints.Clear();
         }
 
         internal void OnSave()
@@ -1501,6 +1673,7 @@ namespace MDStudioPlus.ViewModels
                 {
                     line = ActiveDocument.Document.GetLineByNumber(currentLine.LineTo);
                     currentLineText = ActiveDocument.Document.GetText(line);
+                    UpdateNavigationList();
                 });
 
                 Match match = Regex.Match(currentLineText, "\\s*?([a-zA-Z.]+)");
@@ -1554,8 +1727,9 @@ namespace MDStudioPlus.ViewModels
 
                 //Set StepOver mode
                 breakMode = BreakMode.StepOver;
-                stepOverBreakpoint = new Breakpoint(currentLine.Filename, nextLine, nextPC);
-                
+                var stepOverBreakpoint = new Breakpoint(currentLine.Filename, nextLine, nextPC);
+                stepOverBreakpoints.Add(stepOverBreakpoint);
+
                 //Run to StepOver breakpoint
                 target.Resume();
                 state = State.Running;
@@ -1734,6 +1908,8 @@ namespace MDStudioPlus.ViewModels
         {
             bool canBuild = solution != null;
             canBuild &= !isBuilding;
+            canBuild &= !isBreakpointHit;
+            canBuild &= !isDebugging;
             return canBuild;
         }
 
@@ -1756,6 +1932,24 @@ namespace MDStudioPlus.ViewModels
             }
             else if(state == State.Paused || state == State.Debugging)
             {
+                // clean up breakpoints
+                var allBreakpoints = breakpoints.ToList();
+                allBreakpoints.AddRange(stepOverBreakpoints.ToList());
+                var addresses = target.CleanupBreakpoints().ToList();
+
+                foreach (var breakPoint in allBreakpoints)
+                {
+                    if (addresses.Contains(breakPoint.Address))
+                    {
+                        addresses.Remove(breakPoint.Address);
+                    }
+                }
+
+                foreach (var address in addresses)
+                {
+                    target.RemoveBreakpoint(address);
+                }
+
                 target.Resume();
                 state = State.Running;
                 IsBreakPointHit = false;
@@ -1811,6 +2005,7 @@ namespace MDStudioPlus.ViewModels
                 ActiveDocument?.Refresh();
 
                 IsDebugging = false;
+                IsBreakPointHit = false;
                 state = State.Stopped;
                 Status = "Stopped";
 
@@ -1871,9 +2066,7 @@ namespace MDStudioPlus.ViewModels
             {
                 configViewModel = view.DataContext as ConfigViewModel;
                 configViewModel.Config.Save();
-                var selectedTarget = configViewModel.Target;
-                target = TargetFactory.Create(selectedTarget.Item1, selectedTarget.Item2);
-                TargetName = selectedTarget.Item1;
+                SelectedTarget = configViewModel.Target;               
 
                 if (solution != null)
                 {
@@ -1946,14 +2139,33 @@ namespace MDStudioPlus.ViewModels
         {
             if (!String.IsNullOrEmpty(file))
             {
-                ResetDocument();
-                // open solution 
-                solution = new Solution(file);
-                // populate the solution explorer...
-                explorer.Solution = solution;
-                SolutionName = solution.Name;
+                LoadSolution(new Solution(file));
+            }
+        }
 
-                Application.Current.Dispatcher.Invoke(new Action(() =>  IsSolutionLoaded = true ));
+        private void LoadSolution(Solution newSolution)
+        {
+            ResetDocument();
+            // open solution 
+            solution = newSolution;
+            // populate the solution explorer...
+            explorer.Solution = solution;
+            SolutionName = solution.Name;
+
+            Application.Current.Dispatcher.Invoke(new Action(() => IsSolutionLoaded = true));
+            alreadyBuilt = solution.IsAlreadyBuilt();
+            if (alreadyBuilt) debugSymbols = solution.GetDebugSymbols();
+
+            List<string> recentProjs = new List<string>();
+
+            if (configViewModel.Config.RecentProjects != null)
+                recentProjs = configViewModel.Config.RecentProjects.ToList();
+
+            if (!recentProjs.Any(p => p.ToLower() == solution.FullPath.ToLower()))
+            {
+                recentProjs.Add(solution.FullPath);
+                configViewModel.Config.RecentProjects = recentProjs.ToArray();
+                configViewModel.Config.Save();
             }
         }
 
@@ -1966,6 +2178,36 @@ namespace MDStudioPlus.ViewModels
             }
 
             ActiveDocument = null;
+        }
+
+        private void UpdateNavigationList()
+        {
+            var lastItem = NavigatedItems.LastOrDefault();
+
+            var caretOffest = ActiveDocument.Editor.CaretOffset;
+
+            int lineNumber = ActiveDocument.Document.GetLineByOffset(caretOffest).LineNumber;
+            string filename = ActiveDocument.FileName;
+            string caption = $"{filename}: Line: {lineNumber}";
+
+
+            if ( (lastItem == null) || (lastItem.Item1 != filename || lastItem.Item2 != lineNumber && lastItem.Item3 != caption))
+            {
+                if (lastItem != null && lastItem.Item1 == filename && (lineNumber < lastItem.Item2 + 10 && lineNumber > lastItem.Item2 - 10))
+                {
+                    NavigatedItems[NavigatedItems.Count - 1] = new Tuple<string, int, string>(filename, lineNumber, caption);
+                }
+                else
+                {
+                    NavigatedItems.Add(new Tuple<string, int, string>(filename, lineNumber, caption));
+                }
+            }
+
+            // if we have more than 100 items, remove the first item
+            if (NavigatedItems.Count > 100) NavigatedItems.RemoveAt(0);
+
+            currentNavigationIndex = NavigatedItems.Count;
+
         }
 
         private int PreBuild()
@@ -2052,8 +2294,8 @@ namespace MDStudioPlus.ViewModels
         private void Run()
         {
             if (state == State.Debugging)
-            {
-                // TODO: update code editor
+            {               
+
                 target.Resume();
 
                 if (target is EmulatorTarget emulator)
@@ -2072,7 +2314,8 @@ namespace MDStudioPlus.ViewModels
 
                 int errorCount = 0;
 
-                if(!alreadyBuilt)
+                // check if a document was dirty
+                if(!alreadyBuilt || isDirty)
                 {
                     errorCount = Build();
                 }
@@ -2084,15 +2327,7 @@ namespace MDStudioPlus.ViewModels
 
                     //Init emu
                     Tuple<string, Point> resolution = configViewModel.SelectedResolution;
-                    Point heightWidth = resolution.Item2;
-
-                    /*Application.Current.Dispatcher.Invoke(new Action(() =>
-                    {
-                        EmulatorWindow.Show();
-                        //EmulatorWindow.Handle = new WindowInteropHelper(EmulatorWindow).Handle;
-                    }));*/
-
-                    
+                    Point heightWidth = resolution.Item2;              
 
                     if (target is EmulatorTarget emulator)
                     {

@@ -17,7 +17,7 @@
         MaxHeight="{x:Static SystemParameters.MaximizedPrimaryScreenHeight}" 
         Height="900" Width="1600" SnapsToDevicePixels="True" 
         Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}" 
-        WindowStyle="None" ResizeMode="CanResizeWithGrip" StateChanged="WindowStateChanged" >
+        WindowStyle="None" ResizeMode="CanResizeWithGrip" StateChanged="WindowStateChanged">
     <!--<DockPanel Margin="5,0,5,0">-->
     <WindowChrome.WindowChrome>
         <WindowChrome x:Name="chrome" ResizeBorderThickness="8" 
@@ -30,10 +30,17 @@
         <Style TargetType="{x:Type Window}">
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="{DynamicResource WindowBorderBrush}" />
+            <Setter Property="Visibility" Value="Visible"/>
             <Style.Triggers>
                 <Trigger Property="IsActive" Value="False">
                     <Setter Property="BorderBrush" Value="{DynamicResource WindowInactiveBorderBrush}"/>
                 </Trigger>
+                <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource StatusBarBackgroundDebugging}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
     </Window.Style>
@@ -301,172 +308,150 @@
                     <!--Main Toolbar-->
                     <ToolBar  Background="{x:Null}"  WindowChrome.IsHitTestVisibleInChrome="True">
                         <ToolBarPanel Orientation="Horizontal"  Background="{x:Null}" WindowChrome.IsHitTestVisibleInChrome="True">
-                            <!--New Project Button-->
-                            <Button Command="{Binding NewProjectCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True"
-                                Padding="2"
-                                Margin="2,0,2,0">
-                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/NewProject.png" Width="18"/>
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="ToolTip" Value="New Project"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                                <Setter Property="BorderBrush" Value="{DynamicResource WindowBorderBrush}"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <!--Open Project/Solution Button-->
-                            <Button Command="{Binding OpenProjectSolutionCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True"
-                                Padding="0" Margin="2,0,2,0">
-                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Open.png" Width="18"  Margin="2,0,2,0"/>
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="ToolTip" Value="Open Solution/Project"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                                <Setter Property="BorderBrush" Value="{DynamicResource WindowBorderBrush}"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <!--Save Button-->
-                            <Button Command="{Binding SaveCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True"
-                                Padding="0" BorderBrush="{x:Null}"
-                                Margin="2,0,2,0">
-                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Save.png" Width="18"/>
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="ToolTip" Value="Save"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <!--Save All Button-->
-                            <Button Command="{Binding SaveAllCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True"
-                                Padding="0" BorderBrush="{x:Null}"
-                                Margin="2,0,2,0">
-                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/SaveAll.png" Width="18"/>
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="ToolTip" Value="Save All"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                            <!-- Navigate Backwards -->
+                            <StackPanel Orientation="Horizontal">
+                                <MenuItem Command="{Binding BackwardNaviagtorCommand}"
+                                          Focusable="False"
+                                          ToolTip="Navigate Backward"
+                                          Width="24">
+                                    <MenuItem.Icon>
+                                        <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BackArrow.png"  Width="16"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <!--<MenuItem ItemsSource="{Binding NavigatedItems}"
+                                          ToolTip="Navigate Backward" 
+                                          Width="12" >
+                                    <MenuItem.Icon>
+                                        <Path x:Name="Arrow" Data="{DynamicResource DownArrowGeometry}" Fill="{DynamicResource WindowForeground}" HorizontalAlignment="Left" IsHitTestVisible="False"  VerticalAlignment="Center"/>
+                                    </MenuItem.Icon>
+                                    <MenuItem.ItemTemplate>
+                                        <DataTemplate>
+                                            <Label Content="{Binding Item3}"/>
+                                        </DataTemplate>
+                                    </MenuItem.ItemTemplate>-->
+                                    <!--<i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="ContextMenuOpening">
+                                            <i:InvokeCommandAction Command="{Binding NaviagtorContextMenuCommand}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </MenuItem>-->
+                            </StackPanel>
+                            <!-- Navigate Forwards -->
+                            <MenuItem Command="{Binding ForwardNaviagtorCommand}"
+                                      ToolTip="Navigate Forward"
+                                      Focusable="False"
+                                      Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/ForwardArrow.png"  Width="16"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
                             <!--Separator-->
                             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
-                            <!-- Emulator Target Name -->
-                            <Border Background="{DynamicResource ProjectNameBackground}" Padding="8,0" Margin="14,0">
-                                <TextBlock Text="{Binding TargetName}" VerticalAlignment="Center" Padding="0,1,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}"/>
+                            <!--New Project Button-->
+                            <MenuItem Command="{Binding NewProjectCommand}"
+                                      WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Margin="2,0,0,0"
+                                      Focusable="False"
+                                      Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/NewProject.png" Width="18"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="New Project"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Open Project/Solution Button-->
+                            <MenuItem Command="{Binding OpenProjectSolutionCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Open.png" Width="18"  Margin="2,0,2,0"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="Open Solution/Project"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Save Button-->
+                            <MenuItem Command="{Binding SaveCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Padding="0" BorderBrush="{x:Null}"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Save.png" Width="18"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="Save"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Save All Button-->
+                            <MenuItem Command="{Binding SaveAllCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Padding="0" BorderBrush="{x:Null}"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/SaveAll.png" Width="18"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="Save All"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Separator-->
+                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
+                            <!-- Emulator Target -->
+                            <Border Background="{x:Null}" Padding="2,0" Margin="5,0,0,0">
+                                <ComboBox Template="{DynamicResource ComboBoxControlTemplate}" 
+                                          ItemsSource="{Binding Targets}"
+                                          SelectedItem="{Binding SelectedTarget}"
+                                          Focusable="False"
+                                          Width="200"
+                                          Height="25"
+                                          VerticalAlignment="Center" 
+                                          HorizontalAlignment="Center"
+                                          Padding="10,5,0,0"
+                                          DisplayMemberPath="Item3"
+                                          Background="{DynamicResource ProjectNameBackground}">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Foreground" Value="{DynamicResource WindowForeground}"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}" Value="False">
-                                                    <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}" />
+                                                <DataTrigger Binding="{Binding IsBuilding}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                    </ComboBox.Style>
+                                </ComboBox>
                             </Border>
-                            <!--Separator-->
-                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
                             <!--Run Emulator Button-->
-                            <Button Command="{Binding RunEmulatorCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True"                                 
-                                Padding="2,2,2,2" BorderBrush="{x:Null}"
-                                Margin="2,0,2,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" Width="12" Margin="5,0,0,0"/>
-                                    <TextBlock Foreground="{DynamicResource SystemButtonsForeground}" Margin="5,0,5,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="Text" Value="{Binding SolutionName}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsDebugging}" Value="True">
-                                                        <Setter Property="Text" Value="Continue"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
+                            <MenuItem Header="{Binding SolutionName}"
+                                      Command="{Binding RunEmulatorCommand}"
+                                      WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                      Padding="0,0,-45,0">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsBuilding}" Value="True">
                                                 <Setter Property="IsEnabled" Value="False"/>
                                             </DataTrigger>
@@ -478,46 +463,22 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                             <!--Resume Emulator Button-->
-                            <Button Command="{Binding RunEmulatorCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True"                                 
-                                Padding="2,2,2,2" BorderBrush="{x:Null}"
-                                Margin="2,0,2,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" Width="12" Margin="5,0,0,0"/>
-                                    <TextBlock Foreground="{DynamicResource SystemButtonsForeground}" Margin="5,0,5,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="{x:Type TextBlock}">
-                                                <Setter Property="Text" Value="{Binding SolutionName}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsDebugging}" Value="True">
-                                                        <Setter Property="Text" Value="Continue"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                            <MenuItem Header="Continue" Command="{Binding RunEmulatorCommand}"
+                                Padding="0,0,-45,0"
+                                WindowChrome.IsHitTestVisibleInChrome="True" 
+                                      Focusable="False"
+                                      HorizontalAlignment="Left">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
                                         <Setter Property="IsEnabled" Value="False"/>
                                         <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsDebugging}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
@@ -526,8 +487,8 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                         </ToolBarPanel>
                     </ToolBar>
                     <!--Debug Toolbar-->
@@ -544,28 +505,17 @@
                         </ToolBar.Style>
                         <ToolBarPanel Orientation="Horizontal"  Background="{x:Null}" WindowChrome.IsHitTestVisibleInChrome="True">
                             <!-- Break All (Pause) -->
-                            <Button Command="{Binding BreakAllCommand}"
+                            <MenuItem Command="{Binding BreakAllCommand}"
                                 WindowChrome.IsHitTestVisibleInChrome="True"
-                                BorderBrush="{x:Null}"
-                                Padding="2" Margin="5,0,5,0">
-                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BreakAll.png" Width="12"  Margin="5,0,5,0"/>
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                                      Focusable="False"
+                                      Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BreakAll.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
                                         <Setter Property="ToolTip" Value="Break All"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsDebugging}" Value="False">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
@@ -574,139 +524,102 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                             <!--Stop Emulator Button-->
-                            <Button Command="{Binding StopEmulatorCommand}"
+                            <MenuItem Command="{Binding StopEmulatorCommand}"
                                 WindowChrome.IsHitTestVisibleInChrome="True" 
-                                Padding="2" Margin="5,0,5,0">
-                                <Image Source="pack://application:,,,/Resources/Toolbar/Stop.png" Width="12"  Margin="5,0,5,0"/>
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <Image Source="pack://application:,,,/Resources/Toolbar/Stop.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
                                         <Setter Property="ToolTip" Value="Stop Emulator"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                                <Setter Property="BorderBrush" Value="{DynamicResource SystemButtonsMousePressedForeground}"/>
-                                                <Setter Property="BorderThickness" Value="5"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsDebugging}" Value="False">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                             <!--Reset/Restart Emulator-->
-                            <Button Command="{Binding RestartEmulatorCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True" 
-                                BorderBrush="{x:Null}"                                 
-                                Padding="2" Margin="5,0,5,0">
-                                <Image Source="pack://application:,,,/Resources/Toolbar/Restart.png" Width="16"  Margin="5,0,5,0"/>
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                            <MenuItem Command="{Binding RestartEmulatorCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <Image Source="pack://application:,,,/Resources/Toolbar/Restart.png" Width="16"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
                                         <Setter Property="ToolTip" Value="Reset Emulator"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsDebugging}" Value="False">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                             <!--Separator-->
                             <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Foreground="{DynamicResource ProjectNameForeground}" Margin="5,0,0,0" />
                             <!--Step Into-->
-                            <Button Command="{Binding StepIntoCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True" 
-                                BorderBrush="{x:Null}"                                 
-                                Padding="2" Margin="5,0,5,0">
-                                <Image Source="pack://application:,,,/Resources/Toolbar/StepInto.png" Width="16"  Margin="5,0,5,0"/>
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                            <MenuItem Command="{Binding StepIntoCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepInto.png" Width="16"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
                                         <Setter Property="ToolTip" Value="Step Into"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
+                                        <Setter Property="IsEnabled" Value="False" />
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsDebugging}" Value="False">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                                <Setter Property="IsEnabled" Value="True" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                             <!--Step Over-->
-                            <Button Command="{Binding StepOverCommand}"
-                                WindowChrome.IsHitTestVisibleInChrome="True" 
-                                BorderBrush="{x:Null}"                                 
-                                Padding="2" Margin="5,0,5,0">
-                                <Image Source="pack://application:,,,/Resources/Toolbar/StepOver.png" Width="16"  Margin="5,0,5,0"/>
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                            <MenuItem Command="{Binding StepOverCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepOver.png" Width="16"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
                                         <Setter Property="ToolTip" Value="Step Over"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
+                                        <Setter Property="IsEnabled" Value="False" />
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsDebugging}" Value="False">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                                <Setter Property="IsEnabled" Value="True" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
-                            <!--Step Out-->
-                            
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!-- TODO: Step Out-->
                             <!-- Mute Audio -->
-                            <Button Command="{Binding MuteAudioCommand}"
+                            <MenuItem Command="{Binding MuteAudioCommand}"
                                 WindowChrome.IsHitTestVisibleInChrome="True" 
-                                BorderBrush="{x:Null}"                                 
-                                Padding="2" Margin="5,0,5,0">
-                                <Image Width="16" Margin="5,0,5,0">
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <Image Width="16">
                                     <Image.Style>
                                         <Style TargetType="Image">
                                             <Setter Property="Source" Value="pack://application:,,,/Resources/Toolbar/AudioState.png"/>
@@ -718,30 +631,18 @@
                                         </Style>
                                     </Image.Style>
                                 </Image>
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Background" Value="{DynamicResource HeaderBackground}"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
                                         <Setter Property="ToolTip" Value="Mute Audio"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SystemButtonsMouseOverBackground}"/>
-                                            </Trigger>
                                             <DataTrigger Binding="{Binding IsMuted}" Value="True">
                                                 <Setter Property="ToolTip" Value="Unmute Audio" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </MenuItem.Style>
+                            </MenuItem>
                         </ToolBarPanel>
                     </ToolBar>
                     <!--TODO: Comment/Uncomment and normal Bookmark-->
@@ -782,6 +683,13 @@
                                             <Setter Property="Background" Value="{DynamicResource ControlBackground}" />
                                             <Setter Property="IconBarBackground" Value="{DynamicResource ScrollViewerRectBackground}" />
                                             <Setter Property="IconBarForeground" Value="{DynamicResource ToolBarGripper}" />
+                                            <Setter Property="IsReadOnly" Value="False"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DataContext.IsDebugging, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}}"
+                                                             Value="True">
+                                                    <Setter Property="IsReadOnly" Value="True"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
                                         </Style>
                                     </editor:CodeEditor.Style>
                                     <i:Interaction.Triggers>
@@ -803,8 +711,14 @@
                                                                                      FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
                                                                    PassEventArgsToCommand="True"/>
                                         </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseMove">
+                                        <i:EventTrigger EventName="MouseMove"> <!--MouseHoverStopped-->
                                             <i:InvokeCommandAction Command="{Binding DataContext.MouseMoveCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="PreviewMouseLeftButtonUp">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseLeftButtonDownEditorCommand, 
                                                                                      RelativeSource={RelativeSource 
                                                                                      FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
                                                                    PassEventArgsToCommand="True"/>
@@ -1024,7 +938,7 @@
                                                                         Header="Data Register" 
                                                                         IsReadOnly="True" 
                                                                         Width="25"/>
-                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                                 <!--Address Registers-->
@@ -1040,7 +954,7 @@
                                                                         Header="Address Register" 
                                                                         IsReadOnly="True" 
                                                                         Width="25"/>
-                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                                 <!--State Registers-->
@@ -1056,7 +970,7 @@
                                                                         Header="State Register" 
                                                                         IsReadOnly="True" 
                                                                         Width="25"/>
-                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
                                                     </DataGrid.Columns>
                                                 </DataGrid>
                                             </StackPanel>
@@ -1111,7 +1025,7 @@
                                                                             Header="16-Bit Register" 
                                                                             IsReadOnly="True" 
                                                                             Width="25"/>
-                                                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
+                                                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
                                                         </DataGrid.Columns>
                                                     </DataGrid>
                                                     <!--State Registers-->
@@ -1127,7 +1041,7 @@
                                                                         Header="State Register" 
                                                                         IsReadOnly="True" 
                                                                         Width="25"/>
-                                                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="60"/>
+                                                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
                                                         </DataGrid.Columns>
                                                     </DataGrid>
                                                 </StackPanel>
@@ -1142,7 +1056,10 @@
                     <local:PanesTemplateSelector.MemoryViewTemplate>
                         <DataTemplate>
                             <Border>
-                                <DataGrid AutoGenerateColumns="False"                                          
+                                <DockPanel>
+                                    <TextBox DockPanel.Dock="Top"/>
+                                    <DataGrid DockPanel.Dock="Bottom"
+                                            AutoGenerateColumns="False"                                          
                                           ItemsSource="{Binding Memory}"
                                           HorizontalGridLinesBrush="{x:Null}"
                                           VerticalGridLinesBrush="{x:Null}"
@@ -1152,7 +1069,8 @@
                                           CanUserResizeRows="False"
                                           CanUserResizeColumns="False"
                                           RowHeaderWidth="0"
-                                          CellStyle="{StaticResource DataGridCellStyle}">
+                                          CellStyle="{StaticResource DataGridCellStyle}"
+                                          >
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Binding="{Binding Index}" Header="Addr" Width="40"/>
                                         <DataGridTextColumn Binding="{Binding Value[0]}" Header="$00"/>
@@ -1173,6 +1091,7 @@
                                         <DataGridTextColumn Binding="{Binding Value[15]}" Header="$0F"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
+                                </DockPanel>
                             </Border>
                         </DataTemplate>
                     </local:PanesTemplateSelector.MemoryViewTemplate>

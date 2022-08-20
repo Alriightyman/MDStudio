@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -32,7 +33,7 @@ namespace MDStudioPlus.ViewModels
         private Tuple<string, Theme> selectedTheme;
         private Tuple<string, Point> selectedResolution;
         private bool autoOpenLastProject;
-        private Tuple<string, string> selectedTarget;
+        private Tuple<string, string, string> selectedTarget;
         private Tuple<char, string> selectedRegion;
         private Config config = new Config();
         private string asm68kPath;
@@ -104,9 +105,9 @@ namespace MDStudioPlus.ViewModels
         #endregion
 
         #region Targets
-        public List<Tuple<string,string>> Targets { get; set; } = TargetFactory.GetTargetNames();
+        public List<Tuple<string,string, string>> Targets { get; set; } = TargetFactory.GetTargetNames();
 
-        public Tuple<string, string> SelectedTarget
+        public Tuple<string, string, string> SelectedTarget
         {
             get => selectedTarget;
             set
@@ -122,7 +123,7 @@ namespace MDStudioPlus.ViewModels
         /// Item1 is is the name of the emulator and item2 is the namespace
         /// Item2 is assumed that all Targets will be assigned to MDStudioPlus.Targets
         /// </summary>
-        public Tuple<string, string> Target => new Tuple<string, string>(selectedTarget.Item1, selectedTarget.Item2);
+        public Tuple<string, string, string> Target => new Tuple<string, string, string>(selectedTarget.Item1, selectedTarget.Item2, selectedTarget.Item3);
 
         #endregion
 
@@ -386,7 +387,10 @@ namespace MDStudioPlus.ViewModels
                     break;
             }
             SelectedResolution = ValidResolutions.First(r => r.Item1 == Config.EmuResolution);
-            SelectedTarget = new Tuple<string, string>(Config.TargetName, $"{nameof(MDStudioPlus)}.{nameof(Targets)}");
+            var newTargetName = config.TargetName.Remove(0, 6);
+            newTargetName = Regex.Replace(newTargetName, "([a-z])([A-Z])", "$1 $2");
+
+            SelectedTarget = new Tuple<string, string, string>(Config.TargetName, $"{nameof(MDStudioPlus)}.{nameof(Targets)}", newTargetName);
             AutoOpenLastProject = Config.AutoOpenLastProject;
             AsPath = Config.AsPath;
             Asm68kPath = Config.Asm68kPath;

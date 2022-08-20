@@ -242,7 +242,10 @@ namespace MDStudioPlus.Debugging
 
                     filename = filename.ToUpper().Replace("/", "\\");
 
-                    if (filesToExclude != null && filesToExclude.Contains(filename))
+                    // if this is a file we don't want to parse then don't.   Some fancy things that can be done in AS
+                    // result in AS not knowing the difference between actual addressing and a value counting.  This is
+                    // used in some Sonic hacks where we "count" the music ids and such. 
+                    if (filesToExclude != null && filesToExclude.Any(f => $"{projectPath}\\{f}".ToUpper() == filename))
                     {
                         return currentLine;
                     }

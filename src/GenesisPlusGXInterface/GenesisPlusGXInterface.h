@@ -76,9 +76,7 @@ namespace GenesisPlusGXInterface {
 		void	Show();
 		void	Hide();
 
-		//void	KeyPressed(int vkCode, int keyDown);
-
-		///<	Accessors
+		//	Accessors
 		int		GetDReg(int index);
 		int		GetAReg(int index);
 		int		GetSR();
@@ -100,7 +98,7 @@ namespace GenesisPlusGXInterface {
 		unsigned char	GetVDPRegisterValue(int index);
 
 		unsigned int Disassemble(unsigned int address, char* text);
-
+		array<unsigned int>^ CleanupBreakpoints();
 		void SetVolume(int vol, bool isSetDebug);
 		void PauseAudio(bool pause);
 		unsigned char* GetVRAM();

@@ -31,7 +31,16 @@ namespace MDStudioPlus
         /// Assembler Version this Project uses
         /// </summary>
         [XmlElement("Assembler")]
-        public AssemblerVersion AssemblerVersion { get; set; }
+        public AssemblerVersion AssemblerVersion 
+        {
+            get => assemblerVersion;
+            set
+            {
+                assemblerVersion = value;
+
+                if (assemblerVersion == AssemblerVersion.AS) assembler = new AsAssembler(this, Workspace.Instance.ConfigViewModel.AsPath);
+            }
+        }
 
         /// <summary>
         /// Main File that will be passed to the assembler
@@ -91,6 +100,9 @@ namespace MDStudioPlus
         private IAssembler assembler;
 
         [XmlIgnore]
+        private AssemblerVersion assemblerVersion;
+
+        [XmlIgnore]
         private StringBuilder processStandardOutput = new StringBuilder();
 
         [XmlIgnore]
@@ -118,6 +130,25 @@ namespace MDStudioPlus
 
         [XmlIgnore]
         public IAssembler Assembler => assembler;
+
+        [XmlIgnore]
+        public bool IsBuilt
+        {
+            get
+            {
+                // check for symbols
+                string symbolPath = $"{ProjectPath}\\{OutputFileName}." + (AssemblerVersion == AssemblerVersion.AS ? "MAP" : "symb");
+                if(!File.Exists(symbolPath))
+                    return false;
+
+                // check for binary
+                string binaryPath = $"{ProjectPath}\\{OutputFileName}.{OutputExtension}";
+                if (!File.Exists(binaryPath))
+                    return false;
+
+                return true;
+            }
+        }
 
         [XmlIgnore]
         public string ErrorPattern
@@ -305,7 +336,7 @@ namespace MDStudioPlus
             string symbolPath = $"{ProjectPath}\\{OutputFileName}." + (AssemblerVersion == AssemblerVersion.AS ? "MAP" : "symb");
             try
             {
-                if (symbols.Read(symbolPath, null))
+                if (symbols.Read(symbolPath, FilesToExclude))
                 {
                     return symbols;
                 }

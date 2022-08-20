@@ -30,9 +30,22 @@ namespace MDStudioPlus.ViewModels
 
     public delegate void FileViewModelSelectedEventHandler(object sender, FileViewModelSelectedEventArgs e);
 
+    public class FileViewModelIsDirtyEventArgs : EventArgs
+    {
+        public bool IsDirty { get; set; }
+        public FileViewModelIsDirtyEventArgs(bool isDirty)
+        {
+            IsDirty = isDirty;
+        }
+    }
+
+    public delegate void FileViewModelIsDirtyEventHandler(object sender, FileViewModelIsDirtyEventArgs e);
+
+
     public class FileViewModel : PaneViewModel
     {
         public event FileViewModelSelectedEventHandler OnFileSelected;
+        public event FileViewModelIsDirtyEventHandler OnFileDirty;
 
         #region fields
         private string filePath = null;
@@ -183,6 +196,7 @@ namespace MDStudioPlus.ViewModels
                     Title = FileName;
                     RaisePropertyChanged(nameof(IsDirty));
                     RaisePropertyChanged(nameof(FileName));
+                    OnFileDirty?.Invoke(this, new FileViewModelIsDirtyEventArgs(isDirty));
                 }
             }
         }

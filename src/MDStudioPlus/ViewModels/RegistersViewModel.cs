@@ -145,19 +145,19 @@ namespace MDStudioPlus.ViewModels
             Z80Registers8Bit.Add(new Register() { Name = "B", Value = (bc >> 8).ToString("X2") });
             Z80Registers8Bit.Add(new Register() { Name = "D", Value = (de >> 8).ToString("X2") });
             Z80Registers8Bit.Add(new Register() { Name = "H", Value = (hl >> 8).ToString("X2") });
-            Z80Registers8Bit.Add(new Register() { Name = "F", Value = (af & 8).ToString("X2") });
-            Z80Registers8Bit.Add(new Register() { Name = "C", Value = (bc & 8).ToString("X2") });
-            Z80Registers8Bit.Add(new Register() { Name = "E", Value = (de & 8).ToString("X2") });
-            Z80Registers8Bit.Add(new Register() { Name = "L", Value = (hl & 8).ToString("X2") });
+            Z80Registers8Bit.Add(new Register() { Name = "F", Value = (af & 0xFF).ToString("X2") });
+            Z80Registers8Bit.Add(new Register() { Name = "C", Value = (bc & 0xFF).ToString("X2") });
+            Z80Registers8Bit.Add(new Register() { Name = "E", Value = (de & 0xFF).ToString("X2") });
+            Z80Registers8Bit.Add(new Register() { Name = "L", Value = (hl & 0xFF).ToString("X2") });
 
             Z80Registers8BitAlt.Add(new Register() { Name = "A'", Value = (af_alt >> 8).ToString("X2") });
             Z80Registers8BitAlt.Add(new Register() { Name = "B'", Value = (bc_alt >> 8).ToString("X2") });
             Z80Registers8BitAlt.Add(new Register() { Name = "D'", Value = (de_alt >> 8).ToString("X2") });
             Z80Registers8BitAlt.Add(new Register() { Name = "H'", Value = (hl_alt >> 8).ToString("X2") });
-            Z80Registers8BitAlt.Add(new Register() { Name = "F'", Value = (af_alt & 8).ToString("X2") });
-            Z80Registers8BitAlt.Add(new Register() { Name = "C'", Value = (bc_alt & 8).ToString("X2") });
-            Z80Registers8BitAlt.Add(new Register() { Name = "E'", Value = (de_alt & 8).ToString("X2") });
-            Z80Registers8BitAlt.Add(new Register() { Name = "L'", Value = (hl_alt & 8).ToString("X2") });
+            Z80Registers8BitAlt.Add(new Register() { Name = "F'", Value = (af_alt & 0xFF).ToString("X2") });
+            Z80Registers8BitAlt.Add(new Register() { Name = "C'", Value = (bc_alt & 0xFF).ToString("X2") });
+            Z80Registers8BitAlt.Add(new Register() { Name = "E'", Value = (de_alt & 0xFF).ToString("X2") });
+            Z80Registers8BitAlt.Add(new Register() { Name = "L'", Value = (hl_alt & 0xFF).ToString("X2") });
 
             // 16 bit
             Z80Registers16Bit.Add(new Register() { Name = "IX", Value = ix.ToString("X8") });

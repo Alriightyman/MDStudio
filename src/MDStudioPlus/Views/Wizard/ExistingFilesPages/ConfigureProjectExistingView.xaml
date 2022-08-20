@@ -1,0 +1,191 @@
+﻿<wizard:WizardPageBase
+    xmlns:wizard="clr-namespace:MDStudioPlus.Views.Wizard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Class="MDStudioPlus.Views.Wizard.ExistingFilesPages.ConfigureProjectExistingView"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:MDStudioPlus.Views.Wizard.ExistingFilesPages"
+    xmlns:mdstudio="clr-namespace:MDStudioPlus"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    mc:Ignorable="d"
+    Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}"
+    Height="670" Width="850"
+    KeepAlive="True">
+
+    <wizard:WizardPageBase.Resources>
+        <ObjectDataProvider x:Key="dataFromEnum" MethodName="GetValues"
+                        ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="mdstudio:AssemblerVersion"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </wizard:WizardPageBase.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50*"/>
+            <ColumnDefinition Width="425"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="80*"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid x:Name="header"
+            Grid.Row="0" Grid.Column="1">
+            <!--SizeChanged="HeaderSizeChanged"-->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Button Style="{StaticResource CloseButton}" 
+                    WindowChrome.IsHitTestVisibleInChrome="True"
+                    Click="CloseClick" HorizontalAlignment="Right" />
+        </Grid>
+        <DockPanel Grid.Column="1" Grid.Row="3">
+            <Button Content="Finish" 
+                    DockPanel.Dock="Right" 
+                    Width="80" 
+                    Margin="0,0,20,0"
+                    VerticalAlignment="Center" Click="finishButton_Click"/>
+            <Button Content="Back" 
+                    DockPanel.Dock="Left" 
+                    Width="80" 
+                    Margin="220,0,0,0"
+                    VerticalAlignment="Center" Click="backButton_Click"/>
+        </DockPanel>
+
+        <!-- Page Content -->
+        <TextBlock Text="Configure New Project" Grid.Column="0" Grid.Row="1" Margin="20,0,0,0" FontSize="24"/>
+
+        <Grid Grid.Row="2" Grid.Column="0" Margin="20,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                
+                <RowDefinition Height="30"/>
+                <!-- Project Name -->
+                <RowDefinition Height="30"/>
+                <!-- Project Author -->
+                <RowDefinition Height="30"/>
+                <!-- Project Description -->
+                <RowDefinition Height="90"/>
+                <!-- Assembler -->
+                <RowDefinition Height="30"/>
+                <!-- Output Name/extension -->
+                <RowDefinition Height="30"/>
+                <!-- Main Source File -->
+                <RowDefinition Height="30"/>
+                <!-- Source Files -->
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <!-- Grid Column 0 -->
+            <!-- Name -->
+            <TextBlock Text="Name:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0"/>
+            <TextBox x:Name="NameTextbox" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="240" Grid.Row="0" Grid.Column="1" Width="295"/>
+
+            <!-- Location -->
+            <TextBlock Text="Location:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="1"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="1">
+                <TextBox x:Name="LocationTextbox" VerticalAlignment="Center" Width="240" ToolTip="This file is the main file that you would pass to the assembler"/>
+                <Button Content="..." Width="50" VerticalAlignment="Center" Margin="5,0" Click="LocationButtonClick"/>
+            </StackPanel>
+
+            <!-- Author -->
+            <TextBlock Text="Author:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2"/>
+            <TextBox x:Name="AuthorTextbox" VerticalAlignment="Center" HorizontalAlignment="Center" Width="295" Grid.Column="1" Grid.Row="2"/>
+
+            <!-- Description -->
+            <TextBlock Text="Description:" VerticalAlignment="Top" Grid.Column="0" Grid.Row="3"/>
+            <TextBox x:Name="DescriptionTextbox" HorizontalAlignment="Center" Width="295" Grid.Column="1" Grid.Row="3" Margin="0,5,0,0"/>
+
+            <!-- Assembler -->
+            <TextBlock Text="Assembler:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4"/>
+            <ComboBox x:Name="AssemberVersionCombo"  Grid.Column="1" Grid.Row="4"
+                       VerticalAlignment="Center"                        
+                        ItemsSource="{Binding Source={StaticResource dataFromEnum}}"/>
+            <!-- Binary Name and Extention -->
+            <TextBlock Text="Binary Name:" Grid.Column="0" Grid.Row="5" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="1">
+                <TextBox x:Name="BinaryNameTextbox" VerticalAlignment="Center" Width="140"/>
+                <TextBlock Text="Binary Extension:" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                <TextBox x:Name="BinaryExtensionTextbox" VerticalAlignment="Center" Width="55" Margin="5,0,0,0"/>
+            </StackPanel>
+
+            <!-- Main Source File -->
+            <TextBlock Text="Main Source File:" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6" ToolTip="This file is the main file that you would pass to the assembler"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="1">
+                <TextBox x:Name="MainSourceTextbox" VerticalAlignment="Center" Width="240" ToolTip="This file is the main file that you would pass to the assembler"/>
+                <Button Content="..." Width="50" VerticalAlignment="Center" Margin="5,0" Click="MainSourceButtonClick"/>
+            </StackPanel>
+
+            <!-- Source Files -->
+            <TextBlock Text="Source Files:" VerticalAlignment="Top"  Grid.Column="0" Grid.Row="7"/>
+            <StackPanel Grid.Row="7" Grid.Column="1">
+                <ListBox x:Name="SourceFilesListbox" Height="240"  ToolTip="These files are any support files that are part of your project.  You don't have to add them all now, you can do that later"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="+"
+                            Margin="0,5,5,5"
+                            VerticalAlignment="Center"
+                            Width="60" 
+                            ToolTip="Add a Source File"
+                            Click="AddSourceFile_Click"/>
+                    <Button Content="-" 
+                            VerticalAlignment="Center"
+                            Width="60"
+                            ToolTip="Remove a Source File"
+                            Click="RemoveSourceFile_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Grid Column 1 -->
+        <Grid Grid.Row="2" Grid.Column="1" Margin="10,0,20,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <!-- Prebuild Script -->
+                <RowDefinition Height="180"/>
+                <!-- Postbuild Script -->
+                <RowDefinition Height="180"/>
+                <!-- Exclude from Debugger -->
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <!-- Prebuild Script -->
+            <TextBlock Text="Prebuild Events:" VerticalAlignment="Top"
+                       Grid.Column="0" Grid.Row="0"/>
+            <TextBox x:Name="PrebuildTextbox" Margin="0,5" Grid.Column="1" Grid.Row="0"/>
+            <!-- Postbuild Script -->
+            <TextBlock Text="Postbuild Events:" VerticalAlignment="Top"
+                       Grid.Column="0" Grid.Row="1"/>
+            <TextBox x:Name="PostbuildTextbox" Margin="0,5" Grid.Column="1" Grid.Row="1"/>
+            <!-- Exclude from Debugger -->
+            <TextBlock Text="Exclude from Debugger:" VerticalAlignment="Top"
+                       Grid.Column="0" Grid.Row="2"/>
+            <StackPanel Grid.Row="2" Grid.Column="1">
+                <ListBox x:Name="ExcludedFilesListbox" Height="145"
+                         Margin="0,5,0,0"
+                         ToolTip="Add files that shouldn't be part of the debugger.\nSome assemblers think constants are addresses."/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="+"
+                            Margin="0,5,5,5"
+                            VerticalAlignment="Center"
+                            Width="60" 
+                            ToolTip="Add a Source File"
+                            Click="AddExcludedFile_Click"/>
+                    <Button Content="-" 
+                            VerticalAlignment="Center"
+                            Width="60"
+                            ToolTip="Remove a Source File"
+                            Click="RemoveExcludedFile_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+    </Grid>
+</wizard:WizardPageBase>

@@ -79,6 +79,9 @@ namespace MDStudioPlus.Targets
         //Disassembly
         public abstract uint Disassemble(uint address, ref string text);
 
+        // 
+        public abstract uint[] CleanupBreakpoints();
+
         // Sound
         public abstract void SetVolume(int vol);
         public abstract void PauseAudio(bool pause);

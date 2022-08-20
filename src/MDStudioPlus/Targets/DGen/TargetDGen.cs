@@ -225,5 +225,10 @@ namespace MDStudioPlus.Targets
 
             return size;
         }
+
+        public override uint[] CleanupBreakpoints()
+        {
+            return null;
+        }
     }
 }

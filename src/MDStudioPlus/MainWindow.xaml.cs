@@ -94,7 +94,7 @@ namespace MDStudioPlus
         // events isn't what I'd like it to be. 
         private void codeEditor_Loaded(object sender, RoutedEventArgs e)
         {
-            Workspace.Instance.UpdateDocument();
+            Workspace.Instance.UpdateDocumentErrors();
         }
     }
 }

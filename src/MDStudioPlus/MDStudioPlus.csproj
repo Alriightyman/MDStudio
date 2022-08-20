@@ -60,7 +60,9 @@
     <None Remove="Resources\SyntaxHighlighting\Asm68KDark.xshd" />
     <None Remove="Resources\Toolbar\AudioState.png" />
     <None Remove="Resources\Toolbar\AudioStateMuted.png" />
+    <None Remove="Resources\Toolbar\BackArrow.png" />
     <None Remove="Resources\Toolbar\BreakAll.png" />
+    <None Remove="Resources\Toolbar\ForwardArrow.png" />
     <None Remove="Resources\Toolbar\NewProject.png" />
     <None Remove="Resources\Toolbar\Open.png" />
     <None Remove="Resources\Toolbar\Play.png" />
@@ -99,7 +101,9 @@
     <Resource Include="Resources\SyntaxHighlighting\Asm68k.xshd" />
     <Resource Include="Resources\Toolbar\AudioState.png" />
     <Resource Include="Resources\Toolbar\AudioStateMuted.png" />
+    <Resource Include="Resources\Toolbar\BackArrow.png" />
     <Resource Include="Resources\Toolbar\BreakAll.png" />
+    <Resource Include="Resources\Toolbar\ForwardArrow.png" />
     <Resource Include="Resources\Toolbar\NewProject.png" />
     <Resource Include="Resources\Toolbar\Open.png" />
     <Resource Include="Resources\Toolbar\Play.png" />
@@ -149,6 +153,9 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Reference Include="WindowsFormsIntegration" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Views\Wizard\NewProjectPages\" />
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 	  <Exec Command="copy /Y &quot;$(SolutionDir)$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />

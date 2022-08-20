@@ -230,6 +230,22 @@ unsigned char* GenesisPlusGXInterface::GenesisPlusGX::GetVRAM()
 	return ::GetVRAM();
 }
 
+array<unsigned int>^ GenesisPlusGXInterface::GenesisPlusGX::CleanupBreakpoints()
+{
+	
+	unsigned int* addresses = new unsigned int[1000];
+	int count = ::CleanupBreakpoints(addresses);
+	array<unsigned int>^ items = gcnew array<unsigned int>(count);
+	for (int i = 0; i < count; i++)
+	{
+		items[i] = addresses[i];
+	}
+
+	delete[] addresses;
+
+	return items;
+}
+
 void GenesisPlusGXInterface::GenesisPlusGX::SetVolume(int vol, bool isSetDebug)
 {
 	::SetVolume(vol, isSetDebug);

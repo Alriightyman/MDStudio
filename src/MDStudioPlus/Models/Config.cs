@@ -35,6 +35,9 @@ namespace MDStudioPlus
         public string Font { get; set; } = "Consolas";
         public int TabSize { get; set; } = 4;
 
+        [XmlElement("RecentProject")]
+        public string[] RecentProjects { get; set; }
+
         public Config()
         {
             TargetName = typeof(TargetDGen).Name;
@@ -83,6 +86,7 @@ namespace MDStudioPlus
                         Theme = config.Theme;
                         Font = config.Font;
                         TabSize = config.TabSize;
+                        RecentProjects = config.RecentProjects;
 
                         sr.Close();
                     }
