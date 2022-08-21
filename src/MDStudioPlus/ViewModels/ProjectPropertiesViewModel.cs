@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -142,7 +143,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if(addItemCommand == null)
                 {
-                    addItemCommand = new RelayCommand((p) => OnAddItem());
+                    addItemCommand = new RelayCommand((p) => OnAddItem(p));
                 }
 
                 return addItemCommand;
@@ -162,13 +163,32 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        private void OnAddItem()
+        private void OnAddItem(object p)
         {
             // custom dialog box that list all of the items
-            var files = FilesToExclude;
-            files.Add(project.Name);
-            FilesToExclude = files;
-            
+
+            var ofd = new OpenFileDialog();
+            ofd.Filter = "Assembly Files (*.s,*.asm)|*.s;*.asm|All Files (*.*)|*.*";
+
+            if (ofd.ShowDialog() == true)
+            {
+                var files = FilesToExclude;
+                int length = $"{project.ProjectPath}\\".Length;
+                if (ofd.FileNames.Length > 0)
+                {                    
+
+                    foreach(var file in ofd.FileNames)
+                    {
+                        files.Add(file.Remove(0, length));
+                    }
+                }
+                else
+                {
+                    files.Add(ofd.FileName.Remove(0, length));
+                }
+
+                FilesToExclude = files;
+            }
         }
 
         private void OnRemoveItem(ObservableCollection<object> param)
