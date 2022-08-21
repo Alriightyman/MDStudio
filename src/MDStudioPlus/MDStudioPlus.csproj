@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
 	  
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resources\mdstudio_mjd_icon.ico</ApplicationIcon>
@@ -158,6 +158,6 @@
 	  <Reference Include="WindowsFormsIntegration" />
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="copy /Y &quot;$(SolutionDir)$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />
+	  <Exec Command="copy /Y &quot;$(SolutionDir)Build\$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />
 	</Target>
 </Project>

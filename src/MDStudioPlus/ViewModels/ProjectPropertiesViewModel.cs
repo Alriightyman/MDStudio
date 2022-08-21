@@ -166,9 +166,9 @@ namespace MDStudioPlus.ViewModels
         private void OnAddItem(object p)
         {
             // custom dialog box that list all of the items
-
             var ofd = new OpenFileDialog();
             ofd.Filter = "Assembly Files (*.s,*.asm)|*.s;*.asm|All Files (*.*)|*.*";
+            ofd.Multiselect = true;
 
             if (ofd.ShowDialog() == true)
             {
@@ -176,7 +176,6 @@ namespace MDStudioPlus.ViewModels
                 int length = $"{project.ProjectPath}\\".Length;
                 if (ofd.FileNames.Length > 0)
                 {                    
-
                     foreach(var file in ofd.FileNames)
                     {
                         files.Add(file.Remove(0, length));
