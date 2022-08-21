@@ -9,3 +9,6 @@
 [submodule "3rdparty/zlib"]
 	path = 3rdparty/zlib
 	url = https://github.com/Alriightyman/zlib.git
+[submodule "3rdparty/AvalonEdit"]
+	path = 3rdparty/AvalonEdit
+	url = https://github.com/Alriightyman/AvalonEdit.git
