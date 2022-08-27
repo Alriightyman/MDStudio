@@ -58,6 +58,12 @@ namespace MDStudioPlus
             set;
         }
 
+        public DataTemplate BreakpointsViewTemplate
+        {
+            get;
+            set;
+        }
+
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
             var itemAsLayoutContent = item as LayoutContent;
@@ -82,6 +88,9 @@ namespace MDStudioPlus
 
             if (item is MemoryViewModel)
                 return MemoryViewTemplate;
+
+            if (item is BreakpointsViewModel)
+                return BreakpointsViewTemplate;
 
             return base.SelectTemplate(item, container);
         }

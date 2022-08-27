@@ -19,7 +19,7 @@ namespace MDStudioPlus.Targets
             }
             catch (Exception e)
             {
-                throw (e);
+                throw;
             }
         }
 

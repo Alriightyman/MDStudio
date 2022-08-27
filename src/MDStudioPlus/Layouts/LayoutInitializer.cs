@@ -35,7 +35,7 @@ namespace MDStudioPlus
                 }
             }
 
-            if (anchorableToShow.Content is OutputViewModel || anchorableToShow.Content is ErrorViewModel | anchorableToShow.Content is RegistersViewModel)
+            if (anchorableToShow.Content is OutputViewModel || anchorableToShow.Content is ErrorViewModel | anchorableToShow.Content is RegistersViewModel || anchorableToShow.Content is BreakpointsViewModel)
             {
                 var OutputPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "OutputPane");
                 if (OutputPane != null)
@@ -57,7 +57,7 @@ namespace MDStudioPlus
 
             if(anchorableToShow.Content is MemoryViewModel)
             {
-                var memoryPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "MemoryPane"); 
+                var memoryPane = layout.Descendents().OfType<LayoutAnchorablePane>().FirstOrDefault(d => d.Name == "MemoryPane");
 
                 if(memoryPane != null)
                 {

@@ -59,6 +59,7 @@ namespace MDStudioPlus.Editor
         public event BreakPointAddedEventHandler onBreakPointBeforeAdded;
         public event BreakPointRemovedEventHandler onBreakPointBeforeRemoved;
         public event BreakPointAddedEventHandler onBreakPointAfterAdded;
+
         /// <summary>
         /// Constructor
         /// <remarks>Adds a margin for breakpoints, search panel, and error markers</remarks>
@@ -86,7 +87,7 @@ namespace MDStudioPlus.Editor
 
             // add a search panel
             searchPanel = SearchPanel.Install(this.TextArea);
-            searchPanel.OverridesDefaultStyle = true;
+            //searchPanel.OverridesDefaultStyle = true;
 
             AddServices();
         }

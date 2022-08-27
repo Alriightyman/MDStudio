@@ -8,6 +8,7 @@ using MDStudioPlus.Editor.BookMarks;
 using MDStudioPlus.FileExplorer;
 using MDStudioPlus.FileExplorer.Events;
 using MDStudioPlus.Models;
+using MDStudioPlus.Models.Debugging;
 using MDStudioPlus.Targets;
 using MDStudioPlus.Views;
 using MDStudioPlus.Views.Wizard;
@@ -61,21 +62,6 @@ namespace MDStudioPlus.ViewModels
         {
             Source,
             Disassembly
-        }
-        #endregion
-
-        #region Internal Classes
-        /// <summary>
-        /// Breakpoint only used here, in the workspace
-        /// </summary>
-        class Breakpoint
-        {
-            public string Filename { get; set; }
-            public int Line { get; set; }
-            public int OriginalLine { get; set; }
-            public uint Address { get; set; }
-            public Breakpoint(string _file, int _line) { Filename = _file; Line = _line; Address = 0; OriginalLine = 0; }
-            public Breakpoint(string _file, int _line, uint _address) { Filename = _file; Line = _line; Address = _address; OriginalLine = 0; }
         }
         #endregion
 
@@ -140,7 +126,9 @@ namespace MDStudioPlus.ViewModels
         private ToolViewModel[] tools;
         private ObservableCollection<FileViewModel> files = new ObservableCollection<FileViewModel>();
         private ReadOnlyObservableCollection<FileViewModel> readonyFiles;
-        private CodeEditor codeEditor;
+        private SolidColorBrush statusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
+        private ObservableCollection<Tuple<string, int, string>> navigatedItems = new ObservableCollection<Tuple<string, int, string>>();
+        
         private FileViewModel activeDocument;
         private ErrorViewModel errors;
         private ExplorerViewModel explorer;
@@ -148,9 +136,8 @@ namespace MDStudioPlus.ViewModels
         private ConfigViewModel configViewModel;
         private RegistersViewModel registersViewModel;
         private MemoryViewModel memoryViewModel;
-        private SolidColorBrush statusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
-        private ObservableCollection<Tuple<string, int, string>> navigatedItems = new ObservableCollection<Tuple<string, int, string>>();
-       
+        private BreakpointsViewModel breakpointsViewModel;
+
         // commands
         private RelayCommand openProjectSolutionCommand;
         private RelayCommand openFileCommand;
@@ -200,7 +187,6 @@ namespace MDStudioPlus.ViewModels
         private Solution solution;
         private string solutionName = "No Project Opened";
         private bool isSolutionLoaded = false;
-        private Project selectedProject = null;
         int currentNavigationIndex = 0;
 
         // building
@@ -514,6 +500,19 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
+        public BreakpointsViewModel Breakpoints
+        {
+            get 
+            {
+                if (breakpointsViewModel == null)
+                {
+                    breakpointsViewModel = new BreakpointsViewModel();
+                }
+
+                return breakpointsViewModel; 
+            }
+        }
+
         /// <summary>
         /// Shows errors in the error window
         /// </summary>
@@ -551,7 +550,7 @@ namespace MDStudioPlus.ViewModels
             {
                 if (tools == null)
                     // TODO: Add debugging windows here - CRAM Viewer, Register View, etc.
-                    tools = new ToolViewModel[] { Explorer, Errors, Output, Registers, Memory };
+                    tools = new ToolViewModel[] { Explorer, Errors, Output, Registers, Memory, Breakpoints };
                 return tools;
             }
         }
@@ -1041,6 +1040,32 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
+        private void ActiveDocument_OnFileSelected(object sender, FileViewModelSelectedEventArgs e)
+        {
+            // Ignore document changed events
+            bool watchingEvents = (sourceWatcher == null) || sourceWatcher.EnableRaisingEvents;
+
+            if (sourceWatcher != null)
+            {
+                sourceWatcher.Changed -= onFileChanged;
+                sourceWatcher = null;
+            }
+
+            // TODO: File watcher to watch all directories instead of individual files?
+            sourceWatcher = new FileSystemWatcher();
+            sourceWatcher.Path = Path.GetDirectoryName(e.SelectedFile.FilePath);
+            sourceWatcher.Filter = Path.GetFileName(e.SelectedFile.FilePath);
+            sourceWatcher.EnableRaisingEvents = watchingEvents;
+            sourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
+            sourceWatcher.Changed += onFileChanged;
+        }
+
+        private void ActiveDocument_OnFileDirty(object sender, FileViewModelIsDirtyEventArgs e)
+        {
+            if (e.IsDirty)
+                isDirty = true;
+        }
+
         private void Timer_Tick(object sender, EventArgs e)
         {
             if ((target != null && target.IsHalted())
@@ -1107,6 +1132,8 @@ namespace MDStudioPlus.ViewModels
         #endregion
 
         #region Public Methods
+
+        #region Window Loaded
         public void WindowLoaded(string[] cmdlineArgs)
         {
             var window = Application.Current.MainWindow;
@@ -1157,24 +1184,9 @@ namespace MDStudioPlus.ViewModels
             IsHidden = false;
 
         }
+        #endregion
 
-        public void UpdateDocumentErrors()
-        {
-            // add the error markers if any
-            foreach (var error in ErrorMarkers)
-            {
-                if (ActiveDocument.FileName.Trim('*') == error.Filename)
-                {
-                    ActiveDocument.AddMarker(Int32.Parse(error.LineNumber), TextMarkerTypes.SquigglyUnderline, Colors.Red);
-                }
-            }
-        }
-
-        public void UpdateSyntaxHighlighting()
-        {           
-            if (activeDocument != null) activeDocument.SyntaxHighlightName = GetCurrentHightlighting();
-        }
-
+        #region Error Markers
         public void AddErrorMarkerToDocument(Project project, Error error)
         {
             var file = project.AllFiles().Where(f => f == error.Filename).FirstOrDefault();
@@ -1190,6 +1202,27 @@ namespace MDStudioPlus.ViewModels
             ErrorMarkers.Add(error);            
         }
 
+        public void UpdateDocumentErrors()
+        {
+            // add the error markers if any
+            foreach (var error in ErrorMarkers)
+            {
+                if (ActiveDocument.FileName.Trim('*') == error.Filename)
+                {
+                    ActiveDocument.AddMarker(Int32.Parse(error.LineNumber), TextMarkerTypes.SquigglyUnderline, Colors.Red);
+                }
+            }
+        }
+        #endregion
+
+        #region Update Syntax Highlighting
+        public void UpdateSyntaxHighlighting()
+        {           
+            if (activeDocument != null) activeDocument.SyntaxHighlightName = GetCurrentHightlighting();
+        }
+        #endregion
+
+        #region GoTo
         public void GoTo(string filename, int lineNumber, bool isError = false)
         {
             string fullFilename = Solution.GetFullPath(filename);
@@ -1284,36 +1317,13 @@ namespace MDStudioPlus.ViewModels
 
             }), DispatcherPriority.Render);
         }
+        #endregion
 
-        private void ActiveDocument_OnFileSelected(object sender, FileViewModelSelectedEventArgs e)
-        {
-            // Ignore document changed events
-            bool watchingEvents = (sourceWatcher == null) || sourceWatcher.EnableRaisingEvents;
-
-            if (sourceWatcher != null)
-            {
-                sourceWatcher.Changed -= onFileChanged;                
-                sourceWatcher = null;
-            }
-
-            // TODO: File watcher to watch all directories instead of individual files?
-            sourceWatcher = new FileSystemWatcher();
-            sourceWatcher.Path = Path.GetDirectoryName(e.SelectedFile.FilePath);
-            sourceWatcher.Filter = Path.GetFileName(e.SelectedFile.FilePath);
-            sourceWatcher.EnableRaisingEvents = watchingEvents;
-            sourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
-            sourceWatcher.Changed += onFileChanged;
-        }
-
-        private void ActiveDocument_OnFileDirty(object sender, FileViewModelIsDirtyEventArgs e)
-        {
-            if(e.IsDirty)
-                isDirty = true;
-        }
         #endregion
 
         #region Private Methods
 
+        #region Update Debugger Views
         private void UpdateRegisterView(uint pc)
         {
             //Get regs
@@ -1361,160 +1371,12 @@ namespace MDStudioPlus.ViewModels
                 Memory.UpdateMemory(memBuffer);
             });
         }
-
-        internal void Close(FileViewModel fileToClose)
-        {
-            if (fileToClose.IsDirty)
-            {
-                var res = MessageBox.Show(string.Format("Save changes for file '{0}'?", fileToClose.FileName), "AvalonDock Test App", MessageBoxButton.YesNoCancel);
-                if (res == MessageBoxResult.Cancel)
-                    return;
-                if (res == MessageBoxResult.Yes)
-                {
-                    Save(fileToClose);
-                }
-            }
-
-            ResetDocument();
-
-            files.Remove(fileToClose);
-        }
-
-        internal void OnSolutionClose()
-        {
-            var allFiles = files.ToList();
-            
-            foreach(var file in allFiles)
-            {
-                Close(file);
-            }
-
-            files.Clear();
-            
-            solution = null;
-            IsSolutionLoaded = false;
-            SolutionName = "No Project Loaded";            
-            Explorer.Solution = null;
-            output.BuildOutput = "";
-            
-            Errors.Clear();
-
-            breakpoints.Clear();
-        }
-
-        internal void OnSave()
-        {
-            Save(ActiveDocument);
-        }
-
-        internal void OnSaveAll()
-        {
-            SaveAll();
-        }
-
-        internal void SaveAll()
-        {
-            foreach(var file in files)
-            {
-                Action action = () => Save(file);
-                System.Windows.Application.Current.Dispatcher.Invoke((action));
-            }
-        }
-
-        internal void Save(FileViewModel fileToSave, bool saveAsFlag = false)
-        {
-            if (fileToSave != null)
-            {
-                string newTitle = string.Empty;
-                if (fileToSave?.FilePath == null || saveAsFlag)
-                {
-                    var dlg = new SaveFileDialog();
-
-                    if (dlg.ShowDialog().GetValueOrDefault())
-                    {
-                        fileToSave.FilePath = dlg.FileName;
-                        newTitle = dlg.SafeFileName;
-                    }
-                }
-
-                if (fileToSave.FilePath != null)
-                {
-                    if (sourceWatcher != null) sourceWatcher.EnableRaisingEvents = false;
-
-                    File.WriteAllText(fileToSave.FilePath, fileToSave.Document.Text);
-
-                    if (sourceWatcher != null)
-                    {
-                        sourceWatcher.Path = Path.GetDirectoryName(fileToSave.FilePath);
-                        sourceWatcher.Filter = Path.GetFileName(fileToSave.FilePath);
-                        sourceWatcher.EnableRaisingEvents = true;
-                    }
-
-                    ActiveDocument.IsDirty = false;
-
-                    if (string.IsNullOrEmpty(newTitle)) return;
-
-                    ActiveDocument.Title = newTitle;
-                }
-            }
-        }
-
-        internal FileViewModel Open(string filepath)
-        {
-            FileViewModel fileViewModel = null;
-            filepath = filepath.Replace("*",String.Empty);
-            if (File.Exists(filepath))
-            {
-                Project project = null;
-                fileViewModel = files.FirstOrDefault(fm => fm.FilePath.ToLower() == filepath.ToLower());
-                if (fileViewModel == null)
-                {
-                    project = solution.Projects.FirstOrDefault(p => p.AllFiles().Any(f => f == filepath.ToLower()));
-                    fileViewModel = new FileViewModel(filepath, project);
-                    fileViewModel.SyntaxHighlightName = GetCurrentHightlighting();
-                    files.Add(fileViewModel);
-                }
-
-                ActiveDocument = fileViewModel;
-
-                // Ignore document changed events
-                bool watchingEvents = (sourceWatcher == null) || sourceWatcher.EnableRaisingEvents;
-                sourceWatcher.Changed -= onFileChanged;
-                sourceWatcher = null;
-
-                sourceWatcher = new FileSystemWatcher();
-                sourceWatcher.Path = Path.GetDirectoryName(ActiveDocument.FilePath);
-                sourceWatcher.Filter = Path.GetFileName(ActiveDocument.FilePath);
-                sourceWatcher.EnableRaisingEvents = watchingEvents;
-                sourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                sourceWatcher.Changed += onFileChanged;
-
-                sourceMode = SourceMode.Source;
-
-                // These need to run after binding events in order to access the "Code Editor" in ActiveDocument
-                Application.Current.Dispatcher.Invoke(new Action(() =>
-                {
-                    foreach (Breakpoint breakpoint in breakpoints)
-                    {
-                        if (breakpoint.Line != 0 && breakpoint.Filename.ToLower() == ActiveDocument.FilePath.ToLower())
-                        {
-                            if (!ActiveDocument.IsBreakpointSet(breakpoint.Line))
-                            {
-                                ActiveDocument?.ToggleBreakpoint(breakpoint.Line);
-                            }
-                        }
-                    }
-                }), DispatcherPriority.Render);
-                
-            }
-            return fileViewModel;
-        }
+        #endregion
 
         #region Debugging
         // TODO: Add debugging related stuff here
         private void StartDebugging()
         {
-            //throw new NotImplementedException();
             //stepIntoMenu.Enabled = true;
             //stepOverMenu.Enabled = true;
             //stopToolStripMenuItem.Enabled = true;
@@ -1524,7 +1386,6 @@ namespace MDStudioPlus.ViewModels
         // TODO: Turn off debugging related stuff here
         private void StopDebugging()
         {
-            //throw new NotImplementedException();
             //stepIntoMenu.Enabled = false;
             //stepOverMenu.Enabled = false;
             //stopToolStripMenuItem.Enabled = false;
@@ -1563,7 +1424,9 @@ namespace MDStudioPlus.ViewModels
                     //}
 
                     SetTargetBreakpoint(address);
-                    breakpoints.Add(new Breakpoint(filename, line, address));
+                    var breakpoint = new Breakpoint() { Filename = filename, Line = line, Address = address, IsEnabled = true };
+                    breakpoints.Add(breakpoint);
+                    breakpointsViewModel.Breakpoints.Add(breakpoint);
 
                     //Actual line might be different from requested line, look it up
                     return debugSymbols.GetFileLine(filename, address).LineTo;
@@ -1574,7 +1437,9 @@ namespace MDStudioPlus.ViewModels
             else
             {
                 //No symbols yet, add "offline" breakpoint by file/line
-                breakpoints.Add(new Breakpoint(filename, line));
+                var breakpoint = new Breakpoint() { Filename = filename, Line = line, IsEnabled = true };
+                breakpoints.Add(breakpoint);
+                breakpointsViewModel.Breakpoints.Add(breakpoint);
                 return line;
             }
         }
@@ -1606,9 +1471,8 @@ namespace MDStudioPlus.ViewModels
             }
             else
             {
-                breakpoints.Remove(breakpoints.Find(breakpoint => 
-                                                    breakpoint.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase) && 
-                                                    breakpoint.Line == line));
+                breakpoints.RemoveAll (breakpoint => breakpoint.Filename.Equals(filename, StringComparison.OrdinalIgnoreCase) && 
+                                                    breakpoint.Line == line);
                 return line;
             }
         }
@@ -1727,7 +1591,7 @@ namespace MDStudioPlus.ViewModels
 
                 //Set StepOver mode
                 breakMode = BreakMode.StepOver;
-                var stepOverBreakpoint = new Breakpoint(currentLine.Filename, nextLine, nextPC);
+                var stepOverBreakpoint = new Breakpoint() { Filename = currentLine.Filename, Line = nextLine, Address = nextPC, IsEnabled = true };
                 stepOverBreakpoints.Add(stepOverBreakpoint);
 
                 //Run to StepOver breakpoint
@@ -1806,6 +1670,7 @@ namespace MDStudioPlus.ViewModels
 
         #endregion
 
+        #region Syntax Highlighting
         private IHighlightingDefinition GetCurrentHightlighting()
         {
             IHighlightingDefinition definition = HighlightingManager.Instance.GetDefinition("ASM68K");
@@ -1823,6 +1688,160 @@ namespace MDStudioPlus.ViewModels
 
             return definition;
         }
+        #endregion
+
+        #region Save
+        internal void OnSave()
+        {
+            Save(ActiveDocument);
+        }
+
+        internal void OnSaveAll()
+        {
+            SaveAll();
+        }
+
+        internal void SaveAll()
+        {
+            foreach(var file in files)
+            {
+                Action action = () => Save(file);
+                System.Windows.Application.Current.Dispatcher.Invoke((action));
+            }
+        }
+
+        internal void Save(FileViewModel fileToSave, bool saveAsFlag = false)
+        {
+            if (fileToSave != null)
+            {
+                string newTitle = string.Empty;
+                if (fileToSave?.FilePath == null || saveAsFlag)
+                {
+                    var dlg = new SaveFileDialog();
+
+                    if (dlg.ShowDialog().GetValueOrDefault())
+                    {
+                        fileToSave.FilePath = dlg.FileName;
+                        newTitle = dlg.SafeFileName;
+                    }
+                }
+
+                if (fileToSave.FilePath != null)
+                {
+                    if (sourceWatcher != null) sourceWatcher.EnableRaisingEvents = false;
+
+                    File.WriteAllText(fileToSave.FilePath, fileToSave.Document.Text);
+
+                    if (sourceWatcher != null)
+                    {
+                        sourceWatcher.Path = Path.GetDirectoryName(fileToSave.FilePath);
+                        sourceWatcher.Filter = Path.GetFileName(fileToSave.FilePath);
+                        sourceWatcher.EnableRaisingEvents = true;
+                    }
+
+                    ActiveDocument.IsDirty = false;
+
+                    if (string.IsNullOrEmpty(newTitle)) return;
+
+                    ActiveDocument.Title = newTitle;
+                }
+            }
+        }
+        #endregion
+
+        #region Open
+        internal FileViewModel Open(string filepath)
+        {
+            FileViewModel fileViewModel = null;
+            filepath = filepath.Replace("*",String.Empty);
+            if (File.Exists(filepath))
+            {
+                Project project = null;
+                fileViewModel = files.FirstOrDefault(fm => fm.FilePath.ToLower() == filepath.ToLower());
+                if (fileViewModel == null)
+                {
+                    project = solution.Projects.FirstOrDefault(p => p.AllFiles().Any(f => f == filepath.ToLower()));
+                    fileViewModel = new FileViewModel(filepath, project);
+                    fileViewModel.SyntaxHighlightName = GetCurrentHightlighting();
+                    files.Add(fileViewModel);
+                }
+
+                ActiveDocument = fileViewModel;
+
+                // Ignore document changed events
+                bool watchingEvents = (sourceWatcher == null) || sourceWatcher.EnableRaisingEvents;
+                sourceWatcher.Changed -= onFileChanged;
+                sourceWatcher = null;
+
+                sourceWatcher = new FileSystemWatcher();
+                sourceWatcher.Path = Path.GetDirectoryName(ActiveDocument.FilePath);
+                sourceWatcher.Filter = Path.GetFileName(ActiveDocument.FilePath);
+                sourceWatcher.EnableRaisingEvents = watchingEvents;
+                sourceWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                sourceWatcher.Changed += onFileChanged;
+
+                sourceMode = SourceMode.Source;
+
+                // These need to run after binding events in order to access the "Code Editor" in ActiveDocument
+                Application.Current.Dispatcher.Invoke(new Action(() =>
+                {
+                    foreach (Breakpoint breakpoint in breakpoints)
+                    {
+                        if (breakpoint.Line != 0 && breakpoint.Filename.ToLower() == ActiveDocument.FilePath.ToLower())
+                        {
+                            if (!ActiveDocument.IsBreakpointSet(breakpoint.Line))
+                            {
+                                ActiveDocument?.ToggleBreakpoint(breakpoint.Line);
+                            }
+                        }
+                    }
+                }), DispatcherPriority.Render);
+                
+            }
+            return fileViewModel;
+        }
+        #endregion
+
+        #region Close
+        internal void Close(FileViewModel fileToClose)
+        {
+            if (fileToClose.IsDirty)
+            {
+                var res = MessageBox.Show(string.Format("Save changes for file '{0}'?", fileToClose.FileName), "AvalonDock Test App", MessageBoxButton.YesNoCancel);
+                if (res == MessageBoxResult.Cancel)
+                    return;
+                if (res == MessageBoxResult.Yes)
+                {
+                    Save(fileToClose);
+                }
+            }
+
+            ResetDocument();
+
+            files.Remove(fileToClose);
+        }
+        internal void OnSolutionClose()
+        {
+            var allFiles = files.ToList();
+            
+            foreach(var file in allFiles)
+            {
+                Close(file);
+            }
+
+            files.Clear();
+            
+            solution = null;
+            IsSolutionLoaded = false;
+            SolutionName = "No Project Loaded";            
+            Explorer.Solution = null;
+            output.BuildOutput = "";
+            
+            Errors.Clear();
+
+            breakpoints.Clear();
+        }
+        #endregion
 
         #region Open Command Methods
 
@@ -1835,29 +1854,6 @@ namespace MDStudioPlus.ViewModels
             if (dlg.ShowDialog().GetValueOrDefault())
             {
                 var fileViewModel = Open(dlg.FileName);
-            }
-        }
-
-        private void OnOpenProjectSolution()
-        {
-            // TODO: Handle Opening just a project? 
-            var dlg = new OpenFileDialog();
-            //dlg.Filter = "All Project Files (*.mdsln,*.mdproj)|*.mdsln;*.mdproj|Mega Drive Solution (*.mdsln)|*.mdsln|Mega Drive Project (*.mdproj)|*.mdproj";
-            dlg.Filter = "Mega Drive Solution (*.mdsln)|*.mdsln";
-            if (dlg.ShowDialog().GetValueOrDefault())
-            {
-                var file = dlg.FileName;
-                var extension = Path.GetExtension(file);
-                if (extension == Project.Extension)
-                {
-                    // open project
-                }
-                else if (extension == Solution.Extension)
-                {
-                    OpenSolution(file);
-                    configViewModel.Config.LastProject = file;
-                    configViewModel.Config.Save();
-                }
             }
         }
 
@@ -1887,16 +1883,6 @@ namespace MDStudioPlus.ViewModels
         }
 
         #endregion New Command Methods
-
-        private void OnOpenProjectProperties()
-        {
-            if (isSolutionLoaded)
-            {
-                ProjectPropertiesView view = new ProjectPropertiesView() { DataContext = new ProjectPropertiesViewModel(solution.CurrentlySelectedProject) };
-                view.ShowDialog();
-                solution.CurrentlySelectedProject.Save();
-            }
-        }
 
         #region Build Command Methods
         private void OnBuild()
@@ -1984,8 +1970,13 @@ namespace MDStudioPlus.ViewModels
 
                 //Restore original breakpoint lines
                 var breakpointsCopy = breakpoints.ToArray();
-                foreach (var breakpoint in breakpointsCopy)
+
+                breakpointsViewModel.Breakpoints.Clear();
+
+                for (int i = 0; i < breakpointsCopy.Length; i++)
                 {
+                    var breakpoint = breakpointsCopy[i];
+
                     if (breakpoint.OriginalLine > 0)
                     {
                         if (breakpoint.Filename.Equals(ActiveDocument.FilePath, StringComparison.OrdinalIgnoreCase))
@@ -1999,7 +1990,13 @@ namespace MDStudioPlus.ViewModels
 
                         breakpoint.Line = breakpoint.OriginalLine;
                         breakpoint.OriginalLine = 0;
+                        breakpointsViewModel.Breakpoints[i] = breakpoint;
                     }
+                    else
+                    {
+                        breakpointsViewModel.Breakpoints.Add(breakpoint);
+                    }
+                    
                 }
 
                 ActiveDocument?.RemoveAllMarkers();
@@ -2092,7 +2089,6 @@ namespace MDStudioPlus.ViewModels
         #region Breakpoint Command Methods
         private void OnBreakpointAdded(BookmarkEventArgs e)
         {
-            
         }
 
         private void OnBreakpointRemoved(object parameter)
@@ -2105,6 +2101,7 @@ namespace MDStudioPlus.ViewModels
                 {
                     RemoveBreakpoint(bp.Filename, bp.Line);
                     breakpoints.Remove(bp);
+                    breakpointsViewModel.Breakpoints.Remove(bp);
                 }
             }
         }
@@ -2135,6 +2132,30 @@ namespace MDStudioPlus.ViewModels
         }
 
         #endregion
+        
+        #region Open/Load Solution
+        private void OnOpenProjectSolution()
+        {
+            // TODO: Handle Opening just a project? 
+            var dlg = new OpenFileDialog();
+            //dlg.Filter = "All Project Files (*.mdsln,*.mdproj)|*.mdsln;*.mdproj|Mega Drive Solution (*.mdsln)|*.mdsln|Mega Drive Project (*.mdproj)|*.mdproj";
+            dlg.Filter = "Mega Drive Solution (*.mdsln)|*.mdsln";
+            if (dlg.ShowDialog().GetValueOrDefault())
+            {
+                var file = dlg.FileName;
+                var extension = Path.GetExtension(file);
+                if (extension == Project.Extension)
+                {
+                    // open project
+                }
+                else if (extension == Solution.Extension)
+                {
+                    OpenSolution(file);
+                    configViewModel.Config.LastProject = file;
+                    configViewModel.Config.Save();
+                }
+            }
+        }
 
         private void OpenSolution(string file)
         {
@@ -2169,6 +2190,17 @@ namespace MDStudioPlus.ViewModels
                 configViewModel.Config.Save();
             }
         }
+        #endregion
+        
+        private void OnOpenProjectProperties()
+        {
+            if (isSolutionLoaded)
+            {
+                ProjectPropertiesView view = new ProjectPropertiesView() { DataContext = new ProjectPropertiesViewModel(solution.CurrentlySelectedProject) };
+                view.ShowDialog();
+                solution.CurrentlySelectedProject.Save();
+            }
+        }
 
         private void ResetDocument()
         {
@@ -2183,7 +2215,7 @@ namespace MDStudioPlus.ViewModels
 
         private void UpdateNavigationList()
         {
-            var lastItem = NavigatedItems.LastOrDefault();
+            var lastItem = NavigatedItems?.LastOrDefault();
 
             var caretOffest = ActiveDocument.Editor.CaretOffset;
 
@@ -2351,6 +2383,8 @@ namespace MDStudioPlus.ViewModels
                     target.LoadBinary(solution.BinaryPath);
                     Application.Current.Dispatcher.Invoke(new Action(() =>
                     {
+                        breakpointsViewModel.Breakpoints.Clear();
+
                         //  Lookup and set initial breakpoints
                         for (int i = 0; i < breakpoints.Count; i++)
                         {
@@ -2364,6 +2398,7 @@ namespace MDStudioPlus.ViewModels
                                 //Line differs, backup and set real line
                                 breakpoints[i].OriginalLine = breakpoints[i].Line;
                                 breakpoints[i].Line = fileLine.LineTo;
+
 
                                 if (breakpoints[i].Filename.Equals(ActiveDocument.FilePath, StringComparison.OrdinalIgnoreCase))
                                 {
@@ -2383,6 +2418,8 @@ namespace MDStudioPlus.ViewModels
                                     }
                                 }
                             }
+                            
+                            breakpointsViewModel.Breakpoints.Add(breakpoints[i]);
                         }
 
 

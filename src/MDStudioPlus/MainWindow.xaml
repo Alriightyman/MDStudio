@@ -9,7 +9,9 @@
         xmlns:fileexplorer="clr-namespace:MDStudioPlus.FileExplorer"
         xmlns:controls="clr-namespace:MDStudioPlus.Controls"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
-        xmlns:behaviors="clr-namespace:MDStudioPlus.Behaviors"
+        xmlns:behaviors="clr-namespace:MDStudioPlus.Behaviors" 
+        xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:debugging="clr-namespace:MDStudioPlus.Models.Debugging"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance viewModels:Workspace, IsDesignTimeCreatable=True}"
         Title="MD Studio Plus" MinWidth="140" MinHeight="116" 
@@ -138,6 +140,7 @@
                         <MenuItem Header="Windows">
                             <MenuItem Header="Registers" IsCheckable="True" IsChecked="{Binding Registers.IsVisible, Mode=TwoWay}"/>
                             <MenuItem Header="Memory View" IsCheckable="True" IsChecked="{Binding Memory.IsVisible, Mode=TwoWay}"/>
+                            <MenuItem Header="Breakpoints" IsCheckable="True" IsChecked="{Binding Breakpoints.IsVisible, Mode=TwoWay}"/>
                         </MenuItem>
                         <Separator/>
                         <MenuItem Header="Start Debugging" Command="{Binding RunEmulatorCommand}" InputGestureText="F5">
@@ -671,12 +674,12 @@
                         <DataTemplate>
                             <Grid>
                                 <editor:CodeEditor x:Name="codeEditor" 
-                                                   Document="{Binding Document, UpdateSourceTrigger=PropertyChanged}" 
-                                                   SyntaxHighlighting="{Binding SyntaxHighlightName}"
-                                                   Loaded="codeEditor_Loaded"
-                                                   Options="{Binding CodeEditorOptions}"
-                                                   FontFamily="{Binding EditorFont}" >
-                                    
+                                               Document="{Binding Document, UpdateSourceTrigger=PropertyChanged}" 
+                                               SyntaxHighlighting="{Binding SyntaxHighlightName}"
+                                               Loaded="codeEditor_Loaded"
+                                               Options="{Binding CodeEditorOptions}"
+                                               FontFamily="{Binding EditorFont}"
+                                               >
                                     <editor:CodeEditor.Style>
                                         <Style TargetType="editor:CodeEditor">
                                             <Setter Property="Foreground" Value="{DynamicResource WindowForeground}"/>
@@ -684,6 +687,34 @@
                                             <Setter Property="IconBarBackground" Value="{DynamicResource ScrollViewerRectBackground}" />
                                             <Setter Property="IconBarForeground" Value="{DynamicResource ToolBarGripper}" />
                                             <Setter Property="IsReadOnly" Value="False"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type editor:CodeEditor}">
+                                                        <Border Background="{TemplateBinding Background}"
+						                                        BorderBrush="{TemplateBinding BorderBrush}"
+						                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                            <ScrollViewer
+							                                        Focusable="False"
+							                                        Name="PART_ScrollViewer"
+							                                        CanContentScroll="True"
+							                                        VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"
+							                                        HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+							                                        Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TextArea}"
+							                                        VerticalContentAlignment="Top"
+							                                        HorizontalContentAlignment="Left"
+							                                        Padding="{TemplateBinding Padding}"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="WordWrap"
+						                                             Value="True">
+                                                                <Setter TargetName="PART_ScrollViewer"
+							                                            Property="HorizontalScrollBarVisibility"
+							                                            Value="Disabled" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding DataContext.IsDebugging, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}}"
                                                              Value="True">
@@ -711,7 +742,8 @@
                                                                                      FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
                                                                    PassEventArgsToCommand="True"/>
                                         </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseMove"> <!--MouseHoverStopped-->
+                                        <i:EventTrigger EventName="MouseMove">
+                                            <!--MouseHoverStopped-->
                                             <i:InvokeCommandAction Command="{Binding DataContext.MouseMoveCommand, 
                                                                                      RelativeSource={RelativeSource 
                                                                                      FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
@@ -1095,6 +1127,49 @@
                             </Border>
                         </DataTemplate>
                     </local:PanesTemplateSelector.MemoryViewTemplate>
+                    <!-- Breakpoints View Window -->
+                    <local:PanesTemplateSelector.BreakpointsViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <ListView ItemsSource="{Binding Breakpoints}" 
+                                          SelectedItem="{Binding SelectedItem, Mode=TwoWay}" 
+                                          SelectionMode="Single" >
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Enabled" Width="60">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox IsChecked="{Binding Path=IsEnabled}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Name" Width="180">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Filename}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Line" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Line}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Address" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Address, StringFormat={}0x{0:X8}}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.BreakpointsViewTemplate>
                 </local:PanesTemplateSelector>
             </DockingManager.LayoutItemTemplateSelector>
 
@@ -1138,6 +1213,7 @@
                             <LayoutAnchorablePane Name="OutputPane"/>
                             <LayoutAnchorablePane Name="RegistersPane"/>
                             <LayoutAnchorablePane Name="MemoryPane"/>
+                            <LayoutAnchorablePane Name="BreakpointsPane"/>
                         </LayoutAnchorablePaneGroup>
                     </LayoutPanel>
 

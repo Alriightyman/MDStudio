@@ -55,6 +55,8 @@
     <None Remove="Resources\ForwardArrow.png" />
     <None Remove="Resources\MDStudio.png" />
     <None Remove="Resources\ProjectIcon.png" />
+    <None Remove="Resources\Search\replaceall.png" />
+    <None Remove="Resources\Search\replacenext.png" />
     <None Remove="Resources\SolutionIcon.png" />
     <None Remove="Resources\SyntaxHighlighting\Asm68k.xshd" />
     <None Remove="Resources\SyntaxHighlighting\Asm68KDark.xshd" />
@@ -95,6 +97,8 @@
     <Resource Include="Resources\ForwardArrow.png" />
     <Resource Include="Resources\MDStudio.png" />
     <Resource Include="Resources\ProjectIcon.png" />
+    <Resource Include="Resources\replaceall.png" />
+    <Resource Include="Resources\replacenext.png" />
     <Resource Include="Resources\SolutionIcon.png" />
     <Resource Include="Resources\SyntaxHighlighting\Asm68kDark.xshd" />
     <Resource Include="Resources\SyntaxHighlighting\Asm68k.xshd" />
@@ -155,7 +159,7 @@
 	  <ProjectReference Include="..\GenesisPlusGXInterface\GenesisPlusGXInterface.vcxproj" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Reference Include="WindowsFormsIntegration" />
+	  <Folder Include="Resources\Search\" />
 	</ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 	  <Exec Command="copy /Y &quot;$(SolutionDir)Build\$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />
