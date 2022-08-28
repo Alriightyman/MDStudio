@@ -231,7 +231,7 @@ namespace MDStudioPlus.ViewModels
                     }
 
                     // now that the directory structure is set, create the file item
-                    if (!String.IsNullOrEmpty(relativeFilename))
+                    if (!relativeFilename.IsNullOrEmpty())
                     {
                         FileItemViewModel newFileItem = new FileItemViewModel(project)
                         {

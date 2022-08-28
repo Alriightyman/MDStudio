@@ -116,9 +116,9 @@ namespace MDStudioPlus.Editor.BookMarks
                 if (!this.IsEnabled)
                     return DisabledBreakpointImage;
                 else if (this.IsHealthy)
-                    return string.IsNullOrEmpty(this.Condition) ? BreakpointImage : BreakpointConditionalImage;
+                    return this.Condition.IsNullOrEmpty() ? BreakpointImage : BreakpointConditionalImage;
                 else
-                    return string.IsNullOrEmpty(this.Condition) ? UnhealthyBreakpointImage : DisabledBreakpointConditionalImage;
+                    return this.Condition.IsNullOrEmpty() ? UnhealthyBreakpointImage : DisabledBreakpointConditionalImage;
             }
         }
 

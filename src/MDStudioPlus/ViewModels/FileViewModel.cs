@@ -317,7 +317,7 @@ namespace MDStudioPlus.ViewModels
 
             var currentChar = Document.GetText(offset, 1);
 
-            if (string.IsNullOrWhiteSpace(currentChar))
+            if (currentChar.IsNullOrWhiteSpace())
                 return String.Empty;
 
             var word = Document.GetText(offsetStart, offsetEnd - offsetStart);

@@ -360,7 +360,7 @@ namespace MDStudioPlus
         // Runs a pre/post build script
         private string[] RunScript(string script)
         {
-            if (String.IsNullOrEmpty(script))
+            if (script.IsNullOrEmpty())
             {
                 return new string[0];
             }
@@ -391,7 +391,7 @@ namespace MDStudioPlus
                         {
                             foreach (var command in commands)
                             {
-                                if (!command.StartsWith("REM",StringComparison.CurrentCulture) && !String.IsNullOrWhiteSpace(command) && !String.IsNullOrEmpty(command))
+                                if (!command.StartsWith("REM",StringComparison.CurrentCulture) && !command.IsNullOrWhiteSpace() && !command.IsNullOrEmpty())
                                 {
                                     if (sw.BaseStream.CanWrite)
                                     {
@@ -412,7 +412,7 @@ namespace MDStudioPlus
                                 }
                                 else
                                 {
-                                    if (!String.IsNullOrEmpty(e.Data))
+                                    if (!e.Data.IsNullOrEmpty())
                                     {
                                         processStandardOutput.AppendLine(e.Data);
                                         Application.Current.Dispatcher.Invoke(new Action(() =>

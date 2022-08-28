@@ -5,6 +5,16 @@ namespace MDStudioPlus
     public static class Extensions
     {
 
+        public static bool IsNullOrEmpty(this string str)
+        {
+            return string.IsNullOrEmpty(str);
+        }
+
+        public static bool IsNullOrWhiteSpace(this string st)
+        {
+            return string.IsNullOrWhiteSpace(st);
+        }
+
         public static void ExpandAll(this TreeView treeView)
         {
             foreach (object obj in treeView.Items)

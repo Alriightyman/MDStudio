@@ -101,7 +101,7 @@ namespace MDStudioPlus.FileExplorer
                 }
 
                 // now that the directory structure is set, create the file item
-                if (!String.IsNullOrEmpty(relativeFilename) && FindFileItem(parentDirectoryItem.Items.ToList(), relativeFilename) == null)
+                if (!relativeFilename.IsNullOrEmpty() && FindFileItem(parentDirectoryItem.Items.ToList(), relativeFilename) == null)
                 {
                     // add the file to the project
                     List<string> files = Project.SourceFiles == null ? new List<string>() : Project.SourceFiles.ToList();

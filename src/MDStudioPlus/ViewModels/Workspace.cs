@@ -1034,7 +1034,7 @@ namespace MDStudioPlus.ViewModels
             {
                 string symbol = ActiveDocument?.SetWordAtMousePosition(e);
 
-                if (symbol != null && !String.IsNullOrEmpty(symbol))
+                if (symbol != null && !symbol.IsNullOrEmpty())
                 {
 
                     if (IsRegister(symbol))
@@ -1871,7 +1871,7 @@ namespace MDStudioPlus.ViewModels
 
                     ActiveDocument.IsDirty = false;
 
-                    if (string.IsNullOrEmpty(newTitle)) return;
+                    if (newTitle.IsNullOrEmpty()) return;
 
                     ActiveDocument.Title = newTitle;
                 }
@@ -2289,7 +2289,7 @@ namespace MDStudioPlus.ViewModels
 
         private void OpenSolution(string file)
         {
-            if (!String.IsNullOrEmpty(file))
+            if (!file.IsNullOrEmpty())
             {
                 LoadSolution(new Solution(file));
             }
