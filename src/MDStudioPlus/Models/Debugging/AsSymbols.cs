@@ -20,15 +20,6 @@ namespace MDStudioPlus.Debugging
             public List<AddressEntry> Addresses;
         }
 
-        private struct SymbolSegment
-        {
-            public string Name;
-            public string Type;
-            public string Value;
-            public int DateSize;
-            public int Unused;
-        }
-
         public Dictionary<string, DebugInfo> AddressToFileLine => Addr2FileLine;
         public List<SymbolEntry> Symbols { get; private set; } = new List<SymbolEntry>();
 
@@ -181,10 +172,10 @@ namespace MDStudioPlus.Debugging
                 if (line.Contains("Symbols in Segment"))
                 {
                     // don't care about these symbols for now
-                    if (line.Contains("NOTHING"))
+                    /*if (line.Contains("NOTHING"))
                     {
                         return currentLine;
-                    }
+                    }*/
 
                     continue;
                 }
@@ -202,9 +193,12 @@ namespace MDStudioPlus.Debugging
                     // AS' MAP file, for some reason, writes out RAM addresses as 64 bit integers. So, we parse
                     // the 64 bit value, and then cast it back to a 32 bit value. AND by 0xFFFFFFFF, 
                     // probably doesn't matter, but I do it remove the extra junk.
-                    var value = UInt64.Parse(symbolInfo[2], System.Globalization.NumberStyles.HexNumber);
-                    symbol.address = (uint)(value & 0xFFFFFFFF);
-                    Symbols.Add(symbol);
+                    UInt64 value;
+                    if (UInt64.TryParse(symbolInfo[2], System.Globalization.NumberStyles.HexNumber, null, out value))
+                    {
+                        symbol.address = (uint)(value & 0xFFFFFFFF);
+                        Symbols.Add(symbol);
+                    }
                 }
             }
             return currentLine;

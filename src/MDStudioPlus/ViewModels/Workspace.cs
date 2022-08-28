@@ -1,6 +1,8 @@
 using AvalonDock.Themes;
 using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
 using MDStudioPlus.Debugging;
 using MDStudioPlus.Editor;
@@ -11,6 +13,7 @@ using MDStudioPlus.Models;
 using MDStudioPlus.Models.Debugging;
 using MDStudioPlus.Targets;
 using MDStudioPlus.Views;
+using MDStudioPlus.Views.Debugging;
 using MDStudioPlus.Views.Wizard;
 using Microsoft.Win32;
 using System;
@@ -993,16 +996,29 @@ namespace MDStudioPlus.ViewModels
             }
         }
 
-        private RelayCommand<MouseEventArgs> mouseMoveCommand;
-        public ICommand MouseMoveCommand
+        private RelayCommand<MouseEventArgs> mouseHoverStopCommand;
+        public ICommand MouseHoverStopCommand
         {
             get
             {
-                if(mouseMoveCommand == null)
+                if(mouseHoverStopCommand == null)
                 {
-                    mouseMoveCommand = new RelayCommand<MouseEventArgs>((p) => OnMouseMove(p));
+                    mouseHoverStopCommand = new RelayCommand<MouseEventArgs>((p) => OnMouseHoverStop(p));
                 }
-                return mouseMoveCommand;
+                return mouseHoverStopCommand;
+            }
+        }
+
+        private RelayCommand<MouseEventArgs> mouseHoverCommand;
+        public ICommand MouseHoverCommand
+        {
+            get
+            {
+                if (mouseHoverCommand == null)
+                {
+                    mouseHoverCommand = new RelayCommand<MouseEventArgs>((p) => OnMouseHover(p));
+                }
+                return mouseHoverCommand;
             }
         }
 
@@ -1010,13 +1026,127 @@ namespace MDStudioPlus.ViewModels
 
         #region Events
 
-        private void OnMouseMove(MouseEventArgs e)
+        VariableInspectorWindow varibleInspector;
+        private void OnMouseHover(MouseEventArgs e)
         {
             // don't update this if the game is running..
             if (IsBreakPointHit)
             {
-                ActiveDocument?.SetWordAtMousePosition(e);
+                string symbol = ActiveDocument?.SetWordAtMousePosition(e);
+
+                if (symbol != null && !String.IsNullOrEmpty(symbol))
+                {
+
+                    if (IsRegister(symbol))
+                    {
+                        varibleInspector = new VariableInspectorWindow(Application.Current.MainWindow);
+                        varibleInspector.SymbolName.Text = symbol;
+                        varibleInspector.SymbolAddress.Text = String.Empty;
+                        var position = Application.Current.MainWindow.PointToScreen(Mouse.GetPosition(Application.Current.MainWindow));
+                        if (symbol[0] == 'a')
+                        {
+                            var reg = target.GetAReg((int)char.GetNumericValue(symbol[1]));
+                            varibleInspector.SymbolValue.Text = $"${reg.ToString("X8")}";
+
+                        }
+                        else if (symbol[0] == 'd')
+                        {
+                            var reg = target.GetDReg((int)char.GetNumericValue(symbol[1]));
+                            varibleInspector.SymbolValue.Text = $"${reg.ToString("X8")}";
+                        }
+                        else if (symbol[0] == 's')
+                        {
+                            if (symbol[1] == 'p')
+                            {
+                                var reg = target.GetAReg(7);
+                                varibleInspector.SymbolValue.Text = $"${reg.ToString("X8")}";
+                            }
+                            else
+                            {
+                                uint sr = target.GetSR();
+                                varibleInspector.SymbolValue.Text = $"${sr.ToString("X8")}";
+
+                            }
+                        }
+                        else if (symbol[0] == 'p')
+                        {
+                            var pc = target.GetPC();
+                            varibleInspector.SymbolValue.Text = $"${pc.ToString("X8")}";
+                        }
+
+                        varibleInspector.SetPosition(position);
+                        varibleInspector.Show();
+                        varibleInspector.Closed += delegate { varibleInspector = null; };
+                    }
+                    else
+                    {
+                        SymbolEntry foundSymbol = this.debugSymbols.Symbols.FirstOrDefault(s => s.name.ToUpper() == symbol.ToUpper());
+                        // make sure to only show ram addresses
+                        if (foundSymbol.name != null)
+                        {
+                            byte[] data = null;
+                            if (foundSymbol.address >= 0xFFFF0000)
+                            {
+                                data = new byte[4];
+                                target.ReadMemory(foundSymbol.address, 4, data);
+                            }
+
+                            var position = Application.Current.MainWindow.PointToScreen(Mouse.GetPosition(Application.Current.MainWindow));
+
+                            varibleInspector = new VariableInspectorWindow(Application.Current.MainWindow);
+                            varibleInspector.SymbolName.Text = symbol;
+                            varibleInspector.SymbolAddress.Text = $"${foundSymbol.address.ToString("X8")}";
+
+                            if (data != null)
+                            {
+                                varibleInspector.SymbolValue.Text = $"${data[0].ToString("X2")}, ${(data[0] << 8 | data[1]).ToString("X4")}, ${(data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]).ToString("X8")}";
+                            }
+                            else
+                            {
+                                varibleInspector.SymbolValue.Text = String.Empty;
+                            }
+                            
+                            varibleInspector.SetPosition(position);
+                            varibleInspector.Show();
+                            varibleInspector.Closed += delegate { varibleInspector = null; };
+                        }
+                    }
+                }
             }
+        }
+
+        private void OnMouseHoverStop(MouseEventArgs e)
+        {
+            varibleInspector?.Close();
+        }
+
+        bool IsRegister(string symbol)
+        {
+            switch(symbol.ToLower())
+            {
+                case "a0":
+                case "a1":
+                case "a2":
+                case "a3":
+                case "a4":
+                case "a5":
+                case "a6":
+                case "a7":
+                case "sp":
+                case "pc":
+                case "sr":
+                case "d0":
+                case "d1":
+                case "d2":
+                case "d3":
+                case "d4":
+                case "d5":
+                case "d6":
+                case "d7":
+                    return true;
+            }
+
+            return false;
         }
 
         private void Explorer_OnSelectedItemChanged(object sender, SelectedItemEventArgs e)

@@ -1,4 +1,4 @@
-﻿using GenesisPlusGXInterface;
+using GenesisPlusGXInterface;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -108,20 +108,9 @@ namespace MDStudioPlus.Targets
 
         private static void ThreadLoop(CancellationToken token)
         {
-            try
+            while (!token.IsCancellationRequested)
             {
-                while (!token.IsCancellationRequested)
-                {
-                    var sw = Stopwatch.StartNew();
-                    genPlusGx.Update();
-                    //Thread.Sleep(1);
-                    //Debug.WriteLine($"Frame Time: {sw.ElapsedMilliseconds}");
-                    sw.Stop();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
+                genPlusGx.Update();
             }
         }
     }

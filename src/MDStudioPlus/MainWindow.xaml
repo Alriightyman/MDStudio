@@ -742,9 +742,14 @@
                                                                                      FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
                                                                    PassEventArgsToCommand="True"/>
                                         </i:EventTrigger>
-                                        <i:EventTrigger EventName="MouseMove">
-                                            <!--MouseHoverStopped-->
-                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseMoveCommand, 
+                                        <i:EventTrigger EventName="MouseHoverStopped">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseHoverStopCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="MouseHover">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseHoverCommand, 
                                                                                      RelativeSource={RelativeSource 
                                                                                      FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
                                                                    PassEventArgsToCommand="True"/>

@@ -294,13 +294,13 @@ namespace MDStudioPlus.ViewModels
         }
 
         // TODO: This may be used for showing variable/ram information on hover
-        public void SetWordAtMousePosition(MouseEventArgs e)
+        public string SetWordAtMousePosition(MouseEventArgs e)
         {
             
             var mousePosition = Editor.GetPositionFromPoint(e.GetPosition(Editor));
             
             if (mousePosition == null)
-                return;
+                return String.Empty;
             
             var line = mousePosition.Value.Line;
             var column = mousePosition.Value.Column;
@@ -313,15 +313,15 @@ namespace MDStudioPlus.ViewModels
             int offsetEnd = TextUtilities.GetNextCaretPosition(Document, offset, LogicalDirection.Forward, CaretPositioningMode.WordBorder);
 
             if (offsetEnd == -1 || offsetStart == -1)
-                return;
+                return String.Empty;
 
             var currentChar = Document.GetText(offset, 1);
 
             if (string.IsNullOrWhiteSpace(currentChar))
-                return;
+                return String.Empty;
 
             var word = Document.GetText(offsetStart, offsetEnd - offsetStart);
-            Debug.WriteLine(word);
+            return word;
         }
 
 
