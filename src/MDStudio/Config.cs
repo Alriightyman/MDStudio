@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
+using static MDStudio.Themes;
 
 namespace MDStudio
 {
@@ -37,6 +34,9 @@ namespace MDStudio
         [XmlElement("Others")]
         public string MegaUSBPath { get; set; }
 
+        [XmlElement("Theme")]
+        public Theme Theme { get; set; }
+
         public Config()
         {
             TargetName = typeof(TargetDGen).FullName;
@@ -45,7 +45,7 @@ namespace MDStudio
         public void Read()
         {
             XmlSerializer xs = new XmlSerializer(typeof(Config));
-            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\mdstudio";
+            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\mdstudioOld";
 
             if (!Directory.Exists(path))
             {
@@ -81,6 +81,9 @@ namespace MDStudio
                         KeycodeStart = config.KeycodeStart;
 
                         MegaUSBPath = config.MegaUSBPath;
+
+                        Theme = config.Theme;
+
                         sr.Close();
                     }
                     catch (Exception e)
@@ -94,7 +97,7 @@ namespace MDStudio
         public void Save()
         {
             XmlSerializer xs = new XmlSerializer(typeof(Config));
-            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\mdstudio";
+            string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\mdstudioOld";
 
             try
             {

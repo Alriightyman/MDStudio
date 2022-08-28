@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 
-<SyntaxDefinition name = "ASM68k" extensions = ".s;.asm">
-
-  <Properties>
+<SyntaxDefinition name = "ASM68k" extensions = ".s;.asm">	
+	<Properties>
     <Property name="LineComment" value="//"/>
     <Property name="BlockCommentBegin" value="/*"/>
     <Property name="BlockCommentEnd" value="*/"/>

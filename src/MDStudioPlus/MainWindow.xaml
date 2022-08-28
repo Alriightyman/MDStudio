@@ -1,0 +1,1250 @@
+<Window x:Class="MDStudioPlus.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MDStudioPlus"
+        xmlns:viewModels="clr-namespace:MDStudioPlus.ViewModels"
+        xmlns:editor="clr-namespace:MDStudioPlus.Editor"
+        xmlns:fileexplorer="clr-namespace:MDStudioPlus.FileExplorer"
+        xmlns:controls="clr-namespace:MDStudioPlus.Controls"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
+        xmlns:behaviors="clr-namespace:MDStudioPlus.Behaviors" 
+        xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:debugging="clr-namespace:MDStudioPlus.Models.Debugging"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance viewModels:Workspace, IsDesignTimeCreatable=True}"
+        Title="MD Studio Plus" MinWidth="140" MinHeight="116" 
+        MaxWidth="{x:Static SystemParameters.MaximizedPrimaryScreenWidth}" 
+        MaxHeight="{x:Static SystemParameters.MaximizedPrimaryScreenHeight}" 
+        Height="900" Width="1600" SnapsToDevicePixels="True" 
+        Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}" 
+        WindowStyle="None" ResizeMode="CanResizeWithGrip" StateChanged="WindowStateChanged">
+    <!--<DockPanel Margin="5,0,5,0">-->
+    <WindowChrome.WindowChrome>
+        <WindowChrome x:Name="chrome" ResizeBorderThickness="8" 
+                          CornerRadius="0" GlassFrameThickness="0" NonClientFrameEdges="None" />
+    </WindowChrome.WindowChrome>
+    <i:Interaction.Behaviors>
+        <behaviors:ActivateBehavior Activated="{Binding Activated, Mode=TwoWay}"/>
+    </i:Interaction.Behaviors>
+    <Window.Style>
+        <Style TargetType="{x:Type Window}">
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WindowBorderBrush}" />
+            <Setter Property="Visibility" Value="Visible"/>
+            <Style.Triggers>
+                <Trigger Property="IsActive" Value="False">
+                    <Setter Property="BorderBrush" Value="{DynamicResource WindowInactiveBorderBrush}"/>
+                </Trigger>
+                <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource StatusBarBackgroundDebugging}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
+    <Window.InputBindings>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}" />
+        <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveAllCommand}" />
+        <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenProjectSolutionCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding RunEmulatorCommand}"/>
+        <KeyBinding Key="F7" Command="{Binding BuildSolutionCommand}"/>
+        <KeyBinding Key="F5" Modifiers="Shift" Command="{Binding StopEmulatorCommand}"/>
+        <KeyBinding Key="Pause" Modifiers="Ctrl+Shift" Command="{Binding BreakAllCommand}"/>
+        <KeyBinding Key="F10" Command="{Binding StepOverCommand}"/>
+        <KeyBinding Key="F11" Command="{Binding StepIntoCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.Style>
+            <Style TargetType="{x:Type Grid}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                     Value="Maximized">
+                        <Setter Property="Margin" Value="6,6,6,8" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Style>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="23"/>
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="header" SizeChanged="HeaderSizeChanged">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="4"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Margin="8,4" HorizontalAlignment="Left" Orientation="Horizontal">
+                <!--MD Studio Icon-->
+                <Image Source="pack://application:,,,/Resources/MDStudio.png" Width="24"/>
+                <!--Menus-->
+                <Menu Style="{DynamicResource MetroMenu}" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True" >
+                    <MenuItem Header="File">
+                        <MenuItem Header="New">
+                            <MenuItem Command="{Binding NewSolutionCommand}" Header="Solution..." IsEnabled="False"/>
+                            <MenuItem Command="{Binding NewProjectCommand}" Header="Project..." IsEnabled="False"/>
+                            <MenuItem Command="{Binding NewFileCommand}" Header="File..." />
+                        </MenuItem>
+                        <MenuItem Header="Open">
+                            <MenuItem Command="{Binding OpenProjectSolutionCommand}" Header="Project/Solution.." InputGestureText="Ctrl+O" />
+                            <MenuItem Command="{Binding OpenFileCommand}" Header="File.." />
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Command="{Binding ActiveDocument.SaveCommand}" Header="Save" />
+                        <MenuItem Command="{Binding ActiveDocument.SaveAsCommand}" Header="Save As..." />
+                        <Separator />
+                        <MenuItem Command="{Binding ActiveDocument.CloseCommand}" Header="Close" />
+                        <MenuItem Command="{Binding CloseSolutionCommand}" Header="Close Solution" />
+                        <Separator />
+                        <MenuItem Click="CloseClick" Header="Exit"/>
+                    </MenuItem>
+                    <!--TODO: Edit menu-->
+                    <MenuItem Header="View">
+                        <MenuItem Header="SolutionExplorer" IsCheckable="True" IsChecked="{Binding Explorer.IsVisible, Mode=TwoWay}" />
+                        <MenuItem Header="Error List" IsCheckable="True" IsChecked="{Binding Errors.IsVisible, Mode=TwoWay}" />
+                        <MenuItem Header="Output" IsCheckable="True" IsChecked="{Binding Output.IsVisible, Mode=TwoWay}" />
+                    </MenuItem>
+                    <MenuItem Header="Project">
+                        <!--TODO: Add new File menu-->
+                        <!--TODO: Add existing file menu-->
+                        <!--TODO: Project Build order menu-->
+                        <!--TODO: Project dependencies menu-->
+                        <MenuItem Header="{Binding ProjectPropertiesHeader}" Command="{Binding OpenProjectPropertiesWindowCommand}"/>
+                    </MenuItem>
+                    <MenuItem Header="Build">
+                        <MenuItem Header="Build Solution" Command="{Binding BuildSolutionCommand}" InputGestureText="F7">
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Style.Triggers>
+                                        <!--Don't allow build if the solution is not loaded-->
+                                        <DataTrigger Binding="{Binding IsSolutionLoaded}" Value="False">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBuilding}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                    </MenuItem>
+                    <MenuItem Header="Debug">
+                        <MenuItem Header="Windows">
+                            <MenuItem Header="Registers" IsCheckable="True" IsChecked="{Binding Registers.IsVisible, Mode=TwoWay}"/>
+                            <MenuItem Header="Memory View" IsCheckable="True" IsChecked="{Binding Memory.IsVisible, Mode=TwoWay}"/>
+                            <MenuItem Header="Breakpoints" IsCheckable="True" IsChecked="{Binding Breakpoints.IsVisible, Mode=TwoWay}"/>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Start Debugging" Command="{Binding RunEmulatorCommand}" InputGestureText="F5">
+                            <MenuItem.Icon>
+                                <Image Source="pack://application:,,,/Resources/Toolbar/Play.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsSolutionLoaded}" Value="True" />
+                                                <Condition Binding="{Binding IsBuilding}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="IsEnabled" Value="True"/>
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Pause Debugging" Command="{Binding BreakAllCommand}" InputGestureText="Ctrl+Shift+Pause">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BreakAll.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Continue Debugging" Command="{Binding RunEmulatorCommand}" InputGestureText="F5">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Stop Debugging" Command="{Binding StopEmulatorCommand}" InputGestureText="Shift+F5">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Stop.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Reset" Command="{Binding RestartEmulatorCommand}" InputGestureText="Ctrl+Shift+F5">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Restart.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Step Over" Command="{Binding StepOverCommand}" InputGestureText="F10">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepOver.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+                        <MenuItem Header="Step Into" Command="{Binding StepIntoCommand}" InputGestureText="F11">
+                            <MenuItem.Icon>
+                                <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepInto.png" />
+                            </MenuItem.Icon>
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <!--Don't show Start Debugging if we are already debugging-->
+                                        <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
+
+                    </MenuItem>
+                    <MenuItem Header="Options">
+                        <MenuItem Header="Configuration" Command="{Binding ConfigurationCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="Help">
+                        <MenuItem Header="About"  Command="{Binding AboutCommand}" />
+                    </MenuItem>
+                </Menu>
+                <!--Project Name-->
+                <Border Background="{DynamicResource ProjectNameBackground}" Padding="8,0" Margin="14,0">
+                    <TextBlock Text="{Binding SolutionName}" VerticalAlignment="Center" Padding="0,1,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource ProjectNameForeground}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}" Value="False">
+                                        <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+            </StackPanel>
+            <!--Tool Bar-->
+            <DockPanel Grid.Row="2" HorizontalAlignment="Left">
+                <ToolBarTray Background="{x:Null}">
+                    <!--Main Toolbar-->
+                    <ToolBar  Background="{x:Null}"  WindowChrome.IsHitTestVisibleInChrome="True">
+                        <ToolBarPanel Orientation="Horizontal"  Background="{x:Null}" WindowChrome.IsHitTestVisibleInChrome="True">
+                            <!-- Navigate Backwards -->
+                            <StackPanel Orientation="Horizontal">
+                                <MenuItem Command="{Binding BackwardNaviagtorCommand}"
+                                          Focusable="False"
+                                          ToolTip="Navigate Backward"
+                                          Width="24">
+                                    <MenuItem.Icon>
+                                        <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BackArrow.png"  Width="16"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <!--<MenuItem ItemsSource="{Binding NavigatedItems}"
+                                          ToolTip="Navigate Backward" 
+                                          Width="12" >
+                                    <MenuItem.Icon>
+                                        <Path x:Name="Arrow" Data="{DynamicResource DownArrowGeometry}" Fill="{DynamicResource WindowForeground}" HorizontalAlignment="Left" IsHitTestVisible="False"  VerticalAlignment="Center"/>
+                                    </MenuItem.Icon>
+                                    <MenuItem.ItemTemplate>
+                                        <DataTemplate>
+                                            <Label Content="{Binding Item3}"/>
+                                        </DataTemplate>
+                                    </MenuItem.ItemTemplate>-->
+                                    <!--<i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="ContextMenuOpening">
+                                            <i:InvokeCommandAction Command="{Binding NaviagtorContextMenuCommand}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </MenuItem>-->
+                            </StackPanel>
+                            <!-- Navigate Forwards -->
+                            <MenuItem Command="{Binding ForwardNaviagtorCommand}"
+                                      ToolTip="Navigate Forward"
+                                      Focusable="False"
+                                      Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/ForwardArrow.png"  Width="16"/>
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <!--Separator-->
+                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
+                            <!--New Project Button-->
+                            <MenuItem Command="{Binding NewProjectCommand}"
+                                      WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Margin="2,0,0,0"
+                                      Focusable="False"
+                                      Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/NewProject.png" Width="18"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="New Project"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Open Project/Solution Button-->
+                            <MenuItem Command="{Binding OpenProjectSolutionCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Open.png" Width="18"  Margin="2,0,2,0"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="Open Solution/Project"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Save Button-->
+                            <MenuItem Command="{Binding SaveCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Padding="0" BorderBrush="{x:Null}"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Save.png" Width="18"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="Save"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Save All Button-->
+                            <MenuItem Command="{Binding SaveAllCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Padding="0" BorderBrush="{x:Null}"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/SaveAll.png" Width="18"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="ToolTip" Value="Save All"/>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Separator-->
+                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,0,0" />
+                            <!-- Emulator Target -->
+                            <Border Background="{x:Null}" Padding="2,0" Margin="5,0,0,0">
+                                <ComboBox Template="{DynamicResource ComboBoxControlTemplate}" 
+                                          ItemsSource="{Binding Targets}"
+                                          SelectedItem="{Binding SelectedTarget}"
+                                          Focusable="False"
+                                          Width="200"
+                                          Height="25"
+                                          VerticalAlignment="Center" 
+                                          HorizontalAlignment="Center"
+                                          Padding="10,5,0,0"
+                                          DisplayMemberPath="Item3"
+                                          Background="{DynamicResource ProjectNameBackground}">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Foreground" Value="{DynamicResource WindowForeground}"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsBuilding}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource ProjectNameInactiveForeground}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.Style>
+                                </ComboBox>
+                            </Border>
+                            <!--Run Emulator Button-->
+                            <MenuItem Header="{Binding SolutionName}"
+                                      Command="{Binding RunEmulatorCommand}"
+                                      WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                      Padding="0,0,-45,0">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsBuilding}" Value="True">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSolutionLoaded}" Value="False">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Resume Emulator Button-->
+                            <MenuItem Header="Continue" Command="{Binding RunEmulatorCommand}"
+                                Padding="0,0,-45,0"
+                                WindowChrome.IsHitTestVisibleInChrome="True" 
+                                      Focusable="False"
+                                      HorizontalAlignment="Left">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/Play.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="{x:Type MenuItem}">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                                <Setter Property="IsEnabled" Value="True"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                        </ToolBarPanel>
+                    </ToolBar>
+                    <!--Debug Toolbar-->
+                    <ToolBar  Background="{x:Null}"  WindowChrome.IsHitTestVisibleInChrome="True">
+                        <ToolBar.Style>
+                            <Style TargetType="{x:Type ToolBar}" BasedOn="{StaticResource {x:Type ToolBar}}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDebugging}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ToolBar.Style>
+                        <ToolBarPanel Orientation="Horizontal"  Background="{x:Null}" WindowChrome.IsHitTestVisibleInChrome="True">
+                            <!-- Break All (Pause) -->
+                            <MenuItem Command="{Binding BreakAllCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                      Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/BreakAll.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="ToolTip" Value="Break All"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Stop Emulator Button-->
+                            <MenuItem Command="{Binding StopEmulatorCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True" 
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <Image Source="pack://application:,,,/Resources/Toolbar/Stop.png" Width="12"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="ToolTip" Value="Stop Emulator"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Reset/Restart Emulator-->
+                            <MenuItem Command="{Binding RestartEmulatorCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <Image Source="pack://application:,,,/Resources/Toolbar/Restart.png" Width="16"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="ToolTip" Value="Reset Emulator"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Separator-->
+                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Foreground="{DynamicResource ProjectNameForeground}" Margin="5,0,0,0" />
+                            <!--Step Into-->
+                            <MenuItem Command="{Binding StepIntoCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepInto.png" Width="16"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="ToolTip" Value="Step Into"/>
+                                        <Setter Property="IsEnabled" Value="False" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                                <Setter Property="IsEnabled" Value="True" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!--Step Over-->
+                            <MenuItem Command="{Binding StepOverCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True"
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <controls:AutoGreyableImage Source="pack://application:,,,/Resources/Toolbar/StepOver.png" Width="16"/>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="ToolTip" Value="Step Over"/>
+                                        <Setter Property="IsEnabled" Value="False" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDebugging}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBreakPointHit}" Value="True">
+                                                <Setter Property="IsEnabled" Value="True" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <!-- TODO: Step Out-->
+                            <!-- Mute Audio -->
+                            <MenuItem Command="{Binding MuteAudioCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True" 
+                                      Focusable="False"
+                                Width="24">
+                                <MenuItem.Icon>
+                                    <Image Width="16">
+                                    <Image.Style>
+                                        <Style TargetType="Image">
+                                            <Setter Property="Source" Value="pack://application:,,,/Resources/Toolbar/AudioState.png"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                    <Setter Property="Image.Source" Value="pack://application:,,,/Resources/Toolbar/AudioStateMuted.png"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                                </MenuItem.Icon>
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="ToolTip" Value="Mute Audio"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                <Setter Property="ToolTip" Value="Unmute Audio" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                        </ToolBarPanel>
+                    </ToolBar>
+                    <!--TODO: Comment/Uncomment and normal Bookmark-->
+                </ToolBarTray>
+            </DockPanel>
+            <!--Min/Max/Close Buttons-->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" WindowChrome.IsHitTestVisibleInChrome="True">
+                <Button Style="{StaticResource MinimizeButton}" Click="MinimizeClick" />
+                <Button Style="{StaticResource MaximizeButton}" Click="MaximizeClick" />
+                <Button Style="{StaticResource RestoreDownButton}" Click="RestoreDownClick" />
+                <Button Style="{StaticResource CloseButton}" Click="CloseClick" />
+            </StackPanel>
+        </Grid>
+
+        <DockingManager Grid.Row="1"
+                        AutoHideDelay="0"
+                        ActiveContent="{Binding ActiveDocument, Mode=TwoWay, Converter={StaticResource ActiveDocumentConverter}}"
+                        AnchorablesSource="{Binding Tools}"
+                        DocumentsSource="{Binding Files}"
+                        Theme="{Binding SelectedTheme.Item2}">
+
+            <DockingManager.LayoutItemTemplateSelector>
+                <local:PanesTemplateSelector>
+                    <!--Code Editor-->
+                    <local:PanesTemplateSelector.FileViewTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <editor:CodeEditor x:Name="codeEditor" 
+                                               Document="{Binding Document, UpdateSourceTrigger=PropertyChanged}" 
+                                               SyntaxHighlighting="{Binding SyntaxHighlightName}"
+                                               Loaded="codeEditor_Loaded"
+                                               Options="{Binding CodeEditorOptions}"
+                                               FontFamily="{Binding EditorFont}"
+                                               >
+                                    <editor:CodeEditor.Style>
+                                        <Style TargetType="editor:CodeEditor">
+                                            <Setter Property="Foreground" Value="{DynamicResource WindowForeground}"/>
+                                            <Setter Property="Background" Value="{DynamicResource ControlBackground}" />
+                                            <Setter Property="IconBarBackground" Value="{DynamicResource ScrollViewerRectBackground}" />
+                                            <Setter Property="IconBarForeground" Value="{DynamicResource ToolBarGripper}" />
+                                            <Setter Property="IsReadOnly" Value="False"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type editor:CodeEditor}">
+                                                        <Border Background="{TemplateBinding Background}"
+						                                        BorderBrush="{TemplateBinding BorderBrush}"
+						                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                            <ScrollViewer
+							                                        Focusable="False"
+							                                        Name="PART_ScrollViewer"
+							                                        CanContentScroll="True"
+							                                        VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"
+							                                        HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+							                                        Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TextArea}"
+							                                        VerticalContentAlignment="Top"
+							                                        HorizontalContentAlignment="Left"
+							                                        Padding="{TemplateBinding Padding}"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="WordWrap"
+						                                             Value="True">
+                                                                <Setter TargetName="PART_ScrollViewer"
+							                                            Property="HorizontalScrollBarVisibility"
+							                                            Value="Disabled" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DataContext.IsDebugging, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}}"
+                                                             Value="True">
+                                                    <Setter Property="IsReadOnly" Value="True"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </editor:CodeEditor.Style>
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="onBreakPointAdded">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.OnBreakPointAddedCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="onBreakPointRemoved">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.OnBreakPointRemovedCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}"
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="onBreakPointBeforeAdded">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.OnBreakPointAfterAddedCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="MouseHoverStopped">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseHoverStopCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="MouseHover">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseHoverCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                        <i:EventTrigger EventName="PreviewMouseLeftButtonUp">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.MouseLeftButtonDownEditorCommand, 
+                                                                                     RelativeSource={RelativeSource 
+                                                                                     FindAncestor, AncestorType={x:Type local:MainWindow}}}" 
+                                                                   PassEventArgsToCommand="True"/>
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </editor:CodeEditor>
+                                <Rectangle Fill="{DynamicResource ScrollViewerRectBackground}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="17" Height="17"/>
+                            </Grid>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.FileViewTemplate>
+                    <!--Solution Explorer-->
+                    <local:PanesTemplateSelector.ExplorerViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <DockPanel>
+                                    <!--Hiding toolbar until it is ready to be implemented-->
+                                    <StackPanel Orientation="Vertical" DockPanel.Dock="Top" Visibility="Collapsed">
+                                        <ToolBarPanel Orientation="Horizontal">
+                                            <MenuItem Width="24" Command="{Binding ExpandCommand}">
+                                                <MenuItem.Icon>
+                                                    <Image Source="pack://application:,,,/Resources/Toolbar/Play.png" />
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </ToolBarPanel>
+                                        <TextBox></TextBox>
+                                    </StackPanel>
+                                    <TreeView ItemsSource="{Binding DirectoryItems}" DockPanel.Dock="Bottom">
+                                        <TreeView.Resources>
+                                            <ContextMenu x:Key="ProjectContextMenu">
+                                                <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
+                                                <MenuItem Header="Open Existing File..." Command="{Binding AddExistingFileCommand}"/>
+                                                <MenuItem Header="Add Folder"/>
+                                            </ContextMenu>
+                                            <ContextMenu x:Key="DirectoryContextMenu">
+                                                <MenuItem Header="Add New File..." Command="{Binding AddNewFileCommand}"/>
+                                                <MenuItem Header="Open Existing File..."/>
+                                                <MenuItem Header="Add Folder"/>
+                                            </ContextMenu>
+                                            <ContextMenu x:Key="FileContextMenu">
+                                                <MenuItem Header="Open" IsEnabled="False"/>
+                                                <Separator/>
+                                                <MenuItem Header="Exclude From Debugger" IsEnabled="False"/>
+                                                <Separator/>
+                                                <MenuItem Header="Rename" Command="{Binding RenameCommand}"/>
+                                            </ContextMenu>
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:SolutionItemViewModel}"
+                                                                  ItemsSource="{Binding Items}">
+                                                <DockPanel>
+                                                    <Image Source="pack://application:,,,/Resources/SolutionIcon.png" Width="16" Height="16"/>
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
+                                                </DockPanel>
+                                            </HierarchicalDataTemplate>
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:ProjectItemViewModel}"
+                                                                    ItemsSource="{Binding Items}">
+                                                <DockPanel ContextMenu="{StaticResource ProjectContextMenu}">
+                                                    <Image Source="pack://application:,,,/Resources/ProjectIcon.png" Width="16" Height="16" DockPanel.Dock="Left"/>
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0" DockPanel.Dock="Left"/>
+                                                </DockPanel>
+                                            </HierarchicalDataTemplate>
+                                            <HierarchicalDataTemplate DataType="{x:Type fileexplorer:DirectoryItemViewModel}"
+                                                                  ItemsSource="{Binding Items}">
+                                                <DockPanel ContextMenu="{StaticResource DirectoryContextMenu}">
+                                                    <Image Source="pack://application:,,,/Resources/DirectoryIcon.png" Width="16" Height="16"/>
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0"/>
+                                                </DockPanel>
+                                            </HierarchicalDataTemplate>
+                                            <DataTemplate DataType="{x:Type fileexplorer:FileItemViewModel}">
+                                                <DockPanel ContextMenu="{StaticResource FileContextMenu}" >
+                                                    <!-- File Icon -->
+                                                    <Image Source="pack://application:,,,/Resources/FileIcon.png" Width="16" Height="16"/>
+                                                    <!-- Static File Name -->
+                                                    <TextBlock Text="{Binding Path=Name}" ToolTip="{Binding Path=Path}" Margin="5,0,0,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <!-- Renamable TextBox -->
+                                                    <TextBox x:Name="fileItemTxt" Text="{Binding Path=Name}" Margin="5,0,0,0" >
+                                                        <TextBox.Style>
+                                                            <Style TargetType="{x:Type TextBox}">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                        <Setter Property="AutoWordSelection" Value="True"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBox.Style>
+                                                        <i:Interaction.Behaviors>
+                                                            <behaviors:TextBoxEnterKeyUpdateBehavior />
+                                                        </i:Interaction.Behaviors>
+                                                        <i:Interaction.Triggers>
+                                                            <i:EventTrigger EventName="LostFocus" >
+                                                                <i:InvokeCommandAction Command="{Binding LostFocusCommand}" CommandParameter="{Binding Path=Text, ElementName=fileItemTxt}" />
+                                                            </i:EventTrigger>
+                                                        </i:Interaction.Triggers>
+                                                    </TextBox>
+                                                    <!-- Focuses on TextBox -->
+                                                    <DockPanel.Style>
+                                                        <Style>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElementName=fileItemTxt, Path=IsVisible}" Value="True">
+                                                                    <Setter Property="FocusManager.FocusedElement" Value="{Binding ElementName=fileItemTxt}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </DockPanel.Style>
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </TreeView.Resources>
+                                        <TreeView.ItemContainerStyle>
+                                            <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                            </Style>
+                                        </TreeView.ItemContainerStyle>
+                                    </TreeView>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.ExplorerViewTemplate>
+                    <!--Error Window-->
+                    <local:PanesTemplateSelector.ErrorViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <ListView ItemsSource="{Binding Errors}" 
+                                          SelectedItem="{Binding SelectedItem, Mode=TwoWay}" 
+                                          SelectionMode="Single" >
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Code" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Code}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Description" Width="500">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Description}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Line" Width="100">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=LineNumber}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="File Name" Width="350">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Filename}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="MouseLeftButtonDown">
+                                            <i:InvokeCommandAction Command="{Binding ClearSelection}"
+                                                                   CommandParameter="{Binding RelativeSource=
+                                                                                       {RelativeSource
+                                                                                        Mode=FindAncestor,
+                                                                                        AncestorType={x:Type ListView}}}"/>
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </ListView>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.ErrorViewTemplate>
+                    <!--Output Window-->
+                    <local:PanesTemplateSelector.OutputViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <controls:ScrollingTextBox 
+                                    IsReadOnly="True" 
+                                    IsReadOnlyCaretVisible="True"
+                                    IsInactiveSelectionHighlightEnabled="True"
+                                    Text="{Binding BuildOutput,Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Foreground="{DynamicResource ProjectNameForeground}">
+                                    <controls:ScrollingTextBox.Style>
+                                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"/>
+                                    </controls:ScrollingTextBox.Style>
+                                </controls:ScrollingTextBox>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.OutputViewTemplate>
+                    <!-- Registers Window -->
+                    <local:PanesTemplateSelector.RegistersViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <TabControl Margin="5">
+                                    <TabItem Header="68000">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
+                                            <StackPanel Orientation="Horizontal">
+                                                <!--Data Registers-->
+                                                <DataGrid ItemsSource="{Binding DataRegisters}" 
+                                                      AutoGenerateColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      IsReadOnly="True"
+                                                      CanUserResizeRows="False"
+                                                      CanUserResizeColumns="False"
+                                                      RowHeaderWidth="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Binding="{Binding Name}" 
+                                                                        Header="Data Register" 
+                                                                        IsReadOnly="True" 
+                                                                        Width="25"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                                <!--Address Registers-->
+                                                <DataGrid ItemsSource="{Binding AddressRegisters}" 
+                                                      AutoGenerateColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      IsReadOnly="True"
+                                                      CanUserResizeRows="False"
+                                                      CanUserResizeColumns="False"
+                                                      RowHeaderWidth="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Binding="{Binding Name}" 
+                                                                        Header="Address Register" 
+                                                                        IsReadOnly="True" 
+                                                                        Width="25"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                                <!--State Registers-->
+                                                <DataGrid ItemsSource="{Binding StateRegisters}" 
+                                                      AutoGenerateColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      IsReadOnly="True"
+                                                      CanUserResizeRows="False"
+                                                      CanUserResizeColumns="False"
+                                                      RowHeaderWidth="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Binding="{Binding Name}" 
+                                                                        Header="State Register" 
+                                                                        IsReadOnly="True" 
+                                                                        Width="25"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                    <TabItem Header="Z80">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
+                                            <StackPanel Orientation="Horizontal">
+                                                <!--8-bit Registers-->
+                                                <DataGrid ItemsSource="{Binding Z80Registers8Bit}" 
+                                                      AutoGenerateColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      IsReadOnly="True"
+                                                      CanUserResizeRows="False"
+                                                      CanUserResizeColumns="False"
+                                                      RowHeaderWidth="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Binding="{Binding Name}" 
+                                                                        Header="8-Bit Register" 
+                                                                        IsReadOnly="True" 
+                                                                        Width="25"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="30"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+
+                                                <DataGrid ItemsSource="{Binding Z80Registers8BitAlt}" 
+                                                      AutoGenerateColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      IsReadOnly="True"
+                                                      CanUserResizeRows="False"
+                                                      CanUserResizeColumns="False"
+                                                      RowHeaderWidth="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Binding="{Binding Name}" 
+                                                                        Header="8-Bit Register" 
+                                                                        IsReadOnly="True" 
+                                                                        Width="25"/>
+                                                        <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="30"/>
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                                <StackPanel Orientation="Vertical">
+                                                    <!--16-bit Registers-->
+                                                    <DataGrid ItemsSource="{Binding Z80Registers16Bit}" 
+                                                          AutoGenerateColumns="False"
+                                                          CanUserReorderColumns="False"
+                                                          IsReadOnly="True"
+                                                          CanUserResizeRows="False"
+                                                          CanUserResizeColumns="False"
+                                                          RowHeaderWidth="0">
+                                                        <DataGrid.Columns>
+                                                            <DataGridTextColumn Binding="{Binding Name}" 
+                                                                            Header="16-Bit Register" 
+                                                                            IsReadOnly="True" 
+                                                                            Width="25"/>
+                                                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
+                                                        </DataGrid.Columns>
+                                                    </DataGrid>
+                                                    <!--State Registers-->
+                                                    <DataGrid ItemsSource="{Binding Z80RegistersState}" 
+                                                      AutoGenerateColumns="False"
+                                                      CanUserReorderColumns="False"
+                                                      IsReadOnly="True"
+                                                      CanUserResizeRows="False"
+                                                      CanUserResizeColumns="False"
+                                                      RowHeaderWidth="0">
+                                                        <DataGrid.Columns>
+                                                            <DataGridTextColumn Binding="{Binding Name}" 
+                                                                        Header="State Register" 
+                                                                        IsReadOnly="True" 
+                                                                        Width="25"/>
+                                                            <DataGridTextColumn Binding="{Binding Value}" Header="Value" IsReadOnly="True" Width="64"/>
+                                                        </DataGrid.Columns>
+                                                    </DataGrid>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                </TabControl>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.RegistersViewTemplate>
+                    <!-- Memory View Window -->
+                    <local:PanesTemplateSelector.MemoryViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <DockPanel>
+                                    <TextBox DockPanel.Dock="Top"/>
+                                    <DataGrid DockPanel.Dock="Bottom"
+                                            AutoGenerateColumns="False"                                          
+                                          ItemsSource="{Binding Memory}"
+                                          HorizontalGridLinesBrush="{x:Null}"
+                                          VerticalGridLinesBrush="{x:Null}"
+                                          BorderBrush="{x:Null}"
+                                          CanUserReorderColumns="False"
+                                          ColumnWidth="25"
+                                          CanUserResizeRows="False"
+                                          CanUserResizeColumns="False"
+                                          RowHeaderWidth="0"
+                                          CellStyle="{StaticResource DataGridCellStyle}"
+                                          >
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Binding="{Binding Index}" Header="Addr" Width="40"/>
+                                        <DataGridTextColumn Binding="{Binding Value[0]}" Header="$00"/>
+                                        <DataGridTextColumn Binding="{Binding Value[1]}" Header="$01"/>
+                                        <DataGridTextColumn Binding="{Binding Value[2]}" Header="$02"/>
+                                        <DataGridTextColumn Binding="{Binding Value[3]}" Header="$03"/>
+                                        <DataGridTextColumn Binding="{Binding Value[4]}" Header="$04"/>
+                                        <DataGridTextColumn Binding="{Binding Value[5]}" Header="$05"/>
+                                        <DataGridTextColumn Binding="{Binding Value[6]}" Header="$06"/>
+                                        <DataGridTextColumn Binding="{Binding Value[7]}" Header="$07"/>
+                                        <DataGridTextColumn Binding="{Binding Value[8]}" Header="$08"/>
+                                        <DataGridTextColumn Binding="{Binding Value[9]}" Header="$09"/>
+                                        <DataGridTextColumn Binding="{Binding Value[10]}" Header="$0A"/>
+                                        <DataGridTextColumn Binding="{Binding Value[11]}" Header="$0B"/>
+                                        <DataGridTextColumn Binding="{Binding Value[12]}" Header="$0C"/>
+                                        <DataGridTextColumn Binding="{Binding Value[13]}" Header="$0D"/>
+                                        <DataGridTextColumn Binding="{Binding Value[14]}" Header="$0E"/>
+                                        <DataGridTextColumn Binding="{Binding Value[15]}" Header="$0F"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.MemoryViewTemplate>
+                    <!-- Breakpoints View Window -->
+                    <local:PanesTemplateSelector.BreakpointsViewTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <ListView ItemsSource="{Binding Breakpoints}" 
+                                          SelectedItem="{Binding SelectedItem, Mode=TwoWay}" 
+                                          SelectionMode="Single" >
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Enabled" Width="60">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox IsChecked="{Binding Path=IsEnabled}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Name" Width="180">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Filename}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Line" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Line}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Address" Width="110">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Path=Address, StringFormat={}0x{0:X8}}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </DataTemplate>
+                    </local:PanesTemplateSelector.BreakpointsViewTemplate>
+                </local:PanesTemplateSelector>
+            </DockingManager.LayoutItemTemplateSelector>
+
+            <DockingManager.LayoutItemContainerStyleSelector>
+                <local:PanesStyleSelector>
+                    <local:PanesStyleSelector.ToolStyle>
+                        <Style TargetType="{x:Type LayoutAnchorableItem}">
+                            <Setter Property="Title" Value="{Binding Model.Title}" />
+                            <Setter Property="CanHide" Value="True" />
+                            <Setter Property="Visibility" Value="{Binding Model.IsVisible, 
+                                                                            Mode=TwoWay, 
+                                                                            UpdateSourceTrigger=PropertyChanged, 
+                                                                            Converter={StaticResource BoolToVisibilityConverter},
+                                                                            ConverterParameter={x:Static Visibility.Hidden}}" />
+                            <Setter Property="ContentId" Value="{Binding Model.ContentId}" />
+                            <Setter Property="IsSelected" Value="{Binding Model.IsSelected, Mode=TwoWay}" />
+                            <Setter Property="IsActive" Value="{Binding Model.IsActive, Mode=TwoWay}" />
+                        </Style>
+                    </local:PanesStyleSelector.ToolStyle>
+                    <local:PanesStyleSelector.FileStyle>
+                        <Style TargetType="{x:Type LayoutItem}">
+                            <Setter Property="Title" Value="{Binding Model.Title}" />
+                            <Setter Property="ToolTip" Value="{Binding Model.FilePath}" />
+                            <Setter Property="CloseCommand" Value="{Binding Model.CloseCommand}" />
+                            <Setter Property="ContentId" Value="{Binding Model.ContentId}" />
+                            <Setter Property="IsSelected" Value="{Binding Model.IsSelected, Mode=TwoWay}"/>
+                        </Style>
+                    </local:PanesStyleSelector.FileStyle>
+                </local:PanesStyleSelector>
+            </DockingManager.LayoutItemContainerStyleSelector>
+            <DockingManager.LayoutUpdateStrategy>
+                <local:LayoutInitializer />
+            </DockingManager.LayoutUpdateStrategy>
+
+            <LayoutRoot>
+                <LayoutPanel Orientation="Horizontal">
+                    <LayoutPanel Orientation="Vertical">
+                        <LayoutDocumentPane/>
+                        <LayoutAnchorablePaneGroup DockHeight="256" Orientation="Horizontal">
+                            <LayoutAnchorablePane Name="ErrorsPane" />
+                            <LayoutAnchorablePane Name="OutputPane"/>
+                            <LayoutAnchorablePane Name="RegistersPane"/>
+                            <LayoutAnchorablePane Name="MemoryPane"/>
+                            <LayoutAnchorablePane Name="BreakpointsPane"/>
+                        </LayoutAnchorablePaneGroup>
+                    </LayoutPanel>
+
+                    <LayoutAnchorablePaneGroup DockWidth="256" Orientation="Vertical">
+                        <LayoutAnchorablePane Name="ExplorerPane" DockHeight="2*"/>
+                    </LayoutAnchorablePaneGroup>
+                </LayoutPanel>
+            </LayoutRoot>
+        </DockingManager>
+
+        <!--Status Bar DynamicResource StatusBarBackground -->
+        <Border Grid.Row="2" Background="{Binding StatusBackgroundColor}">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Path Stroke="White" StrokeThickness="1" VerticalAlignment="Bottom" Margin="7.5,0,8,5">
+                        <Path.Data>
+                            <RectangleGeometry Rect="0,0,12,10"/>
+                        </Path.Data>
+                        <Path.RenderTransform>
+                            <SkewTransform AngleX="-15">
+                            </SkewTransform>
+                        </Path.RenderTransform>
+                    </Path>
+                    <TextBlock Text="{Binding Status}" Foreground="{DynamicResource StatusBarForeground}" VerticalAlignment="Center" Margin="0,0,6,1" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -21,7 +21,9 @@
 #define eInputMode		11
 #define eInput_COUNT	12
 
-extern int		InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region);
+extern int volValue;
+
+extern int		InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region, int useGamepad);
 extern void		SetDGenWindowPosition(int x, int y);
 extern int		GetDGenWindowXPosition();
 extern int		GetDGenWindowYPosition();
@@ -71,3 +73,7 @@ extern int		GetPaletteEntry(int index);
 extern unsigned char GetVDPRegisterValue(int index);
 
 extern unsigned int Disassemble(unsigned int address, char* text);
+
+extern void SetVolume(int vol, int isdebugVol);
+extern void PauseAudio(int pause);
+extern unsigned char* GetVRAM();

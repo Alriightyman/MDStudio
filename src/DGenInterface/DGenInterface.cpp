@@ -20,9 +20,9 @@ DGenInterface::DGen::~DGen()
 	::Shutdown();
 }
 
-int DGenInterface::DGen::Init(int windowWidth, int windowHeight, IntPtr hwnd, bool pal, char region)
+int DGenInterface::DGen::Init(int windowWidth, int windowHeight, IntPtr hwnd, bool pal, char region, bool useGamepad)
 {
-	return ::InitDGen(windowWidth, windowHeight, static_cast<HWND>(hwnd.ToPointer()), (int)pal, region);
+	return ::InitDGen(windowWidth, windowHeight, static_cast<HWND>(hwnd.ToPointer()), (int)pal, region, useGamepad);
 }
 
 void DGenInterface::DGen::SetWindowPosition(int x, int y)
@@ -59,8 +59,9 @@ int DGenInterface::DGen::LoadRom(String^ path)
 {
 	marshal_context^ context = gcnew marshal_context();
 	const char* result = context->marshal_as<const char*>(path);
-	return ::LoadRom(result);
+	int returnValue = ::LoadRom(result);
 	delete context;
+	return returnValue;
 }
 
 int DGenInterface::DGen::Update()
@@ -221,4 +222,19 @@ unsigned char DGenInterface::DGen::GetVDPRegisterValue(int index)
 unsigned int DGenInterface::DGen::Disassemble(unsigned int address, char* text)
 {
 	return ::Disassemble(address, text);
+}
+
+unsigned char* DGenInterface::DGen::GetVRAM()
+{
+	return ::GetVRAM();
+}
+
+void DGenInterface::DGen::SetVolume(int vol, bool isSetDebug)
+{
+	::SetVolume(vol, isSetDebug);
+}
+
+void DGenInterface::DGen::PauseAudio(bool pause)
+{
+	::PauseAudio(pause);
 }

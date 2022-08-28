@@ -1,4 +1,4 @@
-﻿//#define UMDK_SUPPORT
+//#define UMDK_SUPPORT
 
 using System;
 using System.Collections.Generic;
@@ -22,6 +22,9 @@ using System.Text.RegularExpressions;
 using System.IO;
 using MDStudio.Properties;
 using MDStudio.Debugging;
+using MDStudio.Tools;
+using MDStudio.Debug;
+using static MDStudio.Themes;
 
 #if UMDK_SUPPORT
     using UMDK;
@@ -54,6 +57,7 @@ namespace MDStudio
             Disassembly
         }
 
+        #region variables
         private readonly Timer m_Timer = new Timer();
         private Project m_Project;
         private DigitalRune.Windows.TextEditor.TextEditorControl currentCodeEditor;
@@ -71,7 +75,7 @@ namespace MDStudio
         private static int s_MaxDisassemblyLines = 200;
         private uint m_DisassembledFrom = 0;
         private uint m_DisassembledTo = 0;
-
+        private Theme CurrentTheme = Theme.Light;
         private RegisterView m_RegisterView;
         private MemoryView m_MemoryView;
         private BuildLog m_BuildLog;
@@ -83,6 +87,8 @@ namespace MDStudio
         private Config m_Config;
 
         private VDPRegs m_VDPRegs;
+        private VdpPatternView m_VDPViewer;
+        private SoundOptions m_SoundOptions;
 
         private bool m_Modified;
 
@@ -98,6 +104,7 @@ namespace MDStudio
         private FileSystemWatcher m_SourceWatcher;
         private FileSystemEventHandler m_OnFileChanged;
         private Object m_WatcherCritSec = new object();
+        private int m_Emulator_Volume = 100;
 
         class Breakpoint
         {
@@ -201,14 +208,13 @@ namespace MDStudio
             "DBRA",
         });
 
+        #endregion
+        
         public MainForm()
         {
             InitializeComponent();
-
-            // custom stuff for the tab control
-            this.DocumentTabs.DrawItem += DocumentTabs_DrawItem;
-            this.DocumentTabs.MouseDown += DocumentTabs_MouseDown;
-            this.DocumentTabs.HandleCreated += DocumentTabs_HandleCreated;
+            m_Config = new Config();
+            m_Config.Read();
 
             m_ErrorMarkers = new List<Marker>();
             m_SearchMarkers= new List<Marker>();
@@ -216,12 +222,11 @@ namespace MDStudio
             m_Breakpoints = new List<Breakpoint>();
             m_Watchpoints = new List<uint>();
 
-            //
-            m_Config = new Config();
-            m_Config.Read();
-
             m_VDPRegs = new VDPRegs(this);
 
+            m_VDPViewer = new VdpPatternView(this);
+
+            m_SoundOptions = new SoundOptions();
             //
             m_BuildLog = new BuildLog(this);
             m_BuildLog.Hide();
@@ -267,6 +272,7 @@ namespace MDStudio
             // Setup file changed watcher
             m_OnFileChanged = new FileSystemEventHandler(OnSourceChanged);
 
+
             if (m_Config.AutoOpenLastProject)
             {
                 //Open last project
@@ -276,61 +282,10 @@ namespace MDStudio
             StopDebugging();
 
 
-
 #if UMDK_SUPPORT
             m_UMDK = new UMDKInterface();
 #endif
-        }
-
-
-        // Following code was adapted from: https://github.com/r-aghaei/TabControlWithCloseButtonAndAddButton
-        // I am not using the "Add" button feature so that code has been removed. 
-        [DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
-        private const int TCM_SETMINTABWIDTH = 0x1300 + 49;
-        private void DocumentTabs_HandleCreated(object sender, EventArgs e)
-        {
-            SendMessage(this.DocumentTabs.Handle, TCM_SETMINTABWIDTH, IntPtr.Zero, (IntPtr)16);
-        }
-
-        private void DocumentTabs_MouseDown(object sender, MouseEventArgs e)
-        {
-            for (var i = 0; i < this.DocumentTabs.TabPages.Count; i++)
-            {
-                var tabRect = this.DocumentTabs.GetTabRect(i);
-                tabRect.Inflate(-2, -2);
-                var closeImage = Properties.Resources.Close;
-                var imageRect = new Rectangle(
-                    (tabRect.Right - closeImage.Width),
-                    tabRect.Top + (tabRect.Height - closeImage.Height) / 2,
-                    closeImage.Width,
-                    closeImage.Height);
-                if (imageRect.Contains(e.Location))
-                {
-                    this.DocumentTabs.TabPages.RemoveAt(i);
-                    break;
-                }
-            }
-
-        }
-
-        private void DocumentTabs_DrawItem(object sender, DrawItemEventArgs e)
-        {
-            var tabPage = this.DocumentTabs.TabPages[e.Index];
-            var tabRect = this.DocumentTabs.GetTabRect(e.Index);
-            tabRect.Inflate(-2, -2);
-            
-            var closeImage = Properties.Resources.Close;
-            e.Graphics.DrawImage(closeImage,
-                (tabRect.Right - closeImage.Width),
-                tabRect.Top + (tabRect.Height - closeImage.Height) / 2);
-            TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font,
-                tabRect, tabPage.ForeColor, TextFormatFlags.Left);            
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-        }
+        }          
 
         private void OpenFile(string filename)
         {
@@ -350,7 +305,7 @@ namespace MDStudio
                 // if tab doesn't exist, create a new tabpage with name and key
                 if (!tabExists)
                 {
-                    DocumentTabs.TabPages.Add(filename, tabText);                    
+                    DocumentTabs.TabPages.Add(filename, tabText);
                 }
 
                 // get the tab
@@ -370,9 +325,16 @@ namespace MDStudio
                     codeEditor.IsIconBarVisible = true;
                     codeEditor.AutoScroll = true;
                     codeEditor.Dock = DockStyle.Fill;
+                    codeEditor.ShowVRuler = false;
 
+                    string theme = "ASM68K";
+                    if (m_Config.Theme == Theme.Dark)
+                    {
+                        theme += "-Dark";
+                    }
                     // Set the syntax-highlighting for ASM68k
-                    codeEditor.Document.HighlightingStrategy = HighlightingManager.Manager.FindHighlighter("ASM68k");
+                    codeEditor.Document.HighlightingStrategy = HighlightingManager.Manager.FindHighlighter(theme);
+
                     codeEditor.Document.DocumentChanged -= documentChanged;
                     codeEditor.LoadFile(filename);
                 }
@@ -590,13 +552,65 @@ namespace MDStudio
             if(m_Target is EmulatorTarget)
             {
                 // Update palette
-                if (m_CRAMViewer.Visible)
+                if (m_CRAMViewer.Visible || m_VDPViewer.Visible)
                 {
                     for (int i = 0; i < 64; i++)
                     {
                         uint rgb = (m_Target as EmulatorTarget).GetColor(i);
-                        m_CRAMViewer.SetColor(i, rgb);
+                        if (m_CRAMViewer.Visible)
+                        {
+                            m_CRAMViewer.SetColor(i, rgb);
+                        }
+
+                        if (m_VDPViewer.Visible)
+                        {
+                            // TODO: get color to update the vdp palette?
+                            m_VDPViewer.SetPaletteEntry(i, rgb);
+                        }
                     }
+
+                    UpdateVdpRAM();
+                }
+            }
+        }
+
+        private void UpdateVdpRAM()
+        {
+            // TODO:
+            // vdp viewer is visible
+            if (true)
+            {
+                // get vram from emulator
+                // pass vram data to vdp viewer
+                // loop through and create tiles
+                unsafe
+                {
+                    var vram = DGenThread.GetDGen().GetVRAM();
+
+                    /*for (int tile = 0; tile < 2048; tile++) //2048
+                    {
+                        Bitmap image = new Bitmap(8, 8);
+                        for (int pixely = 0; pixely < 8; pixely++)
+                        {
+                            // each byte is 2 pixels
+                            for (int pixelx = 0; pixelx < 4; pixelx++)
+                            {
+                                // get color value
+                                byte twoPixels = vram[tile * pixelx * pixely];
+                                byte pix1 = ((byte)((byte)(twoPixels & 0xF0) >> 4));
+                                byte pix2 = (byte)(twoPixels & 0x0F);
+
+                                var color1 = m_VDPViewer.GetColor(pix1);
+                                var color2 = m_VDPViewer.GetColor(pix2);
+
+                                // set color
+                                image.SetPixel(pixelx*2, pixely, color1);
+                                image.SetPixel((pixelx*2)+1, pixely, color2);
+                            }
+                        }
+*/
+                        m_VDPViewer.SetVRam(vram);
+                    //}
                 }
             }
         }
@@ -630,6 +644,7 @@ namespace MDStudio
             {
                 if(m_BreakMode == BreakMode.kLogPoint && m_Watchpoints.Count > 0)
                 {
+                    //m_Target.SetVolume(0);
                     //Log point, fetch new value, log and continue
                     uint value = m_Target.ReadLong(m_Watchpoints[0]);
                     String log = String.Format("LOGPOINT - Address 0x{0:x} = 0x{1:x}", m_Watchpoints[0], value);
@@ -637,7 +652,7 @@ namespace MDStudio
                     m_Target.Resume();
                 }
                 else
-                {
+                {                    
                     //Breakpoint hit, go to address
                     uint currentPC = m_Target.GetPC();
                     GoTo(currentPC);
@@ -782,11 +797,20 @@ namespace MDStudio
             }
             else if (m_Target != null && m_State == State.kRunning)
             {
-                UpdateCRAM();
+                if (m_SoundOptions.Visible)
+                {
+                    m_Emulator_Volume = m_SoundOptions.Volume;
+                }
 
-                byte[] memBuffer = new byte[0xFFFF];
-                m_Target.ReadMemory(0xFFFF0000, 0xFFFF, memBuffer);
-                m_MemoryView.SetRamMemory(memBuffer);
+                //m_Target.SetVolume(m_Emulator_Volume);
+
+                UpdateCRAM();
+                if (m_MemoryView.Visible)
+                {
+                    byte[] memBuffer = new byte[0xFFFF];
+                     m_Target.ReadMemory(0xFFFF0000, 0xFFFF, memBuffer);
+                    m_MemoryView.SetRamMemory(memBuffer);
+                }
             }
         }
 
@@ -1073,7 +1097,6 @@ namespace MDStudio
             }                            
         }
 
-
         private int Build()
         {          
             Stopwatch sw = Stopwatch.StartNew();
@@ -1102,6 +1125,8 @@ namespace MDStudio
                 m_BuildLog.Clear();
                 if (!m_BuildLog.Visible)
                     m_BuildLog.Show();
+                
+                m_BuildLog.SelectLogTab();                
             };
 
             BeginInvoke(action);
@@ -1239,8 +1264,17 @@ namespace MDStudio
             {
                 Console.WriteLine(line);
 
+                // remove some of the whitespace and the "console line stuff"
+                int cmdPromptLength = $"{m_PathToProject}>".Length;
+                string logline = line.Replace('\b',' ').Trim();
+
+                if(!String.IsNullOrWhiteSpace(logline) && logline.Length >= cmdPromptLength && logline.Contains(m_PathToProject))
+                {
+                    logline = logline.Remove(0, cmdPromptLength);
+                }
+
                 Action build_addraw = () => {
-                    m_BuildLog.AddRaw(line);
+                    m_BuildLog.AddRaw(logline);
                 };
                 BeginInvoke(build_addraw);
 
@@ -1251,7 +1285,7 @@ namespace MDStudio
                     patternError = @"> > >([\w:\\.]*)\((\d+)\): error (.+)";
                 }
               
-                Match matchError = Regex.Match(line, patternError);
+                Match matchError = Regex.Match(logline, patternError);
 
                 if (matchError.Success)
                 {
@@ -1267,7 +1301,7 @@ namespace MDStudio
 
                     BeginInvoke(buildLogError);
 
-                    Console.WriteLine("Error in '" + matchError.Groups[1].Value + "' (" + matchError.Groups[2].Value + "): " + matchError.Groups[3].Value);
+                    System.Diagnostics.Debug.WriteLine("Error in '" + matchError.Groups[1].Value + "' (" + matchError.Groups[2].Value + "): " + matchError.Groups[3].Value);
                     errorCount++;
 
                     //  Mark the line
@@ -1283,7 +1317,7 @@ namespace MDStudio
                     }
                 }
             }
-            Console.WriteLine(errorCount + " Error(s)");
+            System.Diagnostics.Debug.WriteLine(errorCount + " Error(s)");
 
             Action codeEditorRefreshAction = () =>
             {
@@ -1331,7 +1365,7 @@ namespace MDStudio
                 }
                 catch (Exception exception)
                 {
-                    Console.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
+                    System.Diagnostics.Debug.WriteLine("Symbol parse error - malformed symbol file: {0}", exception.Message);
 
                     if (m_Project.Assembler == Assembler.Asm68k)
                     {
@@ -1358,6 +1392,13 @@ namespace MDStudio
                     RunScript(m_Project.PostBuildScript);
             }
 
+            if (errorCount > 0)
+            {
+                action = () => m_BuildLog.SelectErrorTab();
+
+                BeginInvoke(action);
+            }
+
             return errorCount;
         }
 
@@ -1377,11 +1418,10 @@ namespace MDStudio
             // -xx : Level 2 for detailed error messages
             // -q : suppress messages
             // -c : variables will be written in a format which permits an easy integration into a C-source file. The extension of the file is H
-            // -D : defines symbols
             // -A : stores the list of global symbols in another, more compact form
             // -L : writes assembler listing into a file
             // -g MAP : This switch instructs AS to create an additional file that contains debug information for the program
-            process.StartInfo.Arguments = @"-xx -n -q -c -A -L -g MAP " + m_Project.AdditionalArguments + " \"" + m_FileToAssemble + "\"";
+            process.StartInfo.Arguments = @"-xx -n -c -A -L -g MAP " + m_Project.AdditionalArguments + " \"" + m_FileToAssemble + "\"";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -1428,9 +1468,9 @@ namespace MDStudio
         }
 
         private void Run()
-        {
+        {            
             if (m_State == State.kDebugging)
-            {
+            {               
                 Action action = () =>
                 {
                     currentCodeEditor.Document.MarkerStrategy.Clear();
@@ -1537,8 +1577,6 @@ namespace MDStudio
                             //  Load Rom
                             m_Target.LoadBinary(binaryFile);
 
-
-
                             //  Lookup and set initial breakpoints
                             for (int i = 0; i < m_Breakpoints.Count; i++)
                             {
@@ -1572,6 +1610,7 @@ namespace MDStudio
                             currentCodeEditor.Refresh();
 
                             // Set watchpoints
+                             
                             foreach (uint address in m_Watchpoints)
                             {
                                 m_Target.AddWatchpoint(address, address + 4);
@@ -1607,7 +1646,7 @@ namespace MDStudio
                     BeginInvoke(action);
 
                 }
-            }
+            }          
         }
 
         private void Disassemble(uint fromAddr)
@@ -1648,6 +1687,11 @@ namespace MDStudio
                 m_DisassemblyText = builder.ToString();
             }
         }
+
+        // bookmark manager needs
+        //  ismarked
+        //  togglemarkat
+        //  clear
 
         private void toggleBreakpoint_Click(object sender, EventArgs e)
         {
@@ -1948,7 +1992,7 @@ namespace MDStudio
             UpdateTitle();
         }
 
-        public void GoTo(string filename, int lineNumber)
+        public void GoTo(string filename, int lineNumber, bool isError = false)
         {
             if (m_CurrentlyEditingFile.ToLower() != filename.ToLower())
             {
@@ -2061,7 +2105,7 @@ namespace MDStudio
         private void configMenu_Click(object sender, EventArgs e)
         {
             ConfigForm configForm = new ConfigForm();
-
+            var c = Color.DimGray;
             configForm.StartPosition = FormStartPosition.CenterParent;
 
             configForm.targetList.SelectedIndex = configForm.targetList.FindString(m_Config.TargetName);
@@ -2082,13 +2126,14 @@ namespace MDStudio
             configForm.modePAL.Checked = m_Config.Pal;
             configForm.modeNTSC.Checked = !m_Config.Pal;
             configForm.megaUSBPath.Text = m_Config.MegaUSBPath;
+            configForm.ThemeCombobox.SelectedIndex = (int)m_Config.Theme;
 
             configForm.listIncludes.Items.Clear();
             if(m_Config.AssemblerIncludePaths != null)
             {
                 foreach(string include in m_Config.AssemblerIncludePaths)
                     configForm.listIncludes.Items.Add(include);
-            }
+            }            
 
             if (configForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -2109,14 +2154,23 @@ namespace MDStudio
                 m_Config.KeycodeB = configForm.inputB.SelectedIndex;
                 m_Config.KeycodeC = configForm.inputC.SelectedIndex;
                 m_Config.KeycodeStart = configForm.inputStart.SelectedIndex;
+                var oldTheme = m_Config.Theme;
 
-                
+                m_Config.Theme = (Theme)configForm.ThemeCombobox.SelectedIndex;
+
+                if (oldTheme != m_Config.Theme)
+                {
+                    Invalidate();
+                }
+
+                // TODO: Change themes
                 m_Config.Pal = configForm.modePAL.Checked;
                 m_Config.MegaUSBPath = configForm.megaUSBPath.Text;
 
                 m_Config.AssemblerIncludePaths = new string[configForm.listIncludes.Items.Count];
                 configForm.listIncludes.Items.CopyTo(m_Config.AssemblerIncludePaths, 0);
 
+                //m_Config.LightTheme = configForm.LightThemeSelection.Checked;
                 m_Config.Save();
 
                 Console.WriteLine(configForm.asm68kPath.Text);
@@ -2189,10 +2243,16 @@ namespace MDStudio
                             m_DebugSymbols = new AsSymbols();
                         }
                     }
-                    var filesToExclude = m_Project.FilesToExclude?.Select(e => $"{m_PathToProject}\\{e}".ToUpper().Replace("/", "\\"));
-                    m_DebugSymbols.Read(symbolFile, filesToExclude?.ToArray());
-
-                    m_AlreadyBuilt = true;
+                    try
+                    {
+                        var filesToExclude = m_Project.FilesToExclude?.Select(e => $"{m_PathToProject}\\{e}".ToUpper().Replace("/", "\\"));
+                        m_DebugSymbols.Read(symbolFile, filesToExclude?.ToArray());
+                        m_AlreadyBuilt = true;
+                    }
+                    catch (Exception e)
+                    {
+                        MessageBox.Show($"Error reading debug data: {e.Message}");
+                    }
                 }
 
             }
@@ -2413,6 +2473,8 @@ namespace MDStudio
             }
 
             profilerEnabledMenuOptions.Checked = Settings.Default.ProfilerEnabled;
+
+            Themes.UseImmersiveDarkMode(this.Handle, m_Config.Theme == Theme.Dark ? true : false);
         }
 
         private void MainForm_Activated(object sender, EventArgs e)
@@ -2676,6 +2738,11 @@ namespace MDStudio
 
         private void fooToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            /*if (m_VDPViewer == null || m_VDPViewer.IsDisposed || m_VDPViewer.Disposing)
+            {
+                m_VDPViewer = new VdpPatternView();
+            }*/
+            m_VDPViewer.Show();
 #if UMDK_SUPPORT
             string binaryFile = m_PathToProject + @"\" + m_ProjectName + ".bin";
 
@@ -2920,5 +2987,101 @@ namespace MDStudio
                 
             }
         }
+
+        private void removeTabToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            RemoveTab(this.DocumentTabs.SelectedIndex);
+        }
+
+        private void RemoveTab(int index)
+        {
+            this.DocumentTabs.TabPages.RemoveAt(index);
+        }
+
+        private void soundToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_SoundOptions.Show();                            
+        }
+
+        private void MainForm_Paint(object sender, PaintEventArgs e)
+        {            
+            SetThemes(e.Graphics);
+        }
+
+        private void SetThemes(Graphics g)
+        {
+            var theme = m_Config.Theme;
+
+            // only make changes if dark theme
+            if (Themes.CurrentTheme != theme)
+            {
+                Themes.CurrentTheme = theme;
+                Color bgColor = Themes.BackColor; //Color.FromArgb(255, 45, 45, 45);
+                Color fgColor =Themes.ForeColor;
+                // main form
+                SetTheme(this, g, fgColor, bgColor);
+
+                //this.treeProjectFiles.BackColor = this.BackColor;
+                //this.treeProjectFiles.ForeColor = this.ForeColor;
+
+                SetTheme(m_VDPRegs,g, fgColor, bgColor);
+                SetTheme(m_VDPViewer,g, fgColor, bgColor);
+                SetTheme(m_CRAMViewer,g, fgColor, bgColor);
+                SetTheme(m_BuildLog,g, fgColor, bgColor);
+                SetTheme(m_MemoryView,g, fgColor, bgColor);
+                SetTheme(m_RegisterView,g, fgColor, bgColor);
+
+                // also, adjust this too
+                if (currentCodeEditor != null && currentCodeEditor.Document != null)
+                {
+                    // Set the syntax-highlighting for ASM68k
+                    currentCodeEditor.Document.HighlightingStrategy = HighlightingManager.Manager.FindHighlighter("ASM68k-Dark");
+                }
+            }
+        }
+
+        Type[] types = new Type[]
+        {
+            typeof(Control), typeof(MenuStrip), typeof(ToolStripMenuItem), typeof(ToolStrip), typeof(ScrollBar),typeof(TreeView),typeof(Form),
+            typeof(SplitContainer), typeof(ScrollBar), typeof(SplitterPanel),typeof(ScrollBar),/*typeof(TabControl),typeof(TabPage),*/typeof(StatusStrip),
+        };
+
+        private void SetTheme(Form form,Graphics g, Color foreground, Color background)
+        {
+            form.BackColor = background;
+            form.ForeColor = foreground;
+
+            SetChildControlTheme(GetAllControls(form, types),g, foreground, background);
+
+        }
+
+        private void SetChildControlTheme(IEnumerable<Control> controls,Graphics g, Color foreground, Color background)
+        {
+            foreach (var control in controls)
+            {
+                control.BackColor = background;
+                control.ForeColor = foreground;
+
+                ControlPaint.DrawBorder(g, control.ClientRectangle,
+                     background, 8, ButtonBorderStyle.Solid,
+                     background, 8, ButtonBorderStyle.Solid,
+                     background, 8, ButtonBorderStyle.Solid,
+                    background, 8, ButtonBorderStyle.Solid);
+
+                if (control.Controls.Count == 0)
+                    continue;
+                SetChildControlTheme(GetAllControls(control, types), g, foreground, background);
+            }
+        }
+
+        public IEnumerable<Control> GetAllControls(Control control, Type[] types)
+        {
+            var controls = control.Controls.Cast<Control>();
+
+            return controls.SelectMany(ctrl => GetAllControls(ctrl, types))
+                                      .Concat(controls).
+                                      Where(c => types.Contains(c.GetType()));
+        }
+
     }
 }

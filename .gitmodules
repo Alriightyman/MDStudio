@@ -1,0 +1,14 @@
+[submodule "src/Genesis-Plus-GX"]
+	path = src/Genesis-Plus-GX
+	url = https://github.com/Alriightyman/Genesis-Plus-GX.git
+	branch = MDStudio
+[submodule "3rdparty/SDL"]
+	path = 3rdparty/SDL
+	url = https://github.com/Alriightyman/SDL.git
+	branch = MDStudio
+[submodule "3rdparty/zlib"]
+	path = 3rdparty/zlib
+	url = https://github.com/Alriightyman/zlib.git
+[submodule "3rdparty/AvalonEdit"]
+	path = 3rdparty/AvalonEdit
+	url = https://github.com/Alriightyman/AvalonEdit.git

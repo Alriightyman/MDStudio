@@ -529,6 +529,17 @@ namespace DigitalRune.Windows.TextEditor
       if (handler != null)
         handler(this, mouseEventArgs);
     }
-    #endregion
-  }
+        #endregion
+
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // TextEditorControl
+            // 
+            this.Name = "TextEditorControl";
+            this.ResumeLayout(false);
+
+        }
+    }
 }

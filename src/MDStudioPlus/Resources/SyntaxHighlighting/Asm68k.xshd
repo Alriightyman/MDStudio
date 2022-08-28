@@ -1,0 +1,117 @@
+<SyntaxDefinition name = "ASM68k" extensions = ".s;.asm" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Comment" foreground="Green" />
+	<Color name="String" foreground="Blue" />
+	<Color name="KeyWord" foreground="#FFFF6600" />
+	<Color name="Number" foreground="#FFFF6600" />
+	<Color name="Register" foreground="#FFFF6600" />
+	<RuleSet>
+		<Span color="Comment">
+			<Begin>;</Begin>
+		</Span>
+
+		<Span color="String">
+			<Begin>"</Begin>
+			<End>"</End>
+		</Span>
+		<Keywords foreground="DarkCyan" fontWeight="bold">
+			<Word>.b</Word>
+			<Word>.w</Word>
+			<Word>.l</Word>
+			<Word>.s</Word>
+			<Word>add</Word>
+			<Word>addi</Word>
+			<Word>adda</Word>
+			<Word>addq</Word>
+			<Word>and</Word>
+			<Word>andi</Word>
+			<Word>asl</Word>
+			<Word>asr</Word>
+			<Word>beq</Word>
+			<Word>bne</Word>
+			<Word>bge</Word>
+			<Word>bgt</Word>
+			<Word>ble</Word>
+			<Word>blo</Word>
+			<Word>bls</Word>
+			<Word>blt</Word>
+			<Word>bcs</Word>
+			<Word>bcc</Word>
+			<Word>bhi</Word>
+			<Word>bhs</Word>
+			<Word>bmi</Word>
+			<Word>bpl</Word>
+			<Word>bra</Word>
+			<Word>bsr</Word>
+			<Word>bclr</Word>
+			<Word>bset</Word>
+			<Word>btst</Word>
+			<Word>clr</Word>
+			<Word>cmp</Word>
+			<Word>cmpa</Word>
+			<Word>cmpi</Word>
+			<Word>dbf</Word>
+			<Word>dbne</Word>
+			<Word>dc</Word>
+			<Word>div</Word>
+			<Word>eor</Word>
+			<Word>eori</Word>
+			<Word>exg</Word>
+			<Word>ext</Word>
+			<Word>jmp</Word>
+			<Word>jsr</Word>
+			<Word>lea</Word>
+			<Word>lsl</Word>
+			<Word>lsr</Word>
+			<Word>move</Word>
+			<Word>movea</Word>
+			<Word>movem</Word>
+			<Word>moveq</Word>
+			<Word>mulu</Word>
+			<Word>muls</Word>
+			<Word>neg</Word>
+			<Word>nop</Word>
+			<Word>not</Word>
+			<Word>or</Word>
+			<Word>ori</Word>
+			<Word>sgt</Word>
+			<Word>sle</Word>
+			<Word>smi</Word>
+			<Word>st</Word>
+			<Word>swap</Word>
+			<Word>rol</Word>
+			<Word>ror</Word>
+			<Word>rs</Word>
+			<Word>rte</Word>
+			<Word>rts</Word>
+			<Word>stop</Word>
+			<Word>sub</Word>
+			<Word>subi</Word>
+			<Word>subq</Word>
+			<Word>tst</Word>
+		</Keywords>
+		<Keywords foreground="Red" fontWeight="bold">			
+			<Word>d0</Word>
+			<Word>d1</Word>
+			<Word>d2</Word>
+			<Word>d3</Word>
+			<Word>d4</Word>
+			<Word>d5</Word>
+			<Word>d6</Word>
+			<Word>d7</Word>
+			<Word>a0</Word>
+			<Word>a1</Word>
+			<Word>a2</Word>
+			<Word>a3</Word>
+			<Word>a4</Word>
+			<Word>a5</Word>
+			<Word>a6</Word>
+			<Word>a7</Word>
+		</Keywords>
+		<Keywords foreground="Red" fontWeight="bold">
+			<Word>sp</Word>
+		</Keywords>
+		<Rule foreground="Red">\$[0-9a-fA-F]+</Rule>
+	</RuleSet>
+	
+	</SyntaxDefinition>
+

@@ -63,6 +63,16 @@ namespace MDStudio
             m_RawLog += line + Environment.NewLine;
         }
 
+        public void SelectErrorTab()
+        {
+            this.TabControl1.SelectedTab = this.ErrorTab;
+        }
+
+        public void SelectLogTab()
+        {
+            this.TabControl1.SelectedTab = this.LogTab;
+        }
+
         private void BuildLog_Load(object sender, EventArgs e)
         {
             if(Settings.Default.BuildLogWindowLocation != null)
@@ -82,7 +92,7 @@ namespace MDStudio
 
             if (selection.Count > 0 && selection[0].Index < m_Errors.Count())
             {
-                m_Parent.GoTo(m_Errors[selection[0].Index].file, m_Errors[selection[0].Index].line);
+                m_Parent.GoTo(m_Errors[selection[0].Index].file, m_Errors[selection[0].Index].line-1);
             }
         }
 

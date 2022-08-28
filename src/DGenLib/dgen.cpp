@@ -21,17 +21,20 @@ extern "C" {
 
 #define	IS_MAIN_CPP
 #include "rc-vars.h"
+#include <exception>
+#include <fstream>
 
 #define AUDIO_CHANNELS 2
 
 FILE *debug_log = NULL;
 
-md*				s_DGenInstance = NULL;
-SDL_Window*		g_SDLWindow = NULL;
-SDL_Renderer*	g_SDLRenderer = NULL;
-SDL_Texture*	g_BackBuffer = NULL;
-SDL_AudioSpec	g_AudioSpec;
-HWND			g_HWND = NULL;
+md*					s_DGenInstance = NULL;
+SDL_Window*			g_SDLWindow = NULL;
+SDL_Renderer*		g_SDLRenderer = NULL;
+SDL_Texture*		g_BackBuffer = NULL;
+SDL_AudioSpec		g_AudioSpec;
+SDL_AudioDeviceID	g_audio_device = 0;
+HWND				g_HWND = NULL;
 
 int usec = 0;
 int newclk = 0, oldclk = 0, startclk = 0;
@@ -39,12 +42,14 @@ int frames_todo = 0;
 
 int sdlWindowWidth;
 int sdlWindowHeight;
+int volValue = 100;
 
 static unsigned char*	mdpal = NULL;
 static struct sndinfo	sndi;
 static struct bmap		mdscr;
 
 sdl::Gamepad* g_sdlGamepad = NULL;
+bool useGamepad = false;
 
 /// Circular buffer and related functions.
 typedef struct
@@ -160,24 +165,35 @@ void DGenAudioCallback(void *userdata, Uint8 * stream, int len)
 	}
 }
 
-int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region)
+int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char region, int use_gamepad)
 {
  	s_DGenInstance = new md(pal, region);
+	useGamepad = use_gamepad;
 
 	//	Init SDL
- 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
+	{
+		auto error = SDL_GetError();
+	}
 
-	g_SDLWindow		= SDL_CreateWindow("DGen",				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+	// prefer rendering with vulkan
+	g_SDLWindow = SDL_CreateWindow("DGen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+
+	// but if not, then use opengl
+	if (g_SDLWindow == NULL)
+	{
+		g_SDLWindow = SDL_CreateWindow("DGen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | SDL_WINDOW_INPUT_FOCUS);
+	}
+
 	g_SDLRenderer	= SDL_CreateRenderer(g_SDLWindow, -1,	SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC|SDL_RENDERER_TARGETTEXTURE);
 	g_BackBuffer	= SDL_CreateTexture(g_SDLRenderer,		SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, windowWidth, windowHeight);
-
 	sdlWindowWidth = windowWidth;
 	sdlWindowHeight = windowHeight;
 
 	// Init gamepad
 	g_sdlGamepad = sdl::Gamepad::FindAvailableController(0);
 
-	//<	Init  screen
+	//	Init  screen
 	mdscr.bpp	= 32;
 	mdscr.w		= windowWidth;
 	mdscr.h		= windowHeight;
@@ -188,12 +204,13 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 
 	//	Set parent window
 	SDL_SysWMinfo wmInfo;
-	
+	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(g_SDLWindow, &wmInfo);
 
-	SetParent(wmInfo.info.win.window, parent);
+	//SetParent(wmInfo.info.win.window, parent);
 
 	// Init audio
+	//SDL_zero(g_AudioSpec);
 	g_AudioSpec.channels = 2;
 	g_AudioSpec.samples = dgen_soundsamples;
 	g_AudioSpec.size = 0;
@@ -205,12 +222,18 @@ int InitDGen(int windowWidth, int windowHeight, HWND parent, int pal, char regio
 	g_AudioSpec.format = AUDIO_S16MSB;
 #else
 	g_AudioSpec.format = AUDIO_S16LSB;
-#endif
+#endif	
 
-	if(int audioResult = SDL_OpenAudio(&g_AudioSpec, &g_AudioSpec) < 0)
+	g_audio_device = SDL_OpenAudioDevice(NULL, 0, &g_AudioSpec, NULL, 0);
+
+	if(g_audio_device <= 0)
 	{
-		printf("SDL_OpenAudio() failed with 0x%08x", audioResult);
+		auto error = SDL_GetError();
+		//printf("SDL_OpenAudio() failed with 0x%08x", audio_device);
+		printf(error);
 	}
+
+	auto currentDriver = SDL_GetCurrentAudioDriver();
 
 	// Alloc audio buffer
 	sndi.len = (dgen_soundrate / dgen_hz);
@@ -279,8 +302,7 @@ int		LoadRom(const char* path)
 	s_DGenInstance->debug_init();
 	
 	ShowSDLWindow();
-	SDL_PauseAudio(0);
-
+	SDL_PauseAudioDevice(g_audio_device, 0);
 	return 1;
 }
 
@@ -395,11 +417,16 @@ unsigned long pd_usecs(void)
  */
 void	ProcessInputs()
 {
-	if (g_sdlGamepad)
+	// TODO: Handle both controller and keyboard inputs to be used at the same time. 
+
+	SDL_Event event;
+
+	if (g_sdlGamepad && useGamepad)
 	{
-		SDL_Event event;
+		// process events
 		while (SDL_PollEvent(&event)) {}
 
+		// handle gampad input
 		g_sdlGamepad->Poll();
 
 		int buttonOffMask = ~0;
@@ -416,9 +443,8 @@ void	ProcessInputs()
 	}
 	else
 	{
-		SDL_Event event;
-
-		const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+		// do keyboard processing here
+		const Uint8* keystate = SDL_GetKeyboardState(NULL);
 
 		while (SDL_PollEvent(&event))
 		{
@@ -459,67 +485,74 @@ void	ProcessInputs()
  */
 int UpdateDGen()
 {
-	ProcessInputs();
-	BeginFrame();
+	try {
+		ProcessInputs();
+		BeginFrame();
 
-	const unsigned int usec_frame = (1000000 / dgen_hz);
+		const unsigned int usec_frame = (1000000 / dgen_hz);
 
-	newclk = pd_usecs();
+		newclk = pd_usecs();
 
-	// Measure how many frames to do this round.
-	usec += ((newclk - oldclk) & 0x3fffff); // no more than 4 secs
-	frames_todo = (usec / usec_frame);
-	usec %= usec_frame;
-	oldclk = newclk;
+		// Measure how many frames to do this round.
+		usec += ((newclk - oldclk) & 0x3fffff); // no more than 4 secs
+		frames_todo = (usec / usec_frame);
+		usec %= usec_frame;
+		oldclk = newclk;
 
-	if (frames_todo == 0) {
-		// No frame to do yet, relax the CPU until next one.
-		int tmp = (usec_frame - usec);
-		if (tmp > 1000) {
-			// Never sleep for longer than the 50Hz value
-			// so events are checked often enough.
-			if (tmp > (1000000 / 50))
-				tmp = (1000000 / 50);
-			tmp -= 1000;
-			uSleep(tmp);
+		if (frames_todo == 0) {
+			// No frame to do yet, relax the CPU until next one.
+			int tmp = (usec_frame - usec);
+			if (tmp > 1000) {
+				// Never sleep for longer than the 50Hz value
+				// so events are checked often enough.
+				if (tmp > (1000000 / 50))
+					tmp = (1000000 / 50);
+				tmp -= 1000;
+				uSleep(tmp);
+			}
 		}
-	}
-	else
-	{
+		else
+		{
 #ifdef WITH_MUSA
-		s_DGenInstance->md_set_musa(true);
+			s_DGenInstance->md_set_musa(true);
 #endif
 
 #ifdef WITH_STAR
-		s_DGenInstance->md_set_star(true);
+			s_DGenInstance->md_set_star(true);
 #endif
 
-		int pc = s_DGenInstance->m68k_get_pc();
+			int pc = s_DGenInstance->m68k_get_pc();
 
-		// 			for(int i = 0; i < 32 ;++i)
-		// 			{
-		// 				unsigned int instrsize;
-		// 				const char* code = m68ki_disassemble_quick(pc, M68K_CPU_TYPE_68000, &instrsize);
-		// 				SDL_Log("#$%x\t%s", pc, code);
-		// 				pc += instrsize;
-		// 			}
+			// 			for(int i = 0; i < 32 ;++i)
+			// 			{
+			// 				unsigned int instrsize;
+			// 				const char* code = m68ki_disassemble_quick(pc, M68K_CPU_TYPE_68000, &instrsize);
+			// 				SDL_Log("#$%x\t%s", pc, code);
+			// 				pc += instrsize;
+			// 			}
 
-		s_DGenInstance->one_frame(&mdscr, mdpal, &sndi);
-		//pd_sound_write();
+			s_DGenInstance->one_frame(&mdscr, mdpal, &sndi);
+			//pd_sound_write();
+		}
+
+		void* pixels = NULL;
+		int		pitch = 0;
+		SDL_LockTexture(g_BackBuffer, NULL, &pixels, &pitch);
+		memcpy(pixels, mdscr.data, mdscr.h * mdscr.pitch);
+		SDL_UnlockTexture(g_BackBuffer);
+
+		//Write sound buffer to ringbuffer
+		SDL_LockAudioDevice(g_audio_device);
+		cbuf_write(&cbuf, (uint8_t*)sndi.lr, (sndi.len * 4));
+		SDL_UnlockAudioDevice(g_audio_device);
+		EndFrame();
 	}
-
-	void*	pixels = NULL;
-	int		pitch = 0;
-	SDL_LockTexture(g_BackBuffer, NULL, &pixels, &pitch);
-	memcpy(pixels, mdscr.data, mdscr.h * mdscr.pitch);
-	SDL_UnlockTexture(g_BackBuffer);
-
-	//Write sound buffer to ringbuffer
-	SDL_LockAudio();
-	cbuf_write(&cbuf, (uint8_t*)sndi.lr, (sndi.len * 4));
-	SDL_UnlockAudio();
-
-	EndFrame();
+	catch (std::exception e)
+	{
+		std::ofstream fout("log.txt");
+		fout << e.what();
+		fout.close();
+	}
 	return 1;
 }
 
@@ -619,7 +652,11 @@ int Break()
 
 int IsDebugging()
 {
-	return s_DGenInstance->debug_trap;
+	if (s_DGenInstance)
+	{
+		return s_DGenInstance->debug_trap;
+	}
+	return false;
 }
 
 unsigned int* GetProfilerResults(int* instructionCount)
@@ -712,11 +749,31 @@ int GetPaletteEntry(int i)
 }
 
 unsigned char GetVDPRegisterValue(int index)
-{
+{	
 	return s_DGenInstance->vdp.reg[index];
 }
 
 unsigned int Disassemble(unsigned int address, char* text)
 {
 	return s_DGenInstance->debug_m68k_disassemble(address, text);
+}
+
+unsigned char* GetVRAM()
+{
+	unsigned char* vram = s_DGenInstance->vdp.vram;
+	return vram;
+}
+
+void SetVolume(int vol, int isdebugVol = 0)
+{
+	dgen_volume = vol;
+	if (isdebugVol == 1)
+		volValue = vol;
+}
+
+void PauseAudio(int pause)
+{
+	int vol = 100;
+	if (pause) vol = 0;
+	SetVolume(vol);
 }

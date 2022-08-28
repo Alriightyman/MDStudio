@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MDStudioPlus": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

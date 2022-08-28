@@ -16,12 +16,12 @@ namespace MDStudio
 
         private Thread myThread = null;
 
-        public void Init(int windowWidth, int windowHeight, IntPtr parent, bool pal, char region)
+        public void Init(int windowWidth, int windowHeight, IntPtr parent, bool pal, char region, bool useGamepad = false)
         {
             m_Instance = this;
 
             m_DGen = new DGen();
-            m_DGen.Init(windowWidth, windowHeight, parent, pal, (sbyte)region);
+            m_DGen.Init(windowWidth, windowHeight, parent, pal, (sbyte)region, useGamepad);
 
             if(Settings.Default.DGenWindowLocation != null)
             {

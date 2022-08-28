@@ -46,7 +46,7 @@
     <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;DATACONSISTENCYTEST</DefineConstants>
+    <DefineConstants>DATACONSISTENCYTEST</DefineConstants>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <CodeAnalysisRules>
     </CodeAnalysisRules>
@@ -247,6 +247,9 @@
     <Compile Include="Document\Bookmarks\Bookmark.cs" />
     <Compile Include="Document\Bookmarks\BookmarkEventHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="GUI\TextEditorControl.resx">
+      <DependentUpon>TextEditorControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\ASPX.xshd" />
     <EmbeddedResource Include="Resources\BAT-Mode.xshd" />
     <EmbeddedResource Include="Resources\CPP-Mode.xshd" />
@@ -304,6 +307,11 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\68k-Mode.xshd">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\68k-Mode-Dark.xshd">
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>

@@ -1,4 +1,6 @@
-﻿namespace MDStudio
+
+
+namespace MDStudio
 {
     partial class MainForm
     {
@@ -32,6 +34,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newProjectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openProjectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveProjectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
@@ -83,6 +86,7 @@
             this.addLogpointToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.vdpToolsRegistersMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.soundToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.configMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.profilerEnabledMenuOptions = new System.Windows.Forms.ToolStripMenuItem();
@@ -97,8 +101,10 @@
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.treeProjectFiles = new System.Windows.Forms.TreeView();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
-            this.DocumentTabs = new System.Windows.Forms.TabControl();
-            this.newProjectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.DocumentTabs = new MDStudio.UI.MDTabControl();
+            this.DocumentTabContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.removeTabToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             this.menuStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.treeContextMenu.SuspendLayout();
@@ -107,6 +113,8 @@
             this.splitContainer.Panel1.SuspendLayout();
             this.splitContainer.Panel2.SuspendLayout();
             this.splitContainer.SuspendLayout();
+            this.DocumentTabs.SuspendLayout();
+            this.DocumentTabContextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -123,7 +131,7 @@
             this.toolStripMenuItem1});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1172, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1059, 24);
             this.menuStrip1.TabIndex = 3;
             this.menuStrip1.Text = "menuStrip1";
             this.menuStrip1.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.menuStrip1_ItemClicked);
@@ -144,6 +152,13 @@
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "&File";
+            // 
+            // newProjectToolStripMenuItem
+            // 
+            this.newProjectToolStripMenuItem.Name = "newProjectToolStripMenuItem";
+            this.newProjectToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.newProjectToolStripMenuItem.Text = "New Project";
+            this.newProjectToolStripMenuItem.Click += new System.EventHandler(this.newProjectToolStripMenuItem_Click);
             // 
             // openProjectToolStripMenuItem
             // 
@@ -540,7 +555,8 @@
             // toolsToolStripMenuItem1
             // 
             this.toolsToolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.vdpToolsRegistersMenu});
+            this.vdpToolsRegistersMenu,
+            this.soundToolStripMenuItem});
             this.toolsToolStripMenuItem1.Name = "toolsToolStripMenuItem1";
             this.toolsToolStripMenuItem1.Size = new System.Drawing.Size(46, 20);
             this.toolsToolStripMenuItem1.Text = "&Tools";
@@ -551,6 +567,13 @@
             this.vdpToolsRegistersMenu.Size = new System.Drawing.Size(146, 22);
             this.vdpToolsRegistersMenu.Text = "VDP Registers";
             this.vdpToolsRegistersMenu.Click += new System.EventHandler(this.vDPRegistersToolStripMenuItem_Click);
+            // 
+            // soundToolStripMenuItem
+            // 
+            this.soundToolStripMenuItem.Name = "soundToolStripMenuItem";
+            this.soundToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+            this.soundToolStripMenuItem.Text = "Sound";
+            this.soundToolStripMenuItem.Click += new System.EventHandler(this.soundToolStripMenuItem_Click);
             // 
             // optionsToolStripMenuItem
             // 
@@ -607,7 +630,7 @@
             this.toolStripButton1});
             this.toolStrip1.Location = new System.Drawing.Point(0, 24);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(1172, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(1059, 25);
             this.toolStrip1.TabIndex = 4;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -639,9 +662,9 @@
             // 
             this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel});
-            this.statusStrip.Location = new System.Drawing.Point(0, 803);
+            this.statusStrip.Location = new System.Drawing.Point(0, 578);
             this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Size = new System.Drawing.Size(1172, 22);
+            this.statusStrip.Size = new System.Drawing.Size(1059, 22);
             this.statusStrip.TabIndex = 6;
             this.statusStrip.Text = "statusStrip1";
             // 
@@ -658,7 +681,7 @@
             this.treeProjectFiles.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeProjectFiles.Location = new System.Drawing.Point(0, 0);
             this.treeProjectFiles.Name = "treeProjectFiles";
-            this.treeProjectFiles.Size = new System.Drawing.Size(211, 754);
+            this.treeProjectFiles.Size = new System.Drawing.Size(200, 529);
             this.treeProjectFiles.TabIndex = 7;
             this.treeProjectFiles.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeProjectFiles_AfterSelect);
             // 
@@ -675,35 +698,56 @@
             // splitContainer.Panel2
             // 
             this.splitContainer.Panel2.Controls.Add(this.DocumentTabs);
-            this.splitContainer.Size = new System.Drawing.Size(1172, 754);
-            this.splitContainer.SplitterDistance = 211;
+            this.splitContainer.Size = new System.Drawing.Size(1059, 529);
+            this.splitContainer.SplitterDistance = 200;
             this.splitContainer.TabIndex = 8;
             // 
             // DocumentTabs
             // 
-            this.DocumentTabs.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DocumentTabs.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
+            this.DocumentTabs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.DocumentTabs.Controls.Add(this.tabPage1);
             this.DocumentTabs.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.DocumentTabs.Location = new System.Drawing.Point(0, 0);
+            this.DocumentTabs.Location = new System.Drawing.Point(3, 3);
+            this.DocumentTabs.Multiline = true;
             this.DocumentTabs.Name = "DocumentTabs";
             this.DocumentTabs.Padding = new System.Drawing.Point(12, 4);
             this.DocumentTabs.SelectedIndex = 0;
-            this.DocumentTabs.Size = new System.Drawing.Size(957, 754);
+            this.DocumentTabs.Size = new System.Drawing.Size(849, 523);
             this.DocumentTabs.TabIndex = 6;
-            this.DocumentTabs.Selected += new System.Windows.Forms.TabControlEventHandler(this.DocumentTabs_Selected);
             // 
-            // newProjectToolStripMenuItem
+            // DocumentTabContextMenu
             // 
-            this.newProjectToolStripMenuItem.Name = "newProjectToolStripMenuItem";
-            this.newProjectToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.newProjectToolStripMenuItem.Text = "New Project";
-            this.newProjectToolStripMenuItem.Click += new System.EventHandler(this.newProjectToolStripMenuItem_Click);
+            this.DocumentTabContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.removeTabToolStripMenuItem});
+            this.DocumentTabContextMenu.Name = "DocumentTabContextMenu";
+            this.DocumentTabContextMenu.Size = new System.Drawing.Size(136, 26);
+            // 
+            // removeTabToolStripMenuItem
+            // 
+            this.removeTabToolStripMenuItem.Name = "removeTabToolStripMenuItem";
+            this.removeTabToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
+            this.removeTabToolStripMenuItem.Text = "RemoveTab";
+            this.removeTabToolStripMenuItem.Click += new System.EventHandler(this.removeTabToolStripMenuItem_Click);
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Location = new System.Drawing.Point(4, 24);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(841, 495);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "tabPage1";
+            this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1172, 825);
+            this.BackColor = System.Drawing.SystemColors.Control;
+            this.ClientSize = new System.Drawing.Size(1059, 600);
+            this.ContextMenuStrip = this.DocumentTabContextMenu;
             this.Controls.Add(this.splitContainer);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.toolStrip1);
@@ -716,6 +760,7 @@
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.Paint += new System.Windows.Forms.PaintEventHandler(this.MainForm_Paint);
             this.Enter += new System.EventHandler(this.MainForm_Enter);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             this.menuStrip1.ResumeLayout(false);
@@ -729,6 +774,8 @@
             this.splitContainer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
             this.splitContainer.ResumeLayout(false);
+            this.DocumentTabs.ResumeLayout(false);
+            this.DocumentTabContextMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -800,11 +847,15 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         private System.Windows.Forms.ToolStripMenuItem projectToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem propertiesToolStripMenuItem;
-        private System.Windows.Forms.TabControl DocumentTabs;
+        private MDStudio.UI.MDTabControl DocumentTabs;
         private System.Windows.Forms.ToolStripMenuItem saveProjectToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem memoryViewerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem addFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem newProjectToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip DocumentTabContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem removeTabToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem soundToolStripMenuItem;
+        private System.Windows.Forms.TabPage tabPage1;
     }
 }
 

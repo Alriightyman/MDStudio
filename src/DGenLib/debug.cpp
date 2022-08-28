@@ -10,7 +10,8 @@
 // #include <unistd.h>
 #include <stdint.h>
 #include <assert.h>
-
+#include <iomanip>
+#include <sstream>
 #include "dgen.h"
 
 #ifdef WITH_MUSA
@@ -29,10 +30,13 @@ extern "C" {
 #include "system.h"
 #include "debug.h"
 #include "linenoise/linenoise.h"
+#include <SDL_log.h>
+#include <string>
 
 static const char *debug_context_names[] = {
 	"M68K", "Z80", "YM2612", "SN76489"
 };
+
 
 /**
  * Aliases for the various cores.
@@ -730,6 +734,12 @@ void md::debug_rm_bp_m68k(int index)
 		return;
 	}
 
+	std::string log = "Removing Breakpoint at: 0x";
+	std::stringstream stream;
+	stream << std::hex << debug_bp_m68k[index].addr;
+	log += stream.str();
+	SDL_Log(log.c_str());
+
 	// shift everything down one
 	if (index == MAX_BREAKPOINTS - 1) {
 		debug_bp_m68k[index].addr = 0;
@@ -910,22 +920,30 @@ void md::debug_list_wps_z80()
 int md::debug_set_bp_m68k(uint32_t addr)
 {
 	int		slot;
+	std::string log;
+	std::stringstream stream;
 
 	if ((debug_find_bp_m68k(addr)) != -1) {
 		printf("breakpoint already set at this address\n");
-		goto out;
+	}
+	else
+	{
+		slot = debug_next_free_bp_m68k();
+		if (slot == -1) {
+			printf("No space for another break point\n");
+		}
+		else {
+			log = "Setting Breakpoint at: 0x";
+			stream << std::hex << addr;
+			log += stream.str();
+			SDL_Log(log.c_str());
+
+			debug_bp_m68k[slot].addr = addr;
+			debug_bp_m68k[slot].flags = BP_FLAG_USED;
+			printf("m68k breakpoint #%d set @ 0x%08x\n", slot, addr);
+		}
 	}
 
-	slot = debug_next_free_bp_m68k();
-	if (slot == -1) {
-		printf("No space for another break point\n");
-		goto out;
-	}
-
-	debug_bp_m68k[slot].addr = addr;
-	debug_bp_m68k[slot].flags = BP_FLAG_USED;
-	printf("m68k breakpoint #%d set @ 0x%08x\n", slot, addr);
-out:
 	fflush(stdout);
 	return (1);
 }
@@ -952,6 +970,12 @@ void md::debug_clear_bp_m68k(uint32_t addr)
 			shuffleIndex = i + 1;
 		}
 	}
+
+	std::string log = "Clearing all Breakpoints at: 0x";
+	std::stringstream stream;
+	stream << std::hex << addr;
+	log += stream.str();
+	SDL_Log(log.c_str());
 
 	if (shuffleIndex > 0 && shuffleIndex < (MAX_BREAKPOINTS-1))
 	{
@@ -1564,6 +1588,7 @@ int md::debug_cmd_cont(int n_args, char **args)
 	(void) args;
 
 	debug_trap = false;
+	SetVolume(volValue, 0);
 	return (0); // causes debugger to exit
 }
 
@@ -2241,6 +2266,7 @@ void md::debug_leave()
 		return;
 	linenoise_nb_clean();
 	debug_trap = false;
+	SetVolume(volValue,0);
 }
 
 /**
@@ -2258,6 +2284,7 @@ int md::debug_enter()
 
 	if (debug_trap == false) {
 		pd_message("Debug trap.");
+		SetVolume(0,0);
 		debug_trap = true;
 
 		if (debug_context == DBG_CONTEXT_M68K)

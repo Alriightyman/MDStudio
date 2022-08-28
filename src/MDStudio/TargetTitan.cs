@@ -152,6 +152,11 @@ namespace MDStudio
         {
             return 0;
         }
+
+        public override void SetVolume(int vol)
+        {
+            
+        }
     }
 }
 

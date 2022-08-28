@@ -18,4 +18,13 @@ src/UMDK/UMDK.vcxproj.user
 bin/
 obj/
 Debug/
+x64/
+Win32/
 Release/
+*.vcxproj.*
+
+.vscode/
+
+
+#allow filters for vS
+!*.vcproj.Filters

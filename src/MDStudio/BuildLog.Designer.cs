@@ -34,13 +34,13 @@
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnExportRaw = new System.Windows.Forms.Button();
             this.saveLogDialog = new System.Windows.Forms.SaveFileDialog();
-            this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.TabControl1 = new System.Windows.Forms.TabControl();
+            this.ErrorTab = new System.Windows.Forms.TabPage();
+            this.LogTab = new System.Windows.Forms.TabPage();
             this.txtRawLog = new System.Windows.Forms.TextBox();
-            this.tabControl1.SuspendLayout();
-            this.tabPage1.SuspendLayout();
-            this.tabPage2.SuspendLayout();
+            this.TabControl1.SuspendLayout();
+            this.ErrorTab.SuspendLayout();
+            this.LogTab.SuspendLayout();
             this.SuspendLayout();
             // 
             // listErrors
@@ -53,6 +53,7 @@
             this.columnHeader3,
             this.columnHeader2});
             this.listErrors.FullRowSelect = true;
+            this.listErrors.HideSelection = false;
             this.listErrors.Location = new System.Drawing.Point(6, 6);
             this.listErrors.Name = "listErrors";
             this.listErrors.Size = new System.Drawing.Size(599, 190);
@@ -93,40 +94,40 @@
             this.saveLogDialog.Title = "Export log";
             this.saveLogDialog.FileOk += new System.ComponentModel.CancelEventHandler(this.saveLogDialog_FileOk);
             // 
-            // tabControl1
+            // TabControl1
             // 
-            this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.TabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tabControl1.Controls.Add(this.tabPage1);
-            this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Location = new System.Drawing.Point(12, 12);
-            this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(619, 228);
-            this.tabControl1.TabIndex = 2;
+            this.TabControl1.Controls.Add(this.LogTab);
+            this.TabControl1.Controls.Add(this.ErrorTab);
+            this.TabControl1.Location = new System.Drawing.Point(12, 12);
+            this.TabControl1.Name = "TabControl1";
+            this.TabControl1.SelectedIndex = 0;
+            this.TabControl1.Size = new System.Drawing.Size(619, 228);
+            this.TabControl1.TabIndex = 2;
             // 
-            // tabPage1
+            // ErrorTab
             // 
-            this.tabPage1.Controls.Add(this.listErrors);
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(611, 202);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "Errors";
-            this.tabPage1.UseVisualStyleBackColor = true;
+            this.ErrorTab.Controls.Add(this.listErrors);
+            this.ErrorTab.Location = new System.Drawing.Point(4, 22);
+            this.ErrorTab.Name = "ErrorTab";
+            this.ErrorTab.Padding = new System.Windows.Forms.Padding(3);
+            this.ErrorTab.Size = new System.Drawing.Size(611, 202);
+            this.ErrorTab.TabIndex = 0;
+            this.ErrorTab.Text = "Errors";
+            this.ErrorTab.UseVisualStyleBackColor = true;
             // 
-            // tabPage2
+            // LogTab
             // 
-            this.tabPage2.Controls.Add(this.txtRawLog);
-            this.tabPage2.Location = new System.Drawing.Point(4, 22);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(611, 202);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Raw Log";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.LogTab.Controls.Add(this.txtRawLog);
+            this.LogTab.Location = new System.Drawing.Point(4, 22);
+            this.LogTab.Name = "LogTab";
+            this.LogTab.Padding = new System.Windows.Forms.Padding(3);
+            this.LogTab.Size = new System.Drawing.Size(611, 202);
+            this.LogTab.TabIndex = 1;
+            this.LogTab.Text = "Raw Log";
+            this.LogTab.UseVisualStyleBackColor = true;
             // 
             // txtRawLog
             // 
@@ -146,7 +147,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(643, 281);
-            this.Controls.Add(this.tabControl1);
+            this.Controls.Add(this.TabControl1);
             this.Controls.Add(this.btnExportRaw);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "BuildLog";
@@ -157,10 +158,10 @@
             this.VisibleChanged += new System.EventHandler(this.BuildLog_Shown);
             this.Move += new System.EventHandler(this.BuildLog_Move);
             this.Resize += new System.EventHandler(this.BuildLog_Resize);
-            this.tabControl1.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
-            this.tabPage2.ResumeLayout(false);
-            this.tabPage2.PerformLayout();
+            this.TabControl1.ResumeLayout(false);
+            this.ErrorTab.ResumeLayout(false);
+            this.LogTab.ResumeLayout(false);
+            this.LogTab.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -173,9 +174,9 @@
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.Button btnExportRaw;
         private System.Windows.Forms.SaveFileDialog saveLogDialog;
-        private System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.TabPage tabPage1;
-        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.TabControl TabControl1;
+        private System.Windows.Forms.TabPage ErrorTab;
+        private System.Windows.Forms.TabPage LogTab;
         private System.Windows.Forms.TextBox txtRawLog;
     }
 }

@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+
+<SyntaxDefinition name = "ASM68k-Dark" extensions = ".s;.asm">
+	<Environment>
+		<Default      color = "#c7c7c7" bgcolor = "#1e1e1e"/>
+		<Selection    color = "White" bgcolor = "Purple"/>
+		<VRuler       color = "DimGray"/>
+		<InvalidLines color = "Red"/>
+		<CaretMarker  color = "White"/>
+
+		<LineNumbers  color = "#c7c7c7" bgcolor = "#1e1e1e"/>
+
+		<FoldLine     color = "Cyan" bgcolor = "Black"/>
+		<FoldMarker   color = "Cyan" bgcolor = "White"/>
+		<SelectedFoldLine color = "Green" bgcolor="Black"/>
+
+		<EOLMarkers   color = "#E0E0E5"/>
+		<SpaceMarkers color = "#E0E0E5"/>
+		<TabMarkers   color = "#E0E0E5"/>
+	</Environment>
+	
+	<Properties>
+    <Property name="LineComment" value=";"/>
+    <Property name="BlockCommentBegin" value="/*"/>
+    <Property name="BlockCommentEnd" value="*/"/>
+  </Properties>	
+	
+	<Digits name = "Digits" bold = "false" italic = "false" color = "#b5ce9a"/>
+  <RuleSets>
+    <RuleSet ignorecase = "true">
+
+      <Delimiters>~!%^*()-+=|\/{}[]:;"'&lt;&gt; , .?</Delimiters>
+
+      <Span name = "LineComment" bold = "true" italic = "false" color = "Green" stopateol = "true">
+        <Begin>;</Begin>
+      </Span>
+
+      <Span name = "IncludeStatement" rule = "IncludeStatemetSet" bold = "false" italic = "false" color = "Black" stopateol = "true" escapecharacter="\">
+        <Begin startofline="true" color = "Blue">#include</Begin>
+      </Span>
+
+      <MarkPrevious bold = "true" italic = "false" color = "Red">:</MarkPrevious>
+      
+      <KeyWords name = "PreprocessorDirectives" bold="false" italic="false" color="#c586c0">
+        <Key word = "include" />
+        <Key word = "even" />
+      </KeyWords>
+
+      <KeyWords name = "PreprocessorDirectives" bold="true" italic="false" color="#c586c0">
+		  <Key word = "vdpCommDelta"/>		  
+      </KeyWords>
+
+       <KeyWords name = "Instructions" bold="true" italic="false" color="#569cd6">
+         <Key word = "add" />
+		 <Key word = "addi" />
+		 <Key word = "adda" />
+         <Key word = "addq" />
+         <Key word = "and" />
+         <Key word = "andi" />
+		 <Key word = "asl" />
+		 <Key word = "asr" />
+         <Key word = "beq" />
+         <Key word = "bne" />
+		 <Key word = "bge" />
+		 <Key word = "bgt" />
+		 <Key word = "ble" />
+		 <Key word = "blo" />
+		 <Key word = "bls" />
+		 <Key word = "blt" />
+		 <Key word = "bcs" />
+		 <Key word = "bcc" />
+		 <Key word = "bhi" />
+		 <Key word = "bhs" />
+		 <Key word = "bmi" />
+		 <Key word = "bpl" />
+		 <Key word = "bra" />
+         <Key word = "bsr" />
+		 <Key word = "bclr" />
+         <Key word = "bset" />
+         <Key word = "btst" />
+         <Key word = "clr" />
+         <Key word = "cmp" />
+         <Key word = "cmpa" />
+         <Key word = "cmpi" />
+         <Key word = "dbf" />
+         <Key word = "dbne" />
+         <Key word = "dc" />
+         <Key word = "div" />
+		 <Key word = "eor" />
+		 <Key word = "eori" />
+		 <Key word = "exg" />
+		 <Key word = "ext" />
+		 <Key word = "jmp" />
+		 <Key word = "jsr" />
+         <Key word = "lea" />
+         <Key word = "lsl" />
+         <Key word = "lsr" />
+         <Key word = "move" />
+		 <Key word = "movea" />
+         <Key word = "movem" />
+         <Key word = "moveq" />
+         <Key word = "mulu" />
+         <Key word = "muls" />
+		 <Key word = "neg" />
+		 <Key word = "nop" />
+		 <Key word = "not" />
+		 <Key word = "or" />
+		 <Key word = "ori" />
+		 <Key word = "sgt" />
+		 <Key word = "sle" />
+		 <Key word = "smi" />
+		 <Key word = "st" />
+		 <Key word = "swap" />
+		 <Key word = "rol" />
+		 <Key word = "ror" />
+		 <Key word = "rs" />
+         <Key word = "rte" />
+         <Key word = "rts" />
+         <Key word = "stop" />
+         <Key word = "sub" />
+		 <Key word = "subi" />
+		 <Key word = "subq" />
+         <Key word = "tst" />
+      </KeyWords>
+
+      <KeyWords name = "Registers" bold="false" italic="false" color="Red">
+        <Key word = "d0" />
+        <Key word = "d1" />
+        <Key word = "d2" />
+        <Key word = "d3" />
+        <Key word = "d4" />
+        <Key word = "d5" />
+        <Key word = "d6" />
+        <Key word = "d7" />
+        <Key word = "a0" />
+        <Key word = "a1" />
+        <Key word = "a2" />
+        <Key word = "a3" />
+        <Key word = "a4" />
+        <Key word = "a5" />
+        <Key word = "a6" />
+        <Key word = "a7" />
+      </KeyWords>		
+    </RuleSet>
+
+    <RuleSet name = "IncludeStatemetSet" ignorecase = "false">
+      <Delimiters>&lt;&gt;~!@%^*()-+=|\#/{}[]:;"' ,	.?</Delimiters>
+      <Span name = "LocalFile" bold = "false" italic = "false" color = "#ce9178" stopateol = "true" escapecharacter="\">
+        <Begin>"</Begin>
+        <End>"</End>
+      </Span>
+      <Span name = "GlobalFile" bold = "false" italic = "false" color = "Red" stopateol = "true" escapecharacter="\">
+        <Begin>&lt;</Begin>
+        <End>&gt;</End>
+      </Span>
+    </RuleSet>
+  </RuleSets>
+</SyntaxDefinition>
+

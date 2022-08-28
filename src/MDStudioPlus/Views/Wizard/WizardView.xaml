@@ -1,0 +1,19 @@
+﻿<NavigationWindow x:Class="MDStudioPlus.Views.WizardView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:MDStudioPlus.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance viewModels:WelcomeScreenViewModel, IsDesignTimeCreatable=True}"
+        Foreground="{DynamicResource WindowForeground}" Background="{DynamicResource HeaderBackground}"
+        Height="670" Width="850" 
+        MinHeight="670" MinWidth="850"
+        WindowStyle="None" ShowsNavigationUI="False">
+    
+    <WindowChrome.WindowChrome>
+        <WindowChrome x:Name="chrome" ResizeBorderThickness="8" 
+                          CornerRadius="0" GlassFrameThickness="0" NonClientFrameEdges="None" />
+    </WindowChrome.WindowChrome>
+
+</NavigationWindow>

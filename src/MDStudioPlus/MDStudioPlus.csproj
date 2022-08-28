@@ -1,0 +1,167 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+	  
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\mdstudio_mjd_icon.ico</ApplicationIcon>
+    <Platforms>AnyCPU;x64</Platforms>
+    <StartupObject>MDStudioPlus.App</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>	
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+	  <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>	
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+	  <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	  <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	  <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\BackArrow.png" />
+    <None Remove="Resources\BookmarkToggle.png" />
+    <None Remove="Resources\Breakpoint.png" />
+    <None Remove="Resources\BreakpointConditional.png" />
+    <None Remove="Resources\DirectoryIcon.png" />
+    <None Remove="Resources\DisabledBreakpoint.png" />
+    <None Remove="Resources\DisabledBreakpointConditional.png" />
+    <None Remove="Resources\FileIcon.png" />
+    <None Remove="Resources\ForwardArrow.png" />
+    <None Remove="Resources\MDStudio.png" />
+    <None Remove="Resources\ProjectIcon.png" />
+    <None Remove="Resources\Search\replaceall.png" />
+    <None Remove="Resources\Search\replacenext.png" />
+    <None Remove="Resources\SolutionIcon.png" />
+    <None Remove="Resources\SyntaxHighlighting\Asm68k.xshd" />
+    <None Remove="Resources\SyntaxHighlighting\Asm68KDark.xshd" />
+    <None Remove="Resources\Toolbar\AudioState.png" />
+    <None Remove="Resources\Toolbar\AudioStateMuted.png" />
+    <None Remove="Resources\Toolbar\BackArrow.png" />
+    <None Remove="Resources\Toolbar\BreakAll.png" />
+    <None Remove="Resources\Toolbar\ForwardArrow.png" />
+    <None Remove="Resources\Toolbar\NewProject.png" />
+    <None Remove="Resources\Toolbar\Open.png" />
+    <None Remove="Resources\Toolbar\Play.png" />
+    <None Remove="Resources\Toolbar\Restart.png" />
+    <None Remove="Resources\Toolbar\Save.png" />
+    <None Remove="Resources\Toolbar\SaveAll.png" />
+    <None Remove="Resources\Toolbar\StepInto.png" />
+    <None Remove="Resources\Toolbar\StepOut.png" />
+    <None Remove="Resources\Toolbar\StepOver.png" />
+    <None Remove="Resources\Toolbar\Stop.png" />
+    <None Remove="Resources\UnhealthyBreakpoint.png" />
+    <None Remove="Views\MDStudio.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.70.2" />
+    <PackageReference Include="Dirkster.MLib" Version="1.3.1.2" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\BackArrow.png" />
+    <Resource Include="Resources\BookmarkToggle.png" />
+    <Resource Include="Resources\Breakpoint.png" />
+    <Resource Include="Resources\BreakpointConditional.png" />
+    <Resource Include="Resources\DirectoryIcon.png" />
+    <Resource Include="Resources\DisabledBreakpoint.png" />
+    <Resource Include="Resources\DisabledBreakpointConditional.png" />
+    <Resource Include="Resources\FileIcon.png" />
+    <Resource Include="Resources\ForwardArrow.png" />
+    <Resource Include="Resources\MDStudio.png" />
+    <Resource Include="Resources\ProjectIcon.png" />
+    <Resource Include="Resources\replaceall.png" />
+    <Resource Include="Resources\replacenext.png" />
+    <Resource Include="Resources\SolutionIcon.png" />
+    <Resource Include="Resources\SyntaxHighlighting\Asm68kDark.xshd" />
+    <Resource Include="Resources\SyntaxHighlighting\Asm68k.xshd" />
+    <Resource Include="Resources\Toolbar\AudioState.png" />
+    <Resource Include="Resources\Toolbar\AudioStateMuted.png" />
+    <Resource Include="Resources\Toolbar\BackArrow.png" />
+    <Resource Include="Resources\Toolbar\BreakAll.png" />
+    <Resource Include="Resources\Toolbar\ForwardArrow.png" />
+    <Resource Include="Resources\Toolbar\NewProject.png" />
+    <Resource Include="Resources\Toolbar\Open.png" />
+    <Resource Include="Resources\Toolbar\Play.png" />
+    <Resource Include="Resources\Toolbar\Restart.png" />
+    <Resource Include="Resources\Toolbar\Save.png" />
+    <Resource Include="Resources\Toolbar\SaveAll.png" />
+    <Resource Include="Resources\Toolbar\StepInto.png" />
+    <Resource Include="Resources\Toolbar\StepOut.png" />
+    <Resource Include="Resources\Toolbar\StepOver.png" />
+    <Resource Include="Resources\Toolbar\Stop.png" />
+    <Resource Include="Resources\UnhealthyBreakpoint.png" />
+    <Resource Include="Views\MDStudio.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\Source Template\hello_world.s">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+	<ItemGroup>
+		<BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
+			<Visible>False</Visible>
+			<ProductName>Microsoft .NET Framework 4.7.2 %28x86 and x64%29</ProductName>
+			<Install>true</Install>
+		</BootstrapperPackage>
+		<BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+			<Visible>False</Visible>
+			<ProductName>.NET Framework 3.5 SP1</ProductName>
+			<Install>false</Install>
+		</BootstrapperPackage>
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Include="Resources\mdstudio_mjd_icon.ico" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\3rdparty\AvalonEdit\ICSharpCode.AvalonEdit\ICSharpCode.AvalonEdit.csproj" />
+	  <ProjectReference Include="..\DGenInterface\DGenInterface.vcxproj" />
+	  <ProjectReference Include="..\GenesisPlusGXInterface\GenesisPlusGXInterface.vcxproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Resources\Search\" />
+	</ItemGroup>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	  <Exec Command="copy /Y &quot;$(SolutionDir)Build\$(Configuration)\SDL2.dll&quot; &quot;$(TargetDir)SDL2.dll&quot;" />
+	</Target>
+</Project>
