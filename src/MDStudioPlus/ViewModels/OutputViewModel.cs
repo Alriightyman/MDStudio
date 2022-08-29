@@ -10,7 +10,7 @@ namespace MDStudioPlus.ViewModels
     internal class OutputViewModel : ToolViewModel
     {
         #region fields
-        public const string ToolContentId = "FileStatsTool";
+        public const string ToolContentId = "OutputTool";
         private DateTime _lastModified;
         private long _fileSize;
         private string _FileName;

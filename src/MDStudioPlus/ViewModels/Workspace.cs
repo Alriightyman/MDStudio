@@ -140,6 +140,7 @@ namespace MDStudioPlus.ViewModels
         private RegistersViewModel registersViewModel;
         private MemoryViewModel memoryViewModel;
         private BreakpointsViewModel breakpointsViewModel;
+        private LayoutViewModel layout;
 
         // commands
         private RelayCommand openProjectSolutionCommand;
@@ -277,6 +278,42 @@ namespace MDStudioPlus.ViewModels
         }
         #endregion
 
+        /// <summary>
+        /// Get a path to the directory where the application
+        /// can persist/load user data on session exit and re-start.
+        /// </summary>
+        public string DirAppData
+        {
+            get
+            {
+                string dirPath = Solution.SolutionPath + "/.mdstudio";
+                //string dirPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
+                //                                 System.IO.Path.DirectorySeparatorChar + "MDStudio";
+
+                try
+                {
+                    if (System.IO.Directory.Exists(dirPath) == false)
+                    {
+                        var di = System.IO.Directory.CreateDirectory(dirPath);
+                        di.Attributes = FileAttributes.Hidden;
+                    }                    
+                }
+                catch
+                {
+                }
+
+                return dirPath;
+            }
+        }
+      
+        public string LayoutFileName
+        {
+            get
+            {
+                return IsDebugging ? "DebugLayout.config" : "Layout.config";
+            }
+        }
+
         public TextEditorOptions CodeEditorOptions
         {
             get => ConfigViewModel.EditorOptions;
@@ -373,23 +410,15 @@ namespace MDStudioPlus.ViewModels
                 isDebugging = value;
                 RaisePropertyChanged(nameof(isDebugging));
 
-                if(isDebugging)
+                if(value)
                 {
                     StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackgroundDebugging"];
-                    Explorer.IsVisible = false;
-                    Registers.IsVisible = true;
-                    Registers.IsSelected = true;
-                    Memory.IsVisible = true;
-                    Memory.IsSelected = true;
-                    Errors.IsVisible = false;
+                    Layout.LoadLayoutCommand.Execute(((MainWindow)Application.Current.MainWindow).DockManager);
                 }
                 else
                 {
                     StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
-                    Explorer.IsVisible = true;
-                    Registers.IsVisible = false;
-                    Memory.IsVisible = false;
-                    Errors.IsVisible = true;                    
+                    Layout.LoadLayoutCommand.Execute(((MainWindow)Application.Current.MainWindow).DockManager);
                 }
 
             }
@@ -541,6 +570,20 @@ namespace MDStudioPlus.ViewModels
                     output = new OutputViewModel();
 
                 return output;
+            }
+        }
+
+        /// <summary>
+        /// Expose command to load/save AvalonDock layout on application startup and shut-down.
+        /// </summary>
+        public LayoutViewModel Layout
+        {
+            get
+            {
+                if (this.layout == null)
+                    this.layout = new LayoutViewModel();
+
+                return this.layout;
             }
         }
 
@@ -1900,7 +1943,12 @@ namespace MDStudioPlus.ViewModels
 
                 // Ignore document changed events
                 bool watchingEvents = (sourceWatcher == null) || sourceWatcher.EnableRaisingEvents;
-                sourceWatcher.Changed -= onFileChanged;
+
+                if (sourceWatcher != null)
+                {
+                    sourceWatcher.Changed -= onFileChanged;
+                }
+
                 sourceWatcher = null;
 
                 sourceWatcher = new FileSystemWatcher();
@@ -2131,6 +2179,8 @@ namespace MDStudioPlus.ViewModels
 
                 ActiveDocument?.RemoveAllMarkers();
                 ActiveDocument?.Refresh();
+
+                Layout.SaveLayoutCommand.Execute(((MainWindow)Application.Current.MainWindow).DockManager);
 
                 IsDebugging = false;
                 IsBreakPointHit = false;

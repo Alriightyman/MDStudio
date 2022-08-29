@@ -16,7 +16,7 @@ namespace MDStudioPlus.ViewModels
         #endregion
         
         #region fields
-        public const string ToolContentId = "FileStatsTool";
+        public const string ToolContentId = "Explorer";
         private DateTime lastModified;
         private long fileSize;
         private string fileName;

@@ -660,17 +660,19 @@
             </StackPanel>
         </Grid>
 
-        <DockingManager Grid.Row="1"
+        <DockingManager x:Name="DockManager" Grid.Row="1"
                         AutoHideDelay="0"
                         ActiveContent="{Binding ActiveDocument, Mode=TwoWay, Converter={StaticResource ActiveDocumentConverter}}"
                         AnchorablesSource="{Binding Tools}"
                         DocumentsSource="{Binding Files}"
-                        Theme="{Binding SelectedTheme.Item2}">
+                        Theme="{Binding SelectedTheme.Item2}"
+                        behaviors:LayoutSerializer.SaveLayoutCommand="{Binding Layout.SaveLayoutCommand}"
+                        behaviors:LayoutSerializer.LoadLayoutCommand="{Binding Layout.LoadLayoutCommand}">
 
             <DockingManager.LayoutItemTemplateSelector>
                 <local:PanesTemplateSelector>
                     <!--Code Editor-->
-                    <local:PanesTemplateSelector.FileViewTemplate>
+                    <local:PanesTemplateSelector.FileViewTemplate >
                         <DataTemplate>
                             <Grid>
                                 <editor:CodeEditor x:Name="codeEditor" 
@@ -1205,6 +1207,7 @@
                     </local:PanesStyleSelector.FileStyle>
                 </local:PanesStyleSelector>
             </DockingManager.LayoutItemContainerStyleSelector>
+            
             <DockingManager.LayoutUpdateStrategy>
                 <local:LayoutInitializer />
             </DockingManager.LayoutUpdateStrategy>

@@ -13,9 +13,10 @@ namespace MDStudioPlus.ViewModels
     class MemoryViewModel : ToolViewModel
     {
         private int numberCols = 16;
-
+        public const string ToolContentId = "MemoryTool";
         public MemoryViewModel() : base("Memory Viewer")
         {
+            ContentId = ToolContentId;
             memory = new ObservableCollection<MemoryItem>();
             for(int i = 0; i < (0x10000 / numberCols); i++)
             {

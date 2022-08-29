@@ -1,4 +1,4 @@
-﻿using AvalonDock.Controls;
+using AvalonDock.Controls;
 using AvalonDock.Layout;
 using MDStudioPlus.ViewModels;
 using System;
@@ -22,7 +22,7 @@ namespace MDStudioPlus
 
             anchorableToShow.AutoHideWidth = 256;
             anchorableToShow.AutoHideHeight = 128;
-            anchorableToShow.CanShowOnHover = false;            
+            anchorableToShow.CanShowOnHover = false;
 
             if (anchorableToShow.Content is ExplorerViewModel)
             {

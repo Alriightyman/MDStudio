@@ -10,6 +10,8 @@ namespace MDStudioPlus.ViewModels
 {
     internal class RegistersViewModel : ToolViewModel
     {
+        public const string ToolContentId = "RegistersTool";
+
         #region 68K Registers
         private ObservableCollection<Register> dataRegisters = new ObservableCollection<Register>();
         public ObservableCollection<Register> DataRegisters
@@ -96,7 +98,7 @@ namespace MDStudioPlus.ViewModels
         public RegistersViewModel() : base("Registers")
         {
             IsVisible = false;
-
+            ContentId = ToolContentId;
             for (int i = 0; i < 8; i++)
             {
                 Register d = new Register() { Name = $"D{i}", Value = 0.ToString("X8") };

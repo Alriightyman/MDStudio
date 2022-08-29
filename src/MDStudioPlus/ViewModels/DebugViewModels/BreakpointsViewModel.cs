@@ -11,7 +11,7 @@ namespace MDStudioPlus.ViewModels
     public class BreakpointsViewModel : ToolViewModel
     {
         private ObservableCollection<Breakpoint> breakpoints = new ObservableCollection<Breakpoint>();
-        public const string ToolContentId = "FileStatsTool";
+        public const string ToolContentId = "BreakpointsTool";
         private DateTime _lastModified;
         private long _fileSize;
         private string _FileName;

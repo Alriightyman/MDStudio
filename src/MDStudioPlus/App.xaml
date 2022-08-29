@@ -16,6 +16,8 @@
                     <BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
                     <converters:ActiveDocumentConverter x:Key="ActiveDocumentConverter" />
                     <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+                    <converters:MultiCommandConverter x:Key="MultiCommandConverter"/>
+                    <converters:MultiParameterConverter x:Key="MultiParameterConverter"/>
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
