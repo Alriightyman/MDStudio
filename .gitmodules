@@ -12,3 +12,6 @@
 [submodule "3rdparty/AvalonEdit"]
 	path = 3rdparty/AvalonEdit
 	url = https://github.com/Alriightyman/AvalonEdit.git
+[submodule "3rdparty/HexView.Wpf"]
+	path = 3rdparty/HexView.Wpf
+	url = https://github.com/Alriightyman/HexView.Wpf.git
