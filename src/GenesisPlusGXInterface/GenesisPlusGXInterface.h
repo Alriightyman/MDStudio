@@ -102,6 +102,20 @@ namespace GenesisPlusGXInterface {
 		void SetVolume(int vol, bool isSetDebug);
 		void PauseAudio(bool pause);
 		unsigned char* GetVRAM();
+		unsigned char* GetCRAM();
+		unsigned char* Get68kMemory();
+
+		void UpdateDebug();
+
+
+		void SetVRAM(unsigned char* v_ram) { vram = v_ram; }
+		void SetCRAM(unsigned char* c_ram) { cram = c_ram; }
+		void SetMem(unsigned char* mem68k) { mem = mem68k; }
+
+	private:
+		unsigned char* vram;
+		unsigned char* cram;
+		unsigned char* mem;
 
 	};
 }

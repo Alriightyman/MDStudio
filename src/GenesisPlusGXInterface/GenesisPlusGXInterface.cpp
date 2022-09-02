@@ -14,6 +14,7 @@ using namespace msclr::interop;
 
 GenesisPlusGXInterface::GenesisPlusGX::GenesisPlusGX()
 {
+
 }
 
 GenesisPlusGXInterface::GenesisPlusGX::~GenesisPlusGX()
@@ -227,7 +228,27 @@ unsigned int GenesisPlusGXInterface::GenesisPlusGX::Disassemble(unsigned int add
 
 unsigned char* GenesisPlusGXInterface::GenesisPlusGX::GetVRAM()
 {
-	return ::GetVRAM();
+	return vram;
+}
+
+unsigned char* GenesisPlusGXInterface::GenesisPlusGX::GetCRAM()
+{
+	return cram;
+}
+
+unsigned char* GenesisPlusGXInterface::GenesisPlusGX::Get68kMemory()
+{
+	return mem;
+}
+
+void GenesisPlusGXInterface::GenesisPlusGX::UpdateDebug()
+{
+	unsigned char* old_mem = mem;
+	mem = ::Get68kMemory();
+	vram = ::GetVRAM();
+	cram = ::GetCRAM();
+
+	delete[] old_mem;
 }
 
 array<unsigned int>^ GenesisPlusGXInterface::GenesisPlusGX::CleanupBreakpoints()

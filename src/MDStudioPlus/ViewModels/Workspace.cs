@@ -1,3 +1,4 @@
+using AvalonDock.Layout;
 using AvalonDock.Themes;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.CodeCompletion;
@@ -38,6 +39,13 @@ namespace MDStudioPlus.ViewModels
 {
     internal class Workspace : ViewModelBase
     {
+        public LayoutRoot DockLayout
+        {
+            get; 
+            set;
+        }
+
+
         #region Enumerations
         /// <summary>
         /// Editor states
@@ -287,8 +295,6 @@ namespace MDStudioPlus.ViewModels
             get
             {
                 string dirPath = Solution.SolutionPath + "/.mdstudio";
-                //string dirPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
-                //                                 System.IO.Path.DirectorySeparatorChar + "MDStudio";
 
                 try
                 {
@@ -410,15 +416,18 @@ namespace MDStudioPlus.ViewModels
                 isDebugging = value;
                 RaisePropertyChanged(nameof(isDebugging));
 
-                if(value)
+                // need to clear files because the layouts will reload and fill this
+                if (value)
                 {
-                    StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackgroundDebugging"];
-                    Layout.LoadLayoutCommand.Execute(((MainWindow)Application.Current.MainWindow).DockManager);
+                    StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackgroundDebugging"];                    
+                    //files.Clear();
+                    //Layout.LoadDebugLayout();
                 }
                 else
                 {
                     StatusBackgroundColor = (SolidColorBrush)Application.Current.Resources["StatusBarBackground"];
-                    Layout.LoadLayoutCommand.Execute(((MainWindow)Application.Current.MainWindow).DockManager);
+                    //files.Clear();
+                    //Layout.RestoreLastLayout();
                 }
 
             }
@@ -1262,8 +1271,6 @@ namespace MDStudioPlus.ViewModels
                     UpdateRegisterView(currentPC);
                     UpdateMemoryView();
 
-                    // TODO: Update Call Stack
-
                     if (breakMode == BreakMode.StepOver)
                     {
                         //If hit desired step over address
@@ -1537,12 +1544,8 @@ namespace MDStudioPlus.ViewModels
 
         private void UpdateMemoryView()
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {               
-                byte[] memBuffer = new byte[0x10000];
-                target.ReadMemory(0xFFFF0000, 0x10000, memBuffer);
-                Memory.UpdateMemory(memBuffer);
-            });
+            byte[] memBuffer = target.Get68kMemory();
+            Memory.UpdateMemory(memBuffer);
         }
         #endregion
 
@@ -1881,6 +1884,8 @@ namespace MDStudioPlus.ViewModels
                 Action action = () => Save(file);
                 System.Windows.Application.Current.Dispatcher.Invoke((action));
             }
+
+            isDirty = false;
         }
 
         internal void Save(FileViewModel fileToSave, bool saveAsFlag = false)
@@ -2391,6 +2396,7 @@ namespace MDStudioPlus.ViewModels
             }
 
             ActiveDocument = null;
+            ActiveDocument = files.FirstOrDefault();
         }
 
         private void UpdateNavigationList()
@@ -2481,6 +2487,13 @@ namespace MDStudioPlus.ViewModels
                 IsBuilding = false;
             }));
 
+            if (!File.Exists(solution.BinaryPath))
+            { 
+                errorCount++;
+                Output.BuildOutput += $"{solution.BinaryPath} not found.\n";
+            }    
+
+
             // display success or fail message
             if (errorCount == 0)
             {
@@ -2561,13 +2574,21 @@ namespace MDStudioPlus.ViewModels
                     state = State.Running;
                     
                     target.LoadBinary(solution.BinaryPath);
+                    
                     Application.Current.Dispatcher.Invoke(new Action(() =>
                     {
+
                         breakpointsViewModel.Breakpoints.Clear();
+                        var oldBreakpoints = breakpoints.ToList();
+
+                        ActiveDocument?.ClearBreakpoints();
+                        ActiveDocument?.RemoveAllMarkers();
 
                         //  Lookup and set initial breakpoints
-                        for (int i = 0; i < breakpoints.Count; i++)
+                        for (int i = 0; i < oldBreakpoints.Count; i++)
                         {
+                            breakpoints.Add(oldBreakpoints[i]);
+
                             breakpoints[i].Address = debugSymbols.GetAddress(breakpoints[i].Filename, breakpoints[i].Line);
                             SetTargetBreakpoint(breakpoints[i].Address);
 
@@ -2587,18 +2608,27 @@ namespace MDStudioPlus.ViewModels
                                     {
                                         if (ActiveDocument.IsBreakpointSet(line))
                                         {
-                                            ActiveDocument?.ToggleBreakpoint(line);
+                                            ActiveDocument.ToggleBreakpoint(line);
                                         }
                                     }
 
                                     //Set real breakpoint
                                     if (!ActiveDocument.IsBreakpointSet(fileLine.LineTo))
                                     {
-                                        ActiveDocument?.ToggleBreakpoint(fileLine.LineTo);
+                                        ActiveDocument.ToggleBreakpoint(fileLine.LineTo);
                                     }
                                 }
                             }
-                            
+
+                            // verify the breakpoint is set on the current document
+                            else if (breakpoints[i].Filename.Equals(ActiveDocument?.FilePath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (!ActiveDocument.IsBreakpointSet(breakpoints[i].Line))
+                                {
+                                    ActiveDocument.ToggleBreakpoint(breakpoints[i].Line);
+                                }
+                            }
+                             
                             breakpointsViewModel.Breakpoints.Add(breakpoints[i]);
                         }
 

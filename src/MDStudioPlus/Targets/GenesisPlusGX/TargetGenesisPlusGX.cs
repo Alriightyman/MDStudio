@@ -19,7 +19,7 @@ namespace MDStudioPlus.Targets
             }
             catch (Exception e)
             {
-                throw (e);
+                throw;
             }
         }
 
@@ -229,6 +229,21 @@ namespace MDStudioPlus.Targets
         public override uint[] CleanupBreakpoints()
         {
             return GenesisPlusGxThread.GetGenPlusGX().CleanupBreakpoints();
+        }
+
+        public override byte[] Get68kMemory()
+        {
+            byte[] memory = new byte[0x10000];
+            unsafe
+            {                                
+                var mem68k = GenesisPlusGxThread.GetGenPlusGX().Get68kMemory();
+                if (mem68k != null)
+                {
+                    System.Runtime.InteropServices.Marshal.Copy(new System.IntPtr(mem68k), memory, 0, memory.Length);
+                }
+            }           
+
+            return memory;
         }
     }
 }

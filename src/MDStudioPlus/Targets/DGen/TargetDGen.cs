@@ -230,5 +230,19 @@ namespace MDStudioPlus.Targets
         {
             return null;
         }
+
+        public override byte[] Get68kMemory()
+        {
+            byte[] memory = new byte[0x10000];
+            unsafe
+            {
+                fixed (byte* ptr = memory)
+                {
+                    DGenThread.GetDGen().ReadMemory(0xFFFF0000, 0x10000, ptr);
+                }
+            }
+
+            return memory;
+        }
     }
 }

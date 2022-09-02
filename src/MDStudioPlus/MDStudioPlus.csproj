@@ -155,6 +155,7 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\..\3rdparty\AvalonEdit\ICSharpCode.AvalonEdit\ICSharpCode.AvalonEdit.csproj" />
+	  <ProjectReference Include="..\..\3rdparty\HexView.Wpf\HexView.Wpf\HexView.Wpf.csproj" />
 	  <ProjectReference Include="..\DGenInterface\DGenInterface.vcxproj" />
 	  <ProjectReference Include="..\GenesisPlusGXInterface\GenesisPlusGXInterface.vcxproj" />
 	</ItemGroup>

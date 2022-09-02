@@ -533,8 +533,6 @@ int UpdateDGen()
 
 			s_DGenInstance->one_frame(&mdscr, mdpal, &sndi);
 			//pd_sound_write();
-		}
-
 		void* pixels = NULL;
 		int		pitch = 0;
 		SDL_LockTexture(g_BackBuffer, NULL, &pixels, &pitch);
@@ -545,6 +543,8 @@ int UpdateDGen()
 		SDL_LockAudioDevice(g_audio_device);
 		cbuf_write(&cbuf, (uint8_t*)sndi.lr, (sndi.len * 4));
 		SDL_UnlockAudioDevice(g_audio_device);
+		}
+
 		EndFrame();
 	}
 	catch (std::exception e)

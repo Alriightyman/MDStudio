@@ -8,11 +8,17 @@
 		<Span color="Comment">
 			<Begin>;</Begin>
 		</Span>
-
+			
 		<Span color="String">
 			<Begin>"</Begin>
 			<End>"</End>
 		</Span>
+
+		<Keywords foreground="Pink" fontWeight="bold">
+			<Word>include</Word>
+			<Word>binclude</Word>
+		</Keywords>
+		
 		<Keywords foreground="DarkCyan" fontWeight="bold">
 			<Word>.b</Word>
 			<Word>.w</Word>
@@ -89,7 +95,7 @@
 			<Word>subq</Word>
 			<Word>tst</Word>
 		</Keywords>
-		<Keywords foreground="Red" fontWeight="bold">			
+		<Keywords foreground="DarkBlue" fontWeight="bold">			
 			<Word>d0</Word>
 			<Word>d1</Word>
 			<Word>d2</Word>

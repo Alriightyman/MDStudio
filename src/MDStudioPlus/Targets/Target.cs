@@ -63,6 +63,7 @@ namespace MDStudioPlus.Targets
         public abstract uint ReadLong(uint address);
         public abstract ushort ReadWord(uint address);
         public abstract void ReadMemory(uint address, uint size, byte[] memory);
+        public abstract byte[] Get68kMemory();
 
         //Z80
         public abstract uint GetZ80Reg(Z80Regs reg);

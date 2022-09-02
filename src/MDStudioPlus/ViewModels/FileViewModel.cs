@@ -275,6 +275,12 @@ namespace MDStudioPlus.ViewModels
             codeEditor?.ToggleBreakpoint(line);
         }
 
+        public void ClearBreakpoints()
+        {
+            CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));
+            codeEditor?.ClearBreakpoints();
+        }
+
         public void AddMarker(int lineNumber, TextMarkerTypes markerType, Color markerColor)
         {
             CodeEditor codeEditor = (CodeEditor)Document.ServiceProvider.GetService(typeof(CodeEditor));

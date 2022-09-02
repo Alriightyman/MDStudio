@@ -110,6 +110,8 @@ namespace MDStudioPlus.Targets
         {
             while (!token.IsCancellationRequested)
             {
+                // TODO: update function that gathers all possible needed data?
+                genPlusGx.UpdateDebug();
                 genPlusGx.Update();
             }
         }

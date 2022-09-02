@@ -11,7 +11,7 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
         xmlns:behaviors="clr-namespace:MDStudioPlus.Behaviors" 
         xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
-        xmlns:debugging="clr-namespace:MDStudioPlus.Models.Debugging"
+        xmlns:debugging="clr-namespace:MDStudioPlus.Models.Debugging" xmlns:wpf="clr-namespace:HexView.Wpf;assembly=HexView.Wpf"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance viewModels:Workspace, IsDesignTimeCreatable=True}"
         Title="MD Studio Plus" MinWidth="140" MinHeight="116" 
@@ -51,6 +51,7 @@
         <KeyBinding Key="S" Modifiers="Ctrl+Shift" Command="{Binding SaveAllCommand}" />
         <KeyBinding Key="O" Modifiers="Ctrl" Command="{Binding OpenProjectSolutionCommand}"/>
         <KeyBinding Key="F5" Command="{Binding RunEmulatorCommand}"/>
+
         <KeyBinding Key="F7" Command="{Binding BuildSolutionCommand}"/>
         <KeyBinding Key="F5" Modifiers="Shift" Command="{Binding StopEmulatorCommand}"/>
         <KeyBinding Key="Pause" Modifiers="Ctrl+Shift" Command="{Binding BreakAllCommand}"/>
@@ -666,6 +667,7 @@
                         AnchorablesSource="{Binding Tools}"
                         DocumentsSource="{Binding Files}"
                         Theme="{Binding SelectedTheme.Item2}"
+                        Layout="{Binding DockLayout}" 
                         behaviors:LayoutSerializer.SaveLayoutCommand="{Binding Layout.SaveLayoutCommand}"
                         behaviors:LayoutSerializer.LoadLayoutCommand="{Binding Layout.LoadLayoutCommand}">
 
@@ -1096,40 +1098,24 @@
                         <DataTemplate>
                             <Border>
                                 <DockPanel>
-                                    <TextBox DockPanel.Dock="Top"/>
-                                    <DataGrid DockPanel.Dock="Bottom"
-                                            AutoGenerateColumns="False"                                          
-                                          ItemsSource="{Binding Memory}"
-                                          HorizontalGridLinesBrush="{x:Null}"
-                                          VerticalGridLinesBrush="{x:Null}"
-                                          BorderBrush="{x:Null}"
-                                          CanUserReorderColumns="False"
-                                          ColumnWidth="25"
-                                          CanUserResizeRows="False"
-                                          CanUserResizeColumns="False"
-                                          RowHeaderWidth="0"
-                                          CellStyle="{StaticResource DataGridCellStyle}"
-                                          >
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Binding="{Binding Index}" Header="Addr" Width="40"/>
-                                        <DataGridTextColumn Binding="{Binding Value[0]}" Header="$00"/>
-                                        <DataGridTextColumn Binding="{Binding Value[1]}" Header="$01"/>
-                                        <DataGridTextColumn Binding="{Binding Value[2]}" Header="$02"/>
-                                        <DataGridTextColumn Binding="{Binding Value[3]}" Header="$03"/>
-                                        <DataGridTextColumn Binding="{Binding Value[4]}" Header="$04"/>
-                                        <DataGridTextColumn Binding="{Binding Value[5]}" Header="$05"/>
-                                        <DataGridTextColumn Binding="{Binding Value[6]}" Header="$06"/>
-                                        <DataGridTextColumn Binding="{Binding Value[7]}" Header="$07"/>
-                                        <DataGridTextColumn Binding="{Binding Value[8]}" Header="$08"/>
-                                        <DataGridTextColumn Binding="{Binding Value[9]}" Header="$09"/>
-                                        <DataGridTextColumn Binding="{Binding Value[10]}" Header="$0A"/>
-                                        <DataGridTextColumn Binding="{Binding Value[11]}" Header="$0B"/>
-                                        <DataGridTextColumn Binding="{Binding Value[12]}" Header="$0C"/>
-                                        <DataGridTextColumn Binding="{Binding Value[13]}" Header="$0D"/>
-                                        <DataGridTextColumn Binding="{Binding Value[14]}" Header="$0E"/>
-                                        <DataGridTextColumn Binding="{Binding Value[15]}" Header="$0F"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
+                                    <TextBox DockPanel.Dock="Top" >
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="TextChanged">
+                                                <i:InvokeCommandAction Command="{Binding TextChangedCommand}"
+                                                                       CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TextBox}}, Path=Text}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </TextBox>
+                                    <wpf:HexViewer x:Name="hexView" DataSource="{Binding Reader}" 
+                                                   Columns="{Binding ColumnCount}"
+                                                   Background="{DynamicResource ControlBackground}"
+                                                   Foreground="{DynamicResource WindowForeground}"
+                                                   Offset="{Binding Offset}"
+                                                   ShowText="False" 
+                                                   ShowHeader="True"
+                                                   DataFormat="Hexadecimal" 
+                                                   AddressFormat="Address16">
+                                    </wpf:HexViewer>
                                 </DockPanel>
                             </Border>
                         </DataTemplate>
@@ -1212,7 +1198,7 @@
                 <local:LayoutInitializer />
             </DockingManager.LayoutUpdateStrategy>
 
-            <LayoutRoot>
+            <!--<LayoutRoot>
                 <LayoutPanel Orientation="Horizontal">
                     <LayoutPanel Orientation="Vertical">
                         <LayoutDocumentPane/>
@@ -1229,7 +1215,7 @@
                         <LayoutAnchorablePane Name="ExplorerPane" DockHeight="2*"/>
                     </LayoutAnchorablePaneGroup>
                 </LayoutPanel>
-            </LayoutRoot>
+            </LayoutRoot>-->
         </DockingManager>
 
         <!--Status Bar DynamicResource StatusBarBackground -->

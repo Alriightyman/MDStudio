@@ -254,6 +254,7 @@ namespace MDStudioPlus.Editor
                 {
                     this.iconBarManager.Bookmarks.Add(bm);
                 }
+
                 return true;
             }
             return false;
@@ -273,6 +274,13 @@ namespace MDStudioPlus.Editor
                 }
             }
         }
+
+        public void ClearBreakpoints()
+        {
+            //this.iconBarManager.Bookmarks.Clear();
+            BookmarkManager.Instance.RemoveAll(b => b is Bookmark);
+        }
+
         #endregion
 
         public void Refresh()

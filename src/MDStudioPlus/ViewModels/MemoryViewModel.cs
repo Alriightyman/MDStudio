@@ -7,35 +7,96 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace MDStudioPlus.ViewModels
 {
     class MemoryViewModel : ToolViewModel
     {
-        private int numberCols = 16;
+        //private int numberCols = 16;
         public const string ToolContentId = "MemoryTool";
+
+        private RelayCommand<string> textChangedCommand;
+
         public MemoryViewModel() : base("Memory Viewer")
         {
             ContentId = ToolContentId;
-            memory = new ObservableCollection<MemoryItem>();
-            for(int i = 0; i < (0x10000 / numberCols); i++)
-            {
-                Memory.Add(new MemoryItem() { Value = new ObservableCollection<string>(){ 
-                    "0", "0", "0", "0", "0", "0", "0", "0","0","0","0","0","0","0","0","0"}, 
-                    Index = (i*16).ToString("X4") });
+        }
+
+        private MemoryStream memoryStream;
+        private BinaryReader reader;
+        public BinaryReader Reader
+        {
+            get { return reader; }
+            set {
+                reader = value;
+                RaisePropertyChanged(nameof(Reader));
             }
         }
 
-        private ObservableCollection<MemoryItem> memory;
-        public ObservableCollection<MemoryItem> Memory
+        long offset = 0;
+        public long Offset
         {
-            get => memory;
+            get => offset;
             set
             {
-                memory = value;
-                RaisePropertyChanged(nameof(Memory));
+                offset = value;
+                RaisePropertyChanged(nameof(Offset));
             }
         }
+
+        public string HeaderText
+        {
+            get
+            {
+                string text = "\t   ";
+
+                for (int col = 0; col < this.ColumnCount; col++)
+                {
+                    text += $"${col.ToString("X2")} ";
+                }
+
+                return text;
+            }
+        }
+
+
+
+        public ICommand TextChangedCommand
+        {
+            get { 
+                
+                if(textChangedCommand == null)
+                {
+                    textChangedCommand = new RelayCommand<string>((p) => GotoAddress(p));
+                }
+                
+                return textChangedCommand; }
+        }
+
+        private void GotoAddress(string text)
+        {
+            if (text == String.Empty)
+            {
+                Offset = 0;
+                return;
+            }
+
+            int hex;
+            if(Int32.TryParse(text, System.Globalization.NumberStyles.HexNumber, null, out hex))
+            {
+                Offset = hex;
+            }
+        }
+
+        public int ColumnCount
+        {
+            get;
+            set;
+        } = 16;
+
 
         /// <summary>
         /// Updates the values in the Memory Viewer
@@ -46,20 +107,11 @@ namespace MDStudioPlus.ViewModels
             // only update these values when showing
             if (IsVisible)
             {
-                int index = 0;
-                for (int row = 0; row < (mem.Length / numberCols); row++)
-                {                    
-                    int memoryIndex = index;
-                    string[] str = new string[numberCols];
-                    for (int col = 0; col < numberCols; col++, index++)
-                    {
-                            str[col] = mem[row * numberCols + col].ToString("X2");
-                    }
-
-                    Memory[row] = new MemoryItem() { Index = memoryIndex.ToString("X4"), Value = new ObservableCollection<string>(str) };
-
-                }
+                memoryStream?.Dispose();
+                memoryStream = new MemoryStream(mem);
+                Reader?.Dispose();
+                Reader = new BinaryReader(memoryStream);                
             }
-        }
+        }        
     }
 }

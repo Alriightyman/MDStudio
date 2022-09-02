@@ -65,6 +65,7 @@ namespace MDStudioPlus.FileExplorer
                 //TODO: test this again
                 string relativeFilename = selectedFile.Contains("\\") ? selectedFile.Remove(0, projectPathLength + 1) : selectedFile;
                 string fullDirectory = System.IO.Path.GetDirectoryName(relativeFilename);
+                string previousDirectoryName = string.Empty;
 
                 if (fullDirectory != String.Empty)
                 {
@@ -72,7 +73,7 @@ namespace MDStudioPlus.FileExplorer
 
                     for (int count = 0; count < directories.Length; count++)
                     {
-                        newDirectoryItem = FindDirectoryItem(parentDirectoryItem.Items.Where(di => di is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList(), directories[count]);
+                        newDirectoryItem = FindDirectoryItem(parentDirectoryItem.Items.Where(di => di is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList(), directories[count], count != 0 ? directories[count-1] : String.Empty);
 
                         // if directory was not found and we have not gone through all directories
                         if (newDirectoryItem == null)
@@ -178,7 +179,7 @@ namespace MDStudioPlus.FileExplorer
         }
 
         // recursively finds the directory item, if it exists
-        private DirectoryItemViewModel FindDirectoryItem(List<DirectoryItemViewModel> directories, string directoryName)
+        private DirectoryItemViewModel FindDirectoryItem(List<DirectoryItemViewModel> directories, string directoryName, string previousDirectory)
         {
             foreach(var directory in directories)
             {
@@ -187,10 +188,12 @@ namespace MDStudioPlus.FileExplorer
                     return directory;
                 // not found?  Look through its Items
                 List<DirectoryItemViewModel> items = directory.Items.Where(item => item is DirectoryItemViewModel).Cast<DirectoryItemViewModel>().ToList();
-                DirectoryItemViewModel directoryItem = FindDirectoryItem(items, directoryName);
+                DirectoryItemViewModel directoryItem = FindDirectoryItem(items, directoryName, previousDirectory);
                 
-                // if we found it, return
-                if (directoryItem != null)
+                // if we found it, varify that its in the correct place
+                if (directoryItem != null &&
+                    ( (directoryItem.Parent != null && directoryItem.Parent.Name == previousDirectory) ||
+                    (previousDirectory != String.Empty && directoryItem.Parent is IProjectItemChild)))
                     return directoryItem;
             }
 
